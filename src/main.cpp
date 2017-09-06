@@ -395,8 +395,9 @@ void KeyPressed(unsigned char key, int x, int y)
 		break;
 	//case 'w': myMesh.Adjust
 	case 'z': mySkin.Enable(); mySkin.GetBoneLocations(); break; // useless function
-	case 'g': mySensor.GetKinectData();
-		//cout << "Getting kinect data" << endl;
+	case 'g': 
+		cout << "Getting kinect data" << endl;
+		mySensor.GetKinectData();
 		break;
 	case 't': Transform(true); break;
 	case 'p': play = !play; cout << (play ? "Play on" : "Play off") << endl; break;
