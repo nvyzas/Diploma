@@ -20,12 +20,12 @@ SkinnedMesh::SkinnedMesh(const KSensor &ks)
 	m_pScene = NULL;
 	KBoneMapper();
 	m_pKBones = ks.m_Joints;
-	m_SuccessfullyLoaded = false;
 	m_BindPose = false;
 	m_NumBones = 0;
 	m_NumNodes = 0;
 	m_ActiveModel = 0;
-	m_ActiveBoneTransformInfo = 0;	
+	m_ActiveBoneTransformInfo = 0;
+	m_SuccessfullyLoaded = false;
 }
 SkinnedMesh::~SkinnedMesh()
 {
@@ -48,6 +48,7 @@ void SkinnedMesh::Clear()
         glDeleteVertexArrays(1, &m_VAO);
         m_VAO = 0;
     }
+	m_SuccessfullyLoaded = false;
 }
 bool SkinnedMesh::LoadMesh(const string& Filename)
 {
@@ -62,7 +63,6 @@ bool SkinnedMesh::LoadMesh(const string& Filename)
     glGenBuffers(ARRAY_SIZE_IN_ELEMENTS(m_Buffers), m_Buffers);
 
     bool Ret = false;    
-	
 	cout << endl;
 	cout << "Loading model " << m_ActiveModel << ": " << Filename.c_str() << endl;
     m_pScene = m_Importer.ReadFile(Filename.c_str(), ASSIMP_LOAD_FLAGS);    
@@ -75,9 +75,11 @@ bool SkinnedMesh::LoadMesh(const string& Filename)
     else {
         printf("Error parsing '%s': '%s'\n", Filename.c_str(), m_Importer.GetErrorString());
     }
+	m_SuccessfullyLoaded = Ret;
+	m_Skinned = true;
 
     // Make sure the VAO is not changed from the outside
-    glBindVertexArray(0);	
+    glBindVertexArray(0);
 
     return Ret;
 }
@@ -160,6 +162,9 @@ bool SkinnedMesh::InitFromScene(const aiScene* pScene, const string& Filename)
 	glEnableVertexAttribArray(BONE_WEIGHT_LOCATION);
 	glVertexAttribPointer(BONE_WEIGHT_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(VertexBoneData), (const GLvoid*)16);
 
+	m_vertexArrayBytes = sizeof(Positions[0]) * Positions.size() + sizeof(TexCoords[0]) * TexCoords.size()
+		+ sizeof(Normals[0]) * Normals.size() + sizeof(Bones[0]) * Bones.size();
+
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_Buffers[INDEX_BUFFER]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices[0]) * Indices.size(), &Indices[0], GL_STATIC_DRAW);
 
@@ -230,6 +235,7 @@ void SkinnedMesh::LoadBones(uint MeshIndex, const aiMesh* pMesh, vector<VertexBo
 			float Weight = pMesh->mBones[i]->mWeights[j].mWeight;
 			Bones[VertexID].AddBoneData(BoneIndex, Weight);
 		}
+		m_VertexBoneData = Bones; // keep vertex bone data copy in class member (necessary?)
 	}
 }
 void SkinnedMesh::VertexBoneData::AddBoneData(uint BoneID, float Weight)
@@ -248,7 +254,7 @@ void SkinnedMesh::VertexBoneData::AddBoneData(uint BoneID, float Weight)
 }
 void SkinnedMesh::VertexBoneData::AdjustBoneData()
 {
-	float max = 0;
+	float max = 0.0f;
 	for (uint i = 0; i < ARRAY_SIZE_IN_ELEMENTS(IDs); i++) {
 		if (Weights[i] > max) max = Weights[i];
 		OldWeights[i] = Weights[i]; // backup weights
@@ -260,7 +266,6 @@ void SkinnedMesh::VertexBoneData::AdjustBoneData()
 			for (uint j = 0; j < ARRAY_SIZE_IN_ELEMENTS(IDs); j++)
 			{
 				if (j != i) Weights[j] = 0.0f;
-
 			}
 			return;
 		}	
@@ -272,7 +277,29 @@ void SkinnedMesh::VertexBoneData::AdjustBoneData()
 }
 void SkinnedMesh::ToggleSkinning()
 { 
-	if (m_Skinned){}
+	unsigned long long vertexBoneDataBytes = sizeof(m_VertexBoneData[0]) * m_VertexBoneData.size();
+	if (m_Skinned){		
+		for (uint i = 0; i < m_VertexBoneData.size(); i++) {
+			m_VertexBoneData[i].AdjustBoneData();
+		}		
+		glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[BONE_VB]);
+		glBufferSubData(GL_ARRAY_BUFFER, m_vertexArrayBytes - vertexBoneDataBytes, vertexBoneDataBytes, &m_VertexBoneData);
+		/*
+		glEnableVertexAttribArray(BONE_ID_LOCATION);
+		glVertexAttribIPointer(BONE_ID_LOCATION, 4, GL_INT, sizeof(VertexBoneData), (const GLvoid*)0);
+		glEnableVertexAttribArray(BONE_WEIGHT_LOCATION);
+		glVertexAttribPointer(BONE_WEIGHT_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(VertexBoneData), (const GLvoid*)16);
+		//*/
+		m_Skinned = false;
+	}
+	else {
+		for (uint i = 0; i < m_VertexBoneData.size(); i++) {
+			m_VertexBoneData[i].RestoreBoneData();
+		}
+		glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[BONE_VB]);
+		glBufferSubData(GL_ARRAY_BUFFER, m_vertexArrayBytes - vertexBoneDataBytes, vertexBoneDataBytes, &m_VertexBoneData);
+		m_Skinned = true;
+	}
 }
 void SkinnedMesh::VertexBoneData::RestoreBoneData()
 {
@@ -653,6 +680,9 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 			sso << "Global transformation:" << endl << G;
 			m_BoneInfo[i].FinalTransformation = G * m_BoneInfo[i].BoneOffset;
 			sso << "Final Transformation:" << endl << m_BoneInfo[i].FinalTransformation;
+			m_BoneTransformInfo[counter] = sso.str();
+			sso.clear();
+			counter++;
 		}else{ // bones or kbones with invalid id
 			q = (m_Parameters[2]) ? L.ExtractQuaternion1() : L.ExtractQuaternion2();
 			sso << "q rel from model " << ": " << q.ToString() << q.ToEulerAnglesString() << q.ToAxisAngleString() << endl;
@@ -680,24 +710,12 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 			sso << "Global transformation:" << endl << G;
 			m_BoneInfo[i].FinalTransformation = m_Parameters[0] ? Matrix4f::Zero() : G * m_BoneInfo[i].BoneOffset;				
 			sso << "Final Transformation:" << endl << m_BoneInfo[i].FinalTransformation;
+			m_BoneTransformInfo[counter] = sso.str();
+			sso.clear();
+			counter++;
 		}
 	}
 		
-	if (it != m_BoneMapping.end()) {
-		/*/
-		sso << "Rotation matrix (local) from q:" << endl << R;
-		sso << "Translation matrix (local) from model:" << endl << T;
-		sso << "Local transformation:" << endl << L;
-		sso << "Parent transformation (global):" << endl << P;
-		sso << "Global transformation:" << endl << G;
-		sso << "Parent transformation (global):" << endl << P;
-		sso << "Bone Offset:" << endl << m_BoneInfo[i].BoneOffset;
-		sso << "Final Transformation:" << endl << m_BoneInfo[i].FinalTransformation;
-		//*/
-		m_BoneTransformInfo[counter] = sso.str();
-		sso.clear();
-		counter++;
-	}
 	for (uint i = 0; i < pNode->mNumChildren; i++) {
 		TraverseNodeHierarchy(pNode->mChildren[i], G);
 	}
@@ -741,7 +759,7 @@ void SkinnedMesh::KBoneMapper()
 	//m_KBoneMapping["RightFoot"]			= INVALID_JOINT_ID;
 	//m_KBoneMapping["LeftToeBase"]			= INVALID_JOINT_ID;
 	//m_KBoneMapping["RightToeBase"]		= INVALID_JOINT_ID;
-
+	
 	// arms
 	m_KBoneMapping["LeftShoulder"]			= JointType_ShoulderLeft;
 	m_KBoneMapping["RightShoulder"]			= JointType_ShoulderRight;
@@ -773,7 +791,7 @@ void SkinnedMesh::NextModel(int step)
 {	
 	m_ActiveModel = Mod(m_ActiveModel, NUM_MODELS, step);
 	string MeshNames[NUM_MODELS] = { "cmu_test","cmu", "cmumb_localy_180","bobby",""};
-	m_SuccessfullyLoaded = LoadMesh("models/" + MeshNames[m_ActiveModel] + ".dae");
+	LoadMesh("models/" + MeshNames[m_ActiveModel] + ".dae");
 }
 void SkinnedMesh::NextJoint(int step)
 {

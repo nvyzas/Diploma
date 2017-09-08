@@ -10,7 +10,7 @@ SkinningTechnique::SkinningTechnique()
 bool SkinningTechnique::Init()
 {
     if (!Technique::Init()) {
-		printf("Cannot init skinning technique\n");
+		printf("Cannot init technique base class\n");
         return false;
     }
 
@@ -41,6 +41,7 @@ bool SkinningTechnique::Init()
     m_matSpecularPowerLocation = GetUniformLocation("gSpecularPower");
     m_numPointLightsLocation = GetUniformLocation("gNumPointLights");
     m_numSpotLightsLocation = GetUniformLocation("gNumSpotLights");
+	m_skinningOnLocation = GetUniformLocation("skinningOn");
 	
 
     if (m_dirLightLocation.AmbientIntensity == INVALID_UNIFORM_LOCATION ||
@@ -54,7 +55,8 @@ bool SkinningTechnique::Init()
         m_matSpecularIntensityLocation == INVALID_UNIFORM_LOCATION ||
         m_matSpecularPowerLocation == INVALID_UNIFORM_LOCATION ||
         m_numPointLightsLocation == INVALID_UNIFORM_LOCATION ||
-        m_numSpotLightsLocation == INVALID_UNIFORM_LOCATION) {
+        m_numSpotLightsLocation == INVALID_UNIFORM_LOCATION ||
+		m_skinningOnLocation == INVALID_UNIFORM_LOCATION) {
 		printf("Invalid uniform location(general)\n");
         return false;
     }
@@ -153,8 +155,6 @@ void SkinningTechnique::SetWVP(const Matrix4f& WVP)
 {
     glUniformMatrix4fv(m_WVPLocation, 1, GL_TRUE, (const GLfloat*)WVP);    
 }
-
-
 void SkinningTechnique::SetWorldMatrix(const Matrix4f& World)
 {
     glUniformMatrix4fv(m_WorldMatrixLocation, 1, GL_TRUE, (const GLfloat*)World);
@@ -231,4 +231,8 @@ void SkinningTechnique::GetBoneLocations() {
 		m_boneLocation[i] = GetUniformLocation(Name);
 		cout << "Bone " << i << " location: " << m_boneLocation[i] << endl;
 	}
+}
+void SkinningTechnique::SetSkinningSwitch(int value) // use 0 value to switch off
+{
+	glUniform1i(m_skinningOnLocation, value);
 }

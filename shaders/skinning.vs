@@ -15,13 +15,28 @@ const int MAX_BONES = 100;
 uniform mat4 gWVP;
 uniform mat4 gWorld;
 uniform mat4 gBones[MAX_BONES];
+uniform bool skinningOn;
+uniform bool visible[MAX_BONES];
 
 void main()
-{       
-    mat4 BoneTransform = gBones[BoneIDs[0]] * Weights[0];
-    BoneTransform     += gBones[BoneIDs[1]] * Weights[1];
-    BoneTransform     += gBones[BoneIDs[2]] * Weights[2];
-    BoneTransform     += gBones[BoneIDs[3]] * Weights[3];
+{
+	mat4 BoneTransform;
+	if (skinningOn){
+		float max = 0;
+		int i,j;
+		for (i=0; i<4; i++){
+			if (Weights[i] >= max){
+				max = Weights[i];
+				j = i;
+			}
+		}
+		BoneTransform 	   = gBones[BoneIDs[j]];
+	}else{		
+		BoneTransform 	   = gBones[BoneIDs[0]] * Weights[0];
+		BoneTransform     += gBones[BoneIDs[1]] * Weights[1];
+		BoneTransform     += gBones[BoneIDs[2]] * Weights[2];
+		BoneTransform     += gBones[BoneIDs[3]] * Weights[3];
+	}
 
     vec4 PosL    = BoneTransform * vec4(Position, 1.0);
     gl_Position  = gWVP * PosL;

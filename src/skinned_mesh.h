@@ -162,8 +162,9 @@ private:
 	uint m_NumBones;
 	uint m_NumNodes;
 	uint m_NumVertices; // total number of vertices
-
+	unsigned long long m_vertexArrayBytes;
 	vector<BoneInfo> m_BoneInfo;
+	vector<VertexBoneData> m_VertexBoneData;
 	Matrix4f m_GlobalInverseTransform;
 
 	const aiScene* m_pScene;

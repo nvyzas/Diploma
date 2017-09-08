@@ -368,6 +368,14 @@ void KeyPressed(unsigned char key, int x, int y)
 		//mySensor.GetKinectData();
 		Transform(true);
 		break;
+	case 'e':
+		//myMesh.ToggleSkinning(); // does not work properly
+		myMesh.m_Skinned = !myMesh.m_Skinned;
+		cout << "Skin " << (myMesh.m_Skinned ? "ON" : "OFF") << endl;
+		mySkin.Enable();
+		mySkin.SetSkinningSwitch(myMesh.m_Skinned);
+		Transform(false);
+		break;
 	case 'q': if (mod & GLUT_ACTIVE_ALT) NextJoint(-1); else NextJoint(0); break;
 	case 'Q': NextJoint(1); break;
 	case 'm':
