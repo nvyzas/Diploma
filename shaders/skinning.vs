@@ -11,6 +11,7 @@ out vec3 Normal0;
 out vec3 WorldPos0;                                                                 
 
 const int MAX_BONES = 100;
+const mat4 ZeroMat4 = mat4(0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0);
 
 uniform mat4 gWVP;
 uniform mat4 gWorld;
@@ -21,7 +22,14 @@ uniform bool visible[MAX_BONES];
 void main()
 {
 	mat4 BoneTransform;
-	if (skinningOn){
+	mat4 FinalTransforms[4];
+	// visible?
+	for (int i = 0; i < 4 ; i++){
+		if (visible[BoneIDs[i]]) FinalTransforms[i] = gBones[BoneIDs[i]];
+		else FinalTransforms[i] = ZeroMat4;
+	}
+	// skinning?
+	if (!skinningOn){
 		float max = 0;
 		int i,j;
 		for (i=0; i<4; i++){
@@ -30,12 +38,12 @@ void main()
 				j = i;
 			}
 		}
-		BoneTransform 	   = gBones[BoneIDs[j]];
+		BoneTransform = FinalTransforms[j];
 	}else{		
-		BoneTransform 	   = gBones[BoneIDs[0]] * Weights[0];
-		BoneTransform     += gBones[BoneIDs[1]] * Weights[1];
-		BoneTransform     += gBones[BoneIDs[2]] * Weights[2];
-		BoneTransform     += gBones[BoneIDs[3]] * Weights[3];
+		BoneTransform 	   =  FinalTransforms[0] * Weights[0];
+		BoneTransform     +=  FinalTransforms[1] * Weights[1];
+		BoneTransform     +=  FinalTransforms[2] * Weights[2];
+		BoneTransform     +=  FinalTransforms[3] * Weights[3];
 	}
 
     vec4 PosL    = BoneTransform * vec4(Position, 1.0);

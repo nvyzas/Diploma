@@ -141,12 +141,19 @@ bool SkinningTechnique::Init()
         }
     }
 
-    for (unsigned int i = 0 ; i < ARRAY_SIZE_IN_ELEMENTS(m_boneLocation) ; i++) {
+    for (uint i = 0 ; i < ARRAY_SIZE_IN_ELEMENTS(m_boneLocation) ; i++) {
         char Name[128];
         memset(Name, 0, sizeof(Name));
         SNPRINTF(Name, sizeof(Name), "gBones[%d]", i);
         m_boneLocation[i] = GetUniformLocation(Name);
     }
+
+	for (uint i = 0; i < ARRAY_SIZE_IN_ELEMENTS(m_visibilityLocation); i++) {
+		char Name[128];
+		memset(Name, 0, sizeof(Name));
+		SNPRINTF(Name, sizeof(Name), "visible[%d]", i);
+		m_visibilityLocation[i] = GetUniformLocation(Name);
+	}
 
     return true;
 }
@@ -219,20 +226,15 @@ void SkinningTechnique::SetSpotLights(uint NumLights, const SpotLight* pLights)
 void SkinningTechnique::SetBoneTransform(uint Index, const Matrix4f& Transform)
 {
     assert(Index < MAX_BONES);
-    //Transform.Print();
-	//printf("Setting bone transform %d\n",Index);
     glUniformMatrix4fv(m_boneLocation[Index], 1, GL_TRUE, (const GLfloat*)Transform);       
-}
-void SkinningTechnique::GetBoneLocations() {
-	for (unsigned int i = 0; i < ARRAY_SIZE_IN_ELEMENTS(m_boneLocation); i++) {
-		char Name[128];
-		memset(Name, 0, sizeof(Name));
-		SNPRINTF(Name, sizeof(Name), "gBones[%d]", i);
-		m_boneLocation[i] = GetUniformLocation(Name);
-		cout << "Bone " << i << " location: " << m_boneLocation[i] << endl;
-	}
 }
 void SkinningTechnique::SetSkinningSwitch(int value) // use 0 value to switch off
 {
 	glUniform1i(m_skinningOnLocation, value);
+}
+void SkinningTechnique::SetBoneVisibility(uint Index, const bool& Visibility)
+{
+	assert(Index < MAX_BONES);
+	//cout << "Setting variable at location " << m_visibilityLocation[Index] << " to " << Visibility << endl;
+	glUniform1i(m_visibilityLocation[Index], Visibility);
 }

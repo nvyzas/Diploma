@@ -83,7 +83,7 @@ public:
     void SetMatSpecularPower(float Power);
     void SetBoneTransform(uint Index, const Matrix4f& Transform);
 	void SetSkinningSwitch(int value);
-	void GetBoneLocations();
+	void SetBoneVisibility(uint Index, const bool& Visibility);
 
 private:
     
@@ -96,6 +96,7 @@ private:
     GLuint m_numPointLightsLocation;
     GLuint m_numSpotLightsLocation;
 	GLuint m_skinningOnLocation;
+	
 
     struct {
         GLuint Color;
@@ -131,6 +132,7 @@ private:
     } m_spotLightsLocation[MAX_SPOT_LIGHTS];
     
     GLuint m_boneLocation[MAX_BONES];
+	GLuint m_visibilityLocation[MAX_BONES];
 };
 
 

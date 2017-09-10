@@ -43,9 +43,14 @@ public:
 	void NextJoint(int step);
 	void FlipParameter(uint i);	
 	void NextBoneTransformInfo(int step);
+	void ToggleActiveBoneVisibility();
 	bool m_Skinned;
 	bool m_BindPose;
 	bool m_SuccessfullyLoaded;
+	uint GetActiveBoneID() const;
+	bool GetBoneVisibility(uint BoneIndex) const;
+	uint GetNumBones() const;
+	
 private:
 
 #define NUM_BONES_PER_VERTEX 4
@@ -170,7 +175,7 @@ private:
 	const aiScene* m_pScene;
 	Assimp::Importer m_Importer;
 
-	std::map<std::string, uint>::iterator m_BoneMapIterator;
+	std::map<std::string, uint>::iterator m_ActiveBone;
 	uint m_ActiveModel;
 	bitset<NUM_PARAMETERS> m_Parameters;
 	const string m_ParametersStringTrue[NUM_PARAMETERS] = { "Invisible parts", "Composed local", "My quaternion", "My matrix", "qRel=qAbs*qAbsParInv","qAbs=qAbsPar*qRel" };

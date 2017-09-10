@@ -119,7 +119,7 @@ bool SkinnedMesh::InitFromScene(const aiScene* pScene, const string& Filename)
 		const aiMesh* paiMesh = pScene->mMeshes[i];
 		InitMesh(i, paiMesh, Positions, Normals, TexCoords, Bones, Indices);
 	}
-	m_BoneMapIterator = m_BoneMapping.begin();
+	m_ActiveBone = m_BoneMapping.begin();
 	m_relQuats.resize(m_NumBones);
 	m_relVecs.resize(m_NumBones);
 	m_relMats.resize(m_NumBones);
@@ -796,15 +796,15 @@ void SkinnedMesh::NextModel(int step)
 void SkinnedMesh::NextJoint(int step)
 {
 	if (step < 0) {
-		if (m_BoneMapIterator == m_BoneMapping.begin()) m_BoneMapIterator = m_BoneMapping.end();
-		m_BoneMapIterator--;
+		if (m_ActiveBone == m_BoneMapping.begin()) m_ActiveBone = m_BoneMapping.end();
+		m_ActiveBone--;
 	}
 	if (step > 0) {
-		m_BoneMapIterator++;
-		if (m_BoneMapIterator == m_BoneMapping.end()) m_BoneMapIterator = m_BoneMapping.begin();
+		m_ActiveBone++;
+		if (m_ActiveBone == m_BoneMapping.end()) m_ActiveBone = m_BoneMapping.begin();
 	}
-	uint i = m_BoneMapIterator->second;// m_BoneMapIterator->second;
-	cout << "Active joint " << setw(2) << m_BoneMapIterator->second << ": " << setw(15) << m_BoneMapIterator->first;
+	uint i = m_ActiveBone->second;// m_BoneMapIterator->second;
+	cout << "Active joint " << setw(2) << m_ActiveBone->second << ": " << setw(15) << m_ActiveBone->first;
 	cout << " Visible:" << m_BoneInfo[i].Visible;
 	cout << " Offset:" << m_BoneInfo[i].Offset;
 	cout << " BindPose:" << m_BoneInfo[i].BindPose;
@@ -828,4 +828,22 @@ void SkinnedMesh::PrintParameters()
 		cout << "Parameter " << i << (m_Parameters[i] ? " ON: " : " OFF: ");
 		cout <<(m_Parameters[i] ? m_ParametersStringTrue[i] : m_ParametersStringFalse[i]) << endl;
 	}
+}
+void SkinnedMesh::ToggleActiveBoneVisibility()
+{
+	bool &vis = m_BoneInfo[m_ActiveBone->second].Visible;
+	vis = !vis;
+	cout << m_ActiveBone->first << " visibility " << (vis ? " ON: " : " OFF: ") << endl;
+}
+bool SkinnedMesh::GetBoneVisibility(uint BoneIndex) const
+{
+	return m_BoneInfo[BoneIndex].Visible;
+}
+uint SkinnedMesh::GetActiveBoneID() const
+{
+	return m_ActiveBone->second;
+}
+uint SkinnedMesh::GetNumBones() const
+{
+	return m_NumBones;
 }

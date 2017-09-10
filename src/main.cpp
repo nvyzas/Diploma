@@ -402,7 +402,12 @@ void KeyPressed(unsigned char key, int x, int y)
 		Transform(true);
 		break;
 	//case 'w': myMesh.Adjust
-	case 'z': mySkin.Enable(); mySkin.GetBoneLocations(); break; // useless function
+	case 'v':
+		myMesh.ToggleActiveBoneVisibility();
+		mySkin.Enable();
+		mySkin.SetBoneVisibility(myMesh.GetActiveBoneID(),myMesh.GetBoneVisibility(myMesh.GetActiveBoneID()));
+		Transform(true);
+		break; 
 	case 'g': 
 		cout << "Getting kinect data" << endl;
 		mySensor.GetKinectData();
@@ -478,7 +483,11 @@ void Setup()
 	mySkin.SetDirectionalLight(directionalLight);
 	mySkin.SetMatSpecularIntensity(0.0f);
 	mySkin.SetMatSpecularPower(0);
+	mySkin.SetSkinningSwitch(myMesh.m_Skinned);
 	mySkin.SetWVP(myPipe.GetWVPTrans());
+	for (uint i = 0; i < myMesh.GetNumBones(); i++) {
+		mySkin.SetBoneVisibility(i, myMesh.GetBoneVisibility(i));
+	}
 	Transform(true);
 }
 
