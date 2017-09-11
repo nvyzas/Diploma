@@ -5,6 +5,7 @@
 #include "camera.h"
 #include "math_3d.h"
 #include "sensor.h"
+#include <GL/freeglut.h>
 #include <iostream>
 #include <iomanip>
 using namespace std;
@@ -46,7 +47,17 @@ void DrawSkeleton(uint id);
 
 void SetupOGL() {
 	// OpenGL setup
-	printf("GL version: %s\n", glGetString(GL_VERSION));
+	cout << "GL version: " << glGetString(GL_VERSION) << endl;
+	GLint i;
+	glGetIntegerv(GL_CONTEXT_FLAGS, &i);
+	cout << "GL renderer: " << glGetString(GL_RENDERER) << endl;
+	cout << "Shaders version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << endl;
+	/*
+	glGetIntegerv(GL_NUM_EXTENSIONS, &i);
+	for (uint j = 0; j < i; j++) cout << "Extension " << j << ": " << glGetStringi(GL_EXTENSIONS, j) << endl;
+	cout << "Legacy extensions: " << glGetString(GL_EXTENSIONS) << endl;
+	//*/
+	//cout << "GL context flag: " << glGetStringi(i) << endl;
 	glEnable(GL_TEXTURE_2D);
 	glShadeModel(GL_SMOOTH);                            // Enable Smooth Shading
 	glClearColor(0.0f, 0.0f, 0.0f, 0.5f);               // Black Background
@@ -195,12 +206,19 @@ void Execute()
 }
 
 bool InitGLUT(int argc, char* argv[]) {
+	//*
+	glutInitContextVersion(3, 3);
+	glutInitContextProfile(GLUT_FORWARD_COMPATIBLE);
+	glutInitContextProfile(GLUT_CORE_PROFILE);
+	//*/
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
 	glutInitWindowSize(WIDTH, HEIGHT);
-	glutCreateWindow("Diploma");
+	glutCreateWindow("Diploma");	
 	glutDisplayFunc(Draw);
 	glutIdleFunc(Draw);
+	glutInitContextVersion(3, 1);
+	glutInitContextFlags(GLUT_FORWARD_COMPATIBLE | GLUT_DEBUG);
 
 	// Must be done after glut is initialized!
 	GLenum res = glewInit();
@@ -208,6 +226,7 @@ bool InitGLUT(int argc, char* argv[]) {
 		printf("Error: '%s'\n", glewGetErrorString(res));
 		return false;
 	}
+	
 	return true;
 }
 
@@ -443,7 +462,6 @@ void Setup()
 	mySensor.PrintJointHierarchy();
 	myMesh.NextModel(0);
 	mySensor.GetKinectData(); // to successfully acquire frame init sensor before mesh and load mesh before getting data
-	mySensor.GetKinectData();
 	// setup pipeline		
 	myPipe.Scale(1.0f, 1.0f, 1.0f);
 	myPipe.Rotate(0.0f, 0.0f, 0.0f);

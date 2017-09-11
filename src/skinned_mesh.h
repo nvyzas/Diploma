@@ -37,7 +37,7 @@ public:
 	void PrintParameters();
 	void PrintSceneInfo();
 	void KBoneMapper();
-	void AdjustBones();
+	void AdjustBones(); // Not used
 	void ToggleSkinning();
 	void NextModel(int step);
 	void NextJoint(int step);
@@ -87,12 +87,12 @@ private:
 		{
 			ZERO_MEM(IDs);
 			ZERO_MEM(Weights);
-			ZERO_MEM(OldWeights);
+			ZERO_MEM(OldWeights); // Not used
 		}
 
 		void AddBoneData(uint BoneID, float Weight);
-		void AdjustBoneData();
-		void RestoreBoneData();
+		void AdjustBoneData(); // Not used
+		void RestoreBoneData(); // Not used
 	};
 
 	void CalcInterpolatedScaling(aiVector3D& Out, float AnimationTime, const aiNodeAnim* pNodeAnim);

@@ -168,6 +168,7 @@ bool SkinnedMesh::InitFromScene(const aiScene* pScene, const string& Filename)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_Buffers[INDEX_BUFFER]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices[0]) * Indices.size(), &Indices[0], GL_STATIC_DRAW);
 
+	GLPrintError();
 	return GLCheckError();
 }
 void SkinnedMesh::InitMesh(uint MeshIndex,
@@ -727,7 +728,6 @@ void SkinnedMesh::SetConQuats()
 	Vector3f zeroAngle(0.0f, 0.0f, 0.0f);
 	for (uint i = 0; i < m_Corrections.size(); i++) m_Corrections[i]=Quaternion(0,0,0,1);
 
-	
 	Quaternion q;
 	q.FromAxisAngle(Vector4f(0, 1, 0, 180));
 	m_Corrections[JointType_SpineMid] = q;
