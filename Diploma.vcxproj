@@ -13,6 +13,7 @@
   <ItemGroup>
     <ClCompile Include="src\camera.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\main_window.cpp" />
     <ClCompile Include="src\math_3d.cpp" />
     <ClCompile Include="src\pipeline.cpp" />
     <ClCompile Include="src\sensor.cpp" />
@@ -24,6 +25,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\camera.h" />
+    <ClInclude Include="src\main_window.h" />
     <ClInclude Include="src\math_3d.h" />
     <ClInclude Include="src\pipeline.h" />
     <ClInclude Include="src\sensor.h" />
@@ -50,11 +52,10 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <Import Project="res\freeglut\FreeGLUT.props" />
-    <Import Project="res\glew\GLEW.props" />
     <Import Project="res\ImageMagick\ImageMagick.props" />
     <Import Project="res\assimp\Assimp.props" />
     <Import Project="res\kinect\Kinect.props" />
+    <Import Project="res\qt\qt.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">

@@ -103,7 +103,7 @@ bool Camera::OnKeyboardSpecial(int Key, bool print)
 	
 	switch (Key) {
 
-	case GLUT_KEY_UP:
+	case 0: 
 		m_Phi -= m_angleStep;
 		m_Phi = (m_Phi <= 0.0f) ? m_Phi + 360.0f : m_Phi;
 		UpdateCartesian();
@@ -113,7 +113,7 @@ bool Camera::OnKeyboardSpecial(int Key, bool print)
 		Ret = true;
 		break;
 
-	case GLUT_KEY_DOWN:
+	case 1:
 		m_Phi += m_angleStep;
 		m_Phi = (m_Phi > 360.0f) ? m_Phi - 360.0f : m_Phi;
 		UpdateCartesian();
@@ -123,7 +123,7 @@ bool Camera::OnKeyboardSpecial(int Key, bool print)
 		Ret = true;
 		break;
 
-	case GLUT_KEY_LEFT:
+	case 2:
 		m_Theta += m_angleStep;
 		m_Theta = ((m_Theta <= 360.0f) ? m_Theta : m_Theta - 360.0f);
 		UpdateCartesian();
@@ -133,7 +133,7 @@ bool Camera::OnKeyboardSpecial(int Key, bool print)
 		Ret = true;
 		break;
 
-	case GLUT_KEY_RIGHT:
+	case 3:
 		m_Theta -= m_angleStep;
 		m_Theta = (m_Theta >= 0.0f) ? m_Theta : m_Theta + 360.0f;
 		UpdateCartesian();
@@ -143,10 +143,10 @@ bool Camera::OnKeyboardSpecial(int Key, bool print)
 		Ret = true;
 		break;
 
-	case GLUT_KEY_PAGE_UP:
+	case 4:
 		break;
 
-	case GLUT_KEY_PAGE_DOWN:
+	case 5:
 		break;
 
 	default:

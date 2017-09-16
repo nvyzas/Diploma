@@ -8,18 +8,18 @@
 #include <map>
 #include <vector>
 #include <bitset>
-#include <GL/glew.h>
 #include <assimp/Importer.hpp>      // C++ importer interface
 #include <assimp/scene.h>			 // Output data structure
 #include <assimp/postprocess.h>     // Post processing flags
-
+#include <QtGui/QOpenGLFunctions>
+#include <QtGui/QOpenGLFunctions_4_5_Compatibility>
 
 #define ASSIMP_LOAD_FLAGS aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices | aiProcess_FlipWindingOrder | aiProcess_LimitBoneWeights 
 #define NUM_PARAMETERS 10
 
 using namespace std;
 
-class SkinnedMesh
+class SkinnedMesh : public QOpenGLFunctions_4_5_Compatibility
 {
 public:
 	SkinnedMesh();

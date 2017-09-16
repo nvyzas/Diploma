@@ -11,11 +11,9 @@ KSensor::KSensor()
 	InitJoints();
 	m_GotFrame = false;
 }
-
 KSensor::~KSensor()
 {
 }
-
 bool KSensor::Init() {
 	//IKinectSensor* sensor;             
 	if (FAILED(GetDefaultKinectSensor(&m_Sensor))) {
@@ -43,7 +41,6 @@ bool KSensor::Init() {
 		return false;
 	}
 }
-
 void KSensor::GetKinectData() {
 	cout << "Getting kinect data" << endl;
 	IMultiSourceFrame* frame = NULL;
@@ -74,7 +71,6 @@ void KSensor::GetKinectData() {
 	}
 	if (frame) frame->Release();
 }
-
 void KSensor::GetDepthData(IMultiSourceFrame* frame, GLubyte* dest) {
 	IDepthFrame* depthframe;
 	IDepthFrameReference* frameref = NULL;
@@ -105,7 +101,6 @@ void KSensor::GetDepthData(IMultiSourceFrame* frame, GLubyte* dest) {
 	m_Mapper->MapDepthFrameToColorSpace(WIDTH*HEIGHT, buf, WIDTH*HEIGHT, m_Depth2RGB);
 	if (depthframe) depthframe->Release();
 }
-
 void KSensor::GetRGBData(IMultiSourceFrame* frame, GLubyte* dest) {
 	IColorFrame* colorframe;
 	IColorFrameReference* frameref = NULL;
@@ -119,7 +114,7 @@ void KSensor::GetRGBData(IMultiSourceFrame* frame, GLubyte* dest) {
 	}
 
 	// Get data from frame
-	colorframe->CopyConvertedFrameDataToArray(COLORWIDTH*COLORHEIGHT * 4, m_RGBimage, ColorImageFormat_Rgba);
+	colorframe->CopyConvertedFrameDataToArray(COLORWIDTH * COLORHEIGHT * 4, (BYTE*)m_RGBimage, ColorImageFormat_Rgba);
 
 	// Write color array for vertices
 	float* fdest = (float*)dest;
@@ -141,7 +136,6 @@ void KSensor::GetRGBData(IMultiSourceFrame* frame, GLubyte* dest) {
 
 	if (colorframe) colorframe->Release();
 }
-
 void KSensor::GetBodyData(IMultiSourceFrame* frame) {
 	
 	IBodyFrame* bodyframe;
@@ -205,7 +199,6 @@ void KSensor::DrawKinectData() {
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_COLOR_ARRAY);
 }
-
 void KSensor::InitJoints() 
 {
 	// Set parents

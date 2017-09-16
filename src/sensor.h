@@ -3,7 +3,9 @@
 #include <string>
 #include <vector>
 #include <Kinect.h>
-#include <GL/glew.h>
+#include <QtGui/QOpenGLFunctions>
+#include <QtGui/QOpenGLFunctions_4_5_Compatibility>
+
 #define WIDTH 512
 #define HEIGHT 424
 #define COLORWIDTH 1920
@@ -36,7 +38,7 @@ struct KJoint
 
 };
 
-class KSensor
+class KSensor : public QOpenGLFunctions_4_5_Compatibility
 {
 public:
 	KSensor();
@@ -65,9 +67,9 @@ private:
 	ICoordinateMapper* m_Mapper;         // Converts between depth, color, and 3d coordinates
 	
 	// Intermediate Buffers
-	unsigned char m_RGBimage[COLORWIDTH*COLORHEIGHT * 4];    // Stores RGB color image
-	ColorSpacePoint m_Depth2RGB[WIDTH*HEIGHT];             // Maps depth pixels to rgb pixels
-	CameraSpacePoint m_Depth2xyz[WIDTH*HEIGHT];			 // Maps depth pixels to 3d coordinates
+	uint m_RGBimage[COLORWIDTH * COLORHEIGHT * 4];  // Stores RGB color image
+	ColorSpacePoint m_Depth2RGB[WIDTH * HEIGHT];             // Maps depth pixels to rgb pixels
+	CameraSpacePoint m_Depth2xyz[WIDTH * HEIGHT];			 // Maps depth pixels to 3d coordinates
 
 	// OpenGL Buffers
 	GLuint m_VBOid;

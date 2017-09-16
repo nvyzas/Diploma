@@ -2,11 +2,11 @@
 #define	TEXTURE_H
 
 #include <string>
-
-#include <GL/glew.h>
 #include <Magick++.h>
+#include <QtGui/QOpenGLFunctions>
+#include <QtGui/QOpenGLFunctions_4_5_Compatibility>
 
-class Texture
+class Texture : QOpenGLFunctions_4_5_Compatibility
 {
 public:
     Texture(GLenum TextureTarget, const std::string& FileName);

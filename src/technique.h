@@ -1,11 +1,12 @@
 #ifndef TECHNIQUE_H
 #define	TECHNIQUE_H
 
-#include <list>
-#include <GL/glew.h>
 #include "math_3d.h"
+#include <list>
+#include <QtGui/QOpenGLFunctions>
+#include <QtGui/QOpenGLFunctions_4_5_Compatibility>
 
-class Technique
+class Technique : public QOpenGLFunctions_4_5_Compatibility
 {
 public:
 

@@ -9,7 +9,6 @@
 #define BONE_WEIGHT_LOCATION 4
 #define NUM_MODELS 5
 
-
 SkinnedMesh::SkinnedMesh()
 {
 }
