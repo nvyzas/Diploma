@@ -2,15 +2,14 @@
 #define	CAMERA_H
 
 #include "math_3d.h"
+#include <QtGui/QOpenGLFunctions_4_5_Compatibility>
 
-class Camera
+class Camera : protected QOpenGLFunctions_4_5_Compatibility
 {
 public:
-    Camera(int WindowWidth, int WindowHeight);
+    Camera();
 	bool OnKeyboardNum(unsigned char Key, bool printInfo);
 	bool OnKeyboardSpecial(int Key, bool printInfo);
-    void OnMouse(int x, int y);
-    void OnRender(bool printAngles);
 	void PrintInfo();
 	void Setup(const Vector3f& Pos, const Vector3f& Center, const Vector3f& Up);
 	void SetSteps(float Step, float angleStep);
@@ -37,7 +36,14 @@ public:
 	{
 		return m_center;
 	}
-
+	const int& GetWidth() const
+	{
+		return m_windowWidth;
+	}
+	const int& GetHeight() const
+	{
+		return m_windowHeight;
+	}
 	void SetCam(const Vector3f &Pos, const Vector3f &Target, const Vector3f &Up)
 	{
 		m_pos = Pos;
@@ -46,29 +52,26 @@ public:
 	}
 
 	//Cartesian coordinates variables
-	float m_X;
-	float m_Y;
-	float m_Z;
+	float m_x;
+	float m_y;
+	float m_z;
 	//Spherical coordinates variables	
-	float m_Rho;
-	float m_Theta;
-	float m_Phi;
-	Vector3f m_Offset;
+	float m_rho;
+	float m_theta;
+	float m_phi;
+	Vector3f m_offset;
 	Vector3f GetXYZ() const
 	{
-		return Vector3f(m_X, m_Y, m_Z);
+		return Vector3f(m_x, m_y, m_z);
 	}
 	Vector3f GetRTF() const
 	{
-		return Vector3f(m_Rho, m_Theta, m_Phi);
+		return Vector3f(m_rho, m_theta, m_phi);
 	}
 	void UpdateCamera();
+	void DrawCameraVectors();
 
 private:
-
-    void Init();
-    void Update();
-
     Vector3f m_pos;
     Vector3f m_target;
     Vector3f m_up;
@@ -77,20 +80,11 @@ private:
     int m_windowWidth;
     int m_windowHeight;
 
-    float m_AngleH;
-    float m_AngleV;
-	
-    bool m_OnUpperEdge;
-    bool m_OnLowerEdge;
-    bool m_OnLeftEdge;
-    bool m_OnRightEdge;
-    Vector2i m_mousePos;
-
-	float m_Step;
+	float m_step;
 	float m_angleStep;
 	Vector3f m_center;
 	void UpdateCartesian();
-	void UpdateSpherical();	// float rho, float phi, float theta
+	void UpdateSpherical();	// not used atm
 };
 
 #endif	/* CAMERA_H */

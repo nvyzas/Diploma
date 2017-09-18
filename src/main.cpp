@@ -6,23 +6,23 @@
 #include <QtWidgets/QApplication>
 
 int main(int argc, char* argv[]) {
-	QApplication myApplication(argc, argv);
+	QApplication myApplication(argc, argv); // 
+	cout << "hup" << endl;
 	//*
 	QSurfaceFormat format;
-	format.setDepthBufferSize(24);
-	format.setStencilBufferSize(8);
-	format.setVersion(3, 3);
+	format.setVersion(4, 5);
 	format.setProfile(QSurfaceFormat::CompatibilityProfile);
-	QSurfaceFormat::setDefaultFormat(format);
+	format.setRenderableType(QSurfaceFormat::OpenGL);
+	cout << "Surface format:";
+	cout << " Version:" << format.version().first << "."  << format.version().second;
+	cout << " Profile:" << format.profile();
+	cout << " Renderable type:" << format.renderableType() << endl;
+	QSurfaceFormat::setDefaultFormat(format);	
 	//*/
 	MainWindow myMainWindow;
+	cout << "two" << endl;
 	myMainWindow.show();
 	system("PAUSE");
-	//SetupOGL();
-	//Setup();
-	
-    // Main loop
-    //Execute();
 	
     return 0;
 }

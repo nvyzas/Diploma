@@ -10,6 +10,7 @@ KSensor::KSensor()
 {
 	InitJoints();
 	m_GotFrame = false;
+	initializeOpenGLFunctions();
 }
 KSensor::~KSensor()
 {
@@ -26,7 +27,7 @@ bool KSensor::Init() {
 		m_Sensor->OpenMultiSourceFrameReader(FrameSourceTypes::FrameSourceTypes_Depth | 
 			FrameSourceTypes::FrameSourceTypes_Color | FrameSourceTypes::FrameSourceTypes_Body, &m_Reader);	
 		
-		const int dataSize = WIDTH * HEIGHT * 3 * 4;
+		const int dataSize = DEPTH_WIDTH * DEPTH_HEIGHT * 3 * 4;
 		glGenBuffers(1, &m_VBOid);
 		glBindBuffer(GL_ARRAY_BUFFER, m_VBOid);
 		glBufferData(GL_ARRAY_BUFFER, dataSize, 0, GL_DYNAMIC_DRAW);
@@ -89,7 +90,7 @@ void KSensor::GetDepthData(IMultiSourceFrame* frame, GLubyte* dest) {
 	depthframe->AccessUnderlyingBuffer(&sz, &buf);
 
 	// Write vertex coordinates
-	m_Mapper->MapDepthFrameToCameraSpace(WIDTH*HEIGHT, buf, WIDTH*HEIGHT, m_Depth2xyz);
+	m_Mapper->MapDepthFrameToCameraSpace(DEPTH_WIDTH*DEPTH_HEIGHT, buf, DEPTH_WIDTH*DEPTH_HEIGHT, m_Depth2xyz);
 	float* fdest = (float*)dest;
 	for (int i = 0; i < sz; i++) {
 		*fdest++ = m_Depth2xyz[i].X;
@@ -98,7 +99,7 @@ void KSensor::GetDepthData(IMultiSourceFrame* frame, GLubyte* dest) {
 	}
 
 	// Fill in depth2rgb map
-	m_Mapper->MapDepthFrameToColorSpace(WIDTH*HEIGHT, buf, WIDTH*HEIGHT, m_Depth2RGB);
+	m_Mapper->MapDepthFrameToColorSpace(DEPTH_WIDTH*DEPTH_HEIGHT, buf, DEPTH_WIDTH*DEPTH_HEIGHT, m_Depth2RGB);
 	if (depthframe) depthframe->Release();
 }
 void KSensor::GetRGBData(IMultiSourceFrame* frame, GLubyte* dest) {
@@ -114,20 +115,20 @@ void KSensor::GetRGBData(IMultiSourceFrame* frame, GLubyte* dest) {
 	}
 
 	// Get data from frame
-	colorframe->CopyConvertedFrameDataToArray(COLORWIDTH * COLORHEIGHT * 4, (BYTE*)m_RGBimage, ColorImageFormat_Rgba);
+	colorframe->CopyConvertedFrameDataToArray(COLOR_WIDTH * COLOR_HEIGHT * 4, (BYTE*)m_RGBimage, ColorImageFormat_Rgba);
 
 	// Write color array for vertices
 	float* fdest = (float*)dest;
-	for (int i = 0; i < WIDTH*HEIGHT; i++) {
+	for (int i = 0; i < DEPTH_WIDTH*DEPTH_HEIGHT; i++) {
 		ColorSpacePoint p = m_Depth2RGB[i];
 		// Check if color pixel coordinates are in bounds
-		if (p.X < 0 || p.Y < 0 || p.X > COLORWIDTH || p.Y > COLORHEIGHT) {
+		if (p.X < 0 || p.Y < 0 || p.X > COLOR_WIDTH || p.Y > COLOR_HEIGHT) {
 			*fdest++ = 0;
 			*fdest++ = 0;
 			*fdest++ = 0;
 		}
 		else {
-			int idx = (int)p.X + COLORWIDTH*(int)p.Y;
+			int idx = (int)p.X + COLOR_WIDTH*(int)p.Y;
 			*fdest++ = m_RGBimage[4 * idx + 0] / 255.;
 			*fdest++ = m_RGBimage[4 * idx + 1] / 255.;
 			*fdest++ = m_RGBimage[4 * idx + 2] / 255.;
@@ -182,7 +183,7 @@ void KSensor::GetBodyData(IMultiSourceFrame* frame) {
 	//SetCorrectedQuaternions();
 	if (bodyframe) bodyframe->Release();
 }
-void KSensor::DrawKinectData() {
+void KSensor::DrawCloud() {
 	// Set up array buffers
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glEnableClientState(GL_COLOR_ARRAY);
@@ -194,7 +195,7 @@ void KSensor::DrawKinectData() {
 	glColorPointer(3, GL_FLOAT, 0, NULL);
 
 	glPointSize(1.f);
-	glDrawArrays(GL_POINTS, 0, WIDTH*HEIGHT);
+	glDrawArrays(GL_POINTS, 0, DEPTH_WIDTH*DEPTH_HEIGHT);
 
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_COLOR_ARRAY);
@@ -264,37 +265,6 @@ void KSensor::SwapSides()
 	swap(m_Joints[JointType_ThumbLeft].Orientation	 , m_Joints[JointType_ThumbRight].Orientation);
 	swap(m_Joints[JointType_HandTipLeft].Orientation , m_Joints[JointType_HandTipRight].Orientation);	
 }
-// use after setting absolute quaternions
-void KSensor::SetRelativeQuaternions(uint start) {
-	for (uint i = 0; i < m_Joints[start].children.size(); i++) {
-		assert(i != INVALID_JOINT_ID);
-		assert(start != INVALID_JOINT_ID);
-		uint c = m_Joints[start].children[i];
-		if (c == JointType_SpineMid || c == JointType_HipLeft || c == JointType_HipRight) {
-			m_Joints[c].relOrientation = m_Joints[c].Orientation;
-			cout << m_Joints[c].name;
-			cout << " relative orientaton = absolute orientation = ";
-			m_Joints[c].Orientation.Print();
-			cout << endl;
-			SetRelativeQuaternions(c);
-		}
-		else {
-			Quaternion q1 = m_Joints[c].Orientation;
-			Quaternion q2 = m_Joints[start].relOrientation.Inverted();
-			m_Joints[c].relOrientation = q1 * q2;
-			//*
-			cout << m_Joints[c].name;
-			cout << " relative orientaton = ";
-			q1.Print(false);
-			cout << " * ";
-			q2.Print(false);
-			cout << " = ";
-			m_Joints[c].relOrientation.Print(true);
-			//*/
-			SetRelativeQuaternions(c);
-		}
-	}
-}
 
 void KSensor::PrintInfo() const
 {
@@ -305,7 +275,6 @@ void KSensor::PrintInfo() const
 	PrintJointHierarchy();
 	cout << endl;
 }
-
 void KSensor::PrintJointData() const
 {
 	for (uint i = 0; i < JointType_Count; i++) {
@@ -314,7 +283,6 @@ void KSensor::PrintJointData() const
 	}
 	cout << endl;
 }
-
 void KSensor::PrintJointHierarchy() const
 {
 	for (uint i = 0; i < JointType_Count; i++) {
@@ -330,9 +298,49 @@ void KSensor::PrintJointHierarchy() const
 	}
 }
 
-void KSensor::SetCorrectedQuaternions()
+void KSensor::DrawSkeleton(uint id)
 {
-	Vector3f hips(0, 0, 0);
+	KJoint j = m_Joints[id];
+	for (uint i = 0; i < j.children.size(); i++) {
+		uint c = j.children[i];
+		const KJoint &cj = m_Joints[c];
+		glBegin(GL_LINES);
+		glColor3f(0xFF, 0xFF, 0xFF);
+		glVertex3f(j.Position.x, j.Position.y, j.Position.z);
+		glVertex3f(cj.Position.x, cj.Position.y, cj.Position.z);
+		glEnd();
+		DrawSkeleton(c);
+	}
+}
+void KSensor::DrawActiveJoint()
+{
+	glBegin(GL_LINES);
+	const Vector3f &p = m_Joints[m_ActiveJoint].Position;
+	const Quaternion &q = m_Joints[m_ActiveJoint].Orientation;
+	Vector3f v;
 
+	v = q.RotateVector(Vector3f(1, 0, 0));
+	v += p;
+	glColor3f(0xFF, 0xFF, 0);
+	glVertex3f(p.x, p.y, p.z);
+	glVertex3f(v.x, v.y, v.z);
 
+	v = q.RotateVector(Vector3f(0, 1, 0));
+	v += p;
+	glColor3f(0, 0xFF, 0xFF);
+	glVertex3f(p.x, p.y, p.z);
+	glVertex3f(v.x, v.y, v.z);
+
+	v = q.RotateVector(Vector3f(0, 0, 1));
+	v += p;
+	glColor3f(0xFF, 0, 0xFF);
+	glVertex3f(p.x, p.y, p.z);
+	glVertex3f(v.x, v.y, v.z);
+	glEnd();
+}
+void KSensor::NextJoint(int step)
+{
+	m_ActiveJoint = Mod(m_ActiveJoint, JointType_Count, step);
+	const KJoint &j = m_Joints[m_ActiveJoint];
+	cout << left << setw(2) << m_ActiveJoint << ": " << setw(15) << j.name << " p=" << left << setw(25) << j.Position.ToString() << " q=" << j.Orientation.ToString() << j.Orientation.ToEulerAnglesString() << j.Orientation.ToAxisAngleString() << endl;
 }

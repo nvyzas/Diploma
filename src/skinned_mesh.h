@@ -5,21 +5,22 @@
 #include "texture.h"
 #include "util.h"
 #include "math_3d.h"
-#include <map>
-#include <vector>
-#include <bitset>
 #include <assimp/Importer.hpp>      // C++ importer interface
 #include <assimp/scene.h>			 // Output data structure
 #include <assimp/postprocess.h>     // Post processing flags
 #include <QtGui/QOpenGLFunctions>
 #include <QtGui/QOpenGLFunctions_4_5_Compatibility>
+#include <map>
+#include <vector>
+#include <bitset>
 
 #define ASSIMP_LOAD_FLAGS aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices | aiProcess_FlipWindingOrder | aiProcess_LimitBoneWeights 
 #define NUM_PARAMETERS 10
+#define NUM_MODELS 5
 
 using namespace std;
 
-class SkinnedMesh : public QOpenGLFunctions_4_5_Compatibility
+class SkinnedMesh : protected QOpenGLFunctions_4_5_Compatibility
 {
 public:
 	SkinnedMesh();
@@ -177,6 +178,7 @@ private:
 
 	std::map<std::string, uint>::iterator m_ActiveBone;
 	uint m_ActiveModel;
+	string m_MeshNames[NUM_MODELS] = { "cmu_test","cmu", "cmumb_localy_180","bobby","" };
 	bitset<NUM_PARAMETERS> m_Parameters;
 	const string m_ParametersStringTrue[NUM_PARAMETERS] = { "Invisible parts", "Composed local", "My quaternion", "My matrix", "qRel=qAbs*qAbsParInv","qAbs=qAbsPar*qRel" };
 	const string m_ParametersStringFalse[NUM_PARAMETERS] = { "Visible parts", "Ready local", "AI quaternion", "AI matrix", "qRel=qAbsParInv*qAbs","qAbs=qRel*qAbsPar" };

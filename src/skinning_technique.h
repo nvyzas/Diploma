@@ -84,7 +84,6 @@ public:
     void SetBoneTransform(uint Index, const Matrix4f& Transform);
 	void SetSkinningSwitch(int value);
 	void SetBoneVisibility(uint Index, const bool& Visibility);
-
 private:
     
     GLuint m_WVPLocation;

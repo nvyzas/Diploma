@@ -6,7 +6,7 @@
 #include <QtGui/QOpenGLFunctions>
 #include <QtGui/QOpenGLFunctions_4_5_Compatibility>
 
-class Technique : public QOpenGLFunctions_4_5_Compatibility
+class Technique : protected QOpenGLFunctions_4_5_Compatibility
 {
 public:
 

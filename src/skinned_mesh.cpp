@@ -7,7 +7,7 @@
 #define NORMAL_LOCATION      2
 #define BONE_ID_LOCATION     3
 #define BONE_WEIGHT_LOCATION 4
-#define NUM_MODELS 5
+
 
 SkinnedMesh::SkinnedMesh()
 {
@@ -789,8 +789,7 @@ const aiNodeAnim* SkinnedMesh::FindNodeAnim(const aiAnimation* pAnimation, const
 void SkinnedMesh::NextModel(int step)
 {	
 	m_ActiveModel = Mod(m_ActiveModel, NUM_MODELS, step);
-	string MeshNames[NUM_MODELS] = { "cmu_test","cmu", "cmumb_localy_180","bobby",""};
-	LoadMesh("models/" + MeshNames[m_ActiveModel] + ".dae");
+	LoadMesh("models/" + m_MeshNames[m_ActiveModel] + ".dae");
 }
 void SkinnedMesh::NextJoint(int step)
 {
