@@ -2,16 +2,14 @@
 
 MainWindow::MainWindow(QWidget *parent) : QOpenGLWidget(parent)
 {
-	
-
-	
-
 	// Setup scene and render it
 	//initializeGL();
 	//paintGL();	
 }
 void MainWindow::initializeGL()
 {
+	/*initializeOpenGLFunctions();
+	glClearColor(1.0f, 0.0f, 0.0f, 1.0f);*/
 	//m_context->makeCurrent(this);
 	if (!initializeOpenGLFunctions()) cout << "Could not init OpenGL function." << endl;
 	/*		 Create an OpenGL context
@@ -19,16 +17,17 @@ void MainWindow::initializeGL()
 	m_context->create();
 	//*/
 	SetupOpenGL();
-	m_Cam = new Camera();
-	m_Sensor = new KSensor();
-	m_Mesh = new SkinnedMesh(*m_Sensor); //Mesh(mySensor)
-	m_Tech = new Technique();
-	m_Skin = new SkinningTechnique();
-	m_Pipe = new Pipeline();
+	m_Cam		= new Camera();
+	m_Sensor	= new KSensor();
+	m_Mesh		= new SkinnedMesh(*m_Sensor); //Mesh(mySensor)
+	m_Tech		= new Technique();
+	m_Skin		= new SkinningTechnique();
+	m_Pipe		= new Pipeline();
 	MySetup();
 }
 void MainWindow::paintGL()
 {
+	//glClear(GL_COLOR_BUFFER_BIT);
 	glClearColor(0.f, 0.f, 0.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	//*

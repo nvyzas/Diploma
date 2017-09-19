@@ -12,7 +12,7 @@ class MainWindow : public QOpenGLWidget, protected QOpenGLFunctions_4_5_Compatib
 {
 	Q_OBJECT
 public:
-	MainWindow::MainWindow(QWidget *parent = Q_NULLPTR);
+	MainWindow(QWidget *parent = Q_NULLPTR);
 	
 protected:
 	void initializeGL();

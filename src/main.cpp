@@ -6,23 +6,21 @@
 #include <QtWidgets/QApplication>
 
 int main(int argc, char* argv[]) {
-	QApplication myApplication(argc, argv); // 
-	cout << "hup" << endl;
-	//*
+	QApplication app(argc, argv);
+
 	QSurfaceFormat format;
 	format.setVersion(4, 5);
 	format.setProfile(QSurfaceFormat::CompatibilityProfile);
 	format.setRenderableType(QSurfaceFormat::OpenGL);
+	QSurfaceFormat::setDefaultFormat(format);
+
 	cout << "Surface format:";
-	cout << " Version:" << format.version().first << "."  << format.version().second;
+	cout << " Version:" << format.version().first << "." << format.version().second;
 	cout << " Profile:" << format.profile();
 	cout << " Renderable type:" << format.renderableType() << endl;
-	QSurfaceFormat::setDefaultFormat(format);	
-	//*/
-	MainWindow myMainWindow;
-	cout << "two" << endl;
-	myMainWindow.show();
-	system("PAUSE");
-	
-    return 0;
+
+	MainWindow widget;
+	widget.show();
+
+	return app.exec();
 }
