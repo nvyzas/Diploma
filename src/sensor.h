@@ -1,8 +1,7 @@
 #pragma once
 #include "math_3d.h"
+#include "util.h"
 #include <Kinect.h>
-#include <QtGui/QOpenGLFunctions>
-#include <QtGui/QOpenGLFunctions_4_5_Compatibility>
 #include <string>
 #include <vector>
 
@@ -39,7 +38,7 @@ struct KJoint
 
 };
 
-class KSensor : protected QOpenGLFunctions_4_5_Compatibility
+class KSensor : protected OPENGL_FUNCTIONS
 {
 public:
 	KSensor();

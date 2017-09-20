@@ -14,6 +14,7 @@ SkinnedMesh::SkinnedMesh()
 }
 SkinnedMesh::SkinnedMesh(const KSensor &ks)
 {
+	initializeOpenGLFunctions();
 	m_VAO = 0;
 	ZERO_MEM(m_Buffers);
 	m_pScene = NULL;

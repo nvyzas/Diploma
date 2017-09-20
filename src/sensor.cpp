@@ -297,7 +297,6 @@ void KSensor::PrintJointHierarchy() const
 		cout << endl;
 	}
 }
-
 void KSensor::DrawSkeleton(uint id)
 {
 	KJoint j = m_Joints[id];

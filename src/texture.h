@@ -1,12 +1,11 @@
 #ifndef TEXTURE_H
 #define	TEXTURE_H
 
-#include <string>
+#include "util.h"
 #include <Magick++.h>
-#include <QtGui/QOpenGLFunctions>
-#include <QtGui/QOpenGLFunctions_4_5_Compatibility>
+#include <string>
 
-class Texture : protected QOpenGLFunctions_4_5_Compatibility
+class Texture : protected OPENGL_FUNCTIONS
 {
 public:
     Texture(GLenum TextureTarget, const std::string& FileName);

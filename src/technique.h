@@ -2,11 +2,10 @@
 #define	TECHNIQUE_H
 
 #include "math_3d.h"
+#include "util.h"
 #include <list>
-#include <QtGui/QOpenGLFunctions>
-#include <QtGui/QOpenGLFunctions_4_5_Compatibility>
 
-class Technique : protected QOpenGLFunctions_4_5_Compatibility
+class Technique : protected OPENGL_FUNCTIONS
 {
 public:
 

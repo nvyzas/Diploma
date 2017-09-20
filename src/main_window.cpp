@@ -8,14 +8,7 @@ MainWindow::MainWindow(QWidget *parent) : QOpenGLWidget(parent)
 }
 void MainWindow::initializeGL()
 {
-	/*initializeOpenGLFunctions();
-	glClearColor(1.0f, 0.0f, 0.0f, 1.0f);*/
-	//m_context->makeCurrent(this);
-	if (!initializeOpenGLFunctions()) cout << "Could not init OpenGL function." << endl;
-	/*		 Create an OpenGL context
-	m_context = new QOpenGLContext;
-	m_context->create();
-	//*/
+	initializeOpenGLFunctions();
 	SetupOpenGL();
 	m_Cam		= new Camera();
 	m_Sensor	= new KSensor();
@@ -27,7 +20,6 @@ void MainWindow::initializeGL()
 }
 void MainWindow::paintGL()
 {
-	//glClear(GL_COLOR_BUFFER_BIT);
 	glClearColor(0.f, 0.f, 0.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	//*
@@ -56,11 +48,11 @@ void MainWindow::resizeGL(int w, int h)
 }
 void MainWindow::SetupOpenGL()
 {
-	cout << "GL version: " << glGetString(GL_VERSION) << endl;
+	cout << "GL version: "		<< glGetString(GL_VERSION)					<< endl;	
+	cout << "GL renderer: "		<< glGetString(GL_RENDERER)				    << endl;
+	cout << "Shaders version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << endl;
 	GLint i;
 	glGetIntegerv(GL_CONTEXT_FLAGS, &i);
-	cout << "GL renderer: " << glGetString(GL_RENDERER) << endl;
-	cout << "Shaders version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << endl;
 	/*
 	glGetIntegerv(GL_NUM_EXTENSIONS, &i);
 	for (uint j = 0; j < i; j++) cout << "Extension " << j << ": " << glGetStringi(GL_EXTENSIONS, j) << endl;

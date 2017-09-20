@@ -8,8 +8,6 @@
 #include <assimp/Importer.hpp>      // C++ importer interface
 #include <assimp/scene.h>			 // Output data structure
 #include <assimp/postprocess.h>     // Post processing flags
-#include <QtGui/QOpenGLFunctions>
-#include <QtGui/QOpenGLFunctions_4_5_Compatibility>
 #include <map>
 #include <vector>
 #include <bitset>
@@ -20,7 +18,7 @@
 
 using namespace std;
 
-class SkinnedMesh : protected QOpenGLFunctions_4_5_Compatibility
+class SkinnedMesh : protected OPENGL_FUNCTIONS
 {
 public:
 	SkinnedMesh();

@@ -9,7 +9,7 @@ int main(int argc, char* argv[]) {
 	QApplication app(argc, argv);
 
 	QSurfaceFormat format;
-	format.setVersion(4, 5);
+	format.setVersion(3, 3);
 	format.setProfile(QSurfaceFormat::CompatibilityProfile);
 	format.setRenderableType(QSurfaceFormat::OpenGL);
 	QSurfaceFormat::setDefaultFormat(format);

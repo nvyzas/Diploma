@@ -2,9 +2,9 @@
 #define	CAMERA_H
 
 #include "math_3d.h"
-#include <QtGui/QOpenGLFunctions_4_5_Compatibility>
+#include "util.h"
 
-class Camera : protected QOpenGLFunctions_4_5_Compatibility
+class Camera : protected OPENGL_FUNCTIONS
 {
 public:
     Camera();

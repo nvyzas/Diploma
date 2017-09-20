@@ -5,6 +5,7 @@ Texture::Texture(GLenum TextureTarget, const std::string& FileName)
 {
     m_textureTarget = TextureTarget;
     m_fileName      = FileName;
+	initializeOpenGLFunctions();
 }
 
 

@@ -6,6 +6,7 @@
 Technique::Technique()
 {
     m_shaderProg = 0;
+	initializeOpenGLFunctions();
 }
 Technique::~Technique()
 {

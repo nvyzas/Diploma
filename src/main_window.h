@@ -5,10 +5,10 @@
 #include "camera.h"
 #include "math_3d.h"
 #include "sensor.h"
+#include "util.h"
 #include <QtWidgets\QOpenGLWidget>
-#include <QtGui\QOpenGLFunctions_4_5_Compatibility>
 
-class MainWindow : public QOpenGLWidget, protected QOpenGLFunctions_4_5_Compatibility
+class MainWindow : public QOpenGLWidget, protected OPENGL_FUNCTIONS
 {
 	Q_OBJECT
 public:
