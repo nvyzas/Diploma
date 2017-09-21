@@ -4,6 +4,7 @@
 #include <string>
 #include <assert.h>
 #include <QtGui\QOpenGLFunctions_3_3_Compatibility>
+
 #define OPENGL_FUNCTIONS QOpenGLFunctions_3_3_Compatibility
 #define ZERO_MEM(a) memset(a, 0, sizeof(a))
 #define ZERO_MEM_VAR(var) memset(&var, 0, sizeof(var))

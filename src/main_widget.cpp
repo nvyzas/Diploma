@@ -1,12 +1,12 @@
-#include "main_window.h"
+#include "main_widget.h"
 
-MainWindow::MainWindow(QWidget *parent) : QOpenGLWidget(parent)
+MainWidget::MainWidget(QWidget *parent) : QOpenGLWidget(parent)
 {
 	// Setup scene and render it
 	//initializeGL();
 	//paintGL();	
 }
-void MainWindow::initializeGL()
+void MainWidget::initializeGL()
 {
 	initializeOpenGLFunctions();
 	SetupOpenGL();
@@ -18,7 +18,7 @@ void MainWindow::initializeGL()
 	m_Pipe		= new Pipeline();
 	MySetup();
 }
-void MainWindow::paintGL()
+void MainWidget::paintGL()
 {
 	glClearColor(0.f, 0.f, 0.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -42,11 +42,11 @@ void MainWindow::paintGL()
 	//*/
 	//glutSwapBuffers();
 }
-void MainWindow::resizeGL(int w, int h)
+void MainWidget::resizeGL(int w, int h)
 {
 
 }
-void MainWindow::SetupOpenGL()
+void MainWidget::SetupOpenGL()
 {
 	cout << "GL version: "		<< glGetString(GL_VERSION)					<< endl;	
 	cout << "GL renderer: "		<< glGetString(GL_RENDERER)				    << endl;
@@ -75,9 +75,9 @@ void MainWindow::SetupOpenGL()
 	glCullFace(GL_BACK);
 	glDisable(GL_CULL_FACE);
 }
-void MainWindow::DrawAxes()
+void MainWidget::DrawAxes()
 {
-	/*
+	//*
 	glBegin(GL_LINES);
 	Vector3f origin(0.0f, 0.0f, 0.0f);
 	float length = 1;
@@ -96,9 +96,9 @@ void MainWindow::DrawAxes()
 	glEnd();
 	//*/
 }
-void MainWindow::DrawAxes(Vector3f origin, Vector3f vx, Vector3f vy, Vector3f vz, float length)
+void MainWidget::DrawAxes(Vector3f origin, Vector3f vx, Vector3f vy, Vector3f vz, float length)
 {
-	/*
+	//*
 	glBegin(GL_LINES);
 	//[X]
 	glColor3f(0xFF, 0, 0);
@@ -115,7 +115,7 @@ void MainWindow::DrawAxes(Vector3f origin, Vector3f vx, Vector3f vy, Vector3f vz
 	glEnd();
 	//*/
 }
-void MainWindow::DrawTestAxes()
+void MainWidget::DrawTestAxes()
 {
 	Vector3f o(0.0f, 0.0f, 0.0f);
 	Vector3f vx = Vector3f::UnitX;
@@ -126,7 +126,7 @@ void MainWindow::DrawTestAxes()
 	R.InitRotateTransform(45, 0, 0);
 
 }
-void MainWindow::NextInfoBlock(int step)
+void MainWidget::NextInfoBlock(int step)
 {
 	activeInfo = Mod(activeInfo, NUM_INFO_BLOCKS, step);
 	cout << "Printing info block " << activeInfo << endl;
@@ -134,7 +134,7 @@ void MainWindow::NextInfoBlock(int step)
 	else if (activeInfo == 1) m_Mesh->PrintInfo();
 	else m_Cam->PrintInfo();
 }
-void MainWindow::Transform(bool print)
+void MainWidget::Transform(bool print)
 {
 	//if (!print) cout.setstate(std::ios_base::failbit);
 	if (m_Mesh->m_SuccessfullyLoaded) {
@@ -152,7 +152,7 @@ void MainWindow::Transform(bool print)
 	//if (!print) cout.clear();
 }
 //*/
-void MainWindow::MySetup()
+void MainWidget::MySetup()
 {
 	// 1) Init KSensor
 	m_Sensor->Init();

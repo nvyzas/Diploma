@@ -8,11 +8,11 @@
 #include "util.h"
 #include <QtWidgets\QOpenGLWidget>
 
-class MainWindow : public QOpenGLWidget, protected OPENGL_FUNCTIONS
+class MainWidget : public QOpenGLWidget, protected OPENGL_FUNCTIONS
 {
 	Q_OBJECT
 public:
-	MainWindow(QWidget *parent = Q_NULLPTR);
+	MainWidget(QWidget *parent = Q_NULLPTR);
 	
 protected:
 	void initializeGL();
