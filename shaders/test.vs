@@ -1,4 +1,4 @@
-#version 330
+#version 330 compatibility
 
 varying vec4 vColor;
 uniform mat4 gWVP;

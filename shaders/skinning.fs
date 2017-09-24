@@ -1,4 +1,4 @@
-#version 330
+#version 330 compatibility
 
 const int MAX_POINT_LIGHTS = 2;
 const int MAX_SPOT_LIGHTS = 2;

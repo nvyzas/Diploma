@@ -17,6 +17,14 @@ void MainWidget::initializeGL()
 	m_Skin		= new SkinningTechnique();
 	m_Pipe		= new Pipeline();
 	MySetup();
+	QSurfaceFormat format = context()->format();
+	cout << "Surface format:";
+	cout << " Version:" << format.version().first << "." << format.version().second;
+	cout << " Profile:" << format.profile();
+	cout << " Renderable type:" << format.renderableType();
+	cout << " Option deprecated funcs:" << format.testOption(QSurfaceFormat::DeprecatedFunctions);
+	cout << " Option debug context:" << format.testOption(QSurfaceFormat::DebugContext);
+	cout << " Options:" << format.options() << endl;
 }
 void MainWidget::paintGL()
 {

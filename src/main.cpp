@@ -1,9 +1,11 @@
 #pragma once
-#include "main_widget.h"
+#include "main_window.h"
 #include <iostream>
 #include <iomanip>
 #include <QtWidgets/QOpenGLWidget>
 #include <QtWidgets/QApplication>
+
+using namespace std;
 
 int main(int argc, char* argv[]) {
 	QApplication app(argc, argv);
@@ -12,21 +14,11 @@ int main(int argc, char* argv[]) {
 	format.setVersion(3, 3);
 	format.setProfile(QSurfaceFormat::CompatibilityProfile);
 	format.setRenderableType(QSurfaceFormat::OpenGL);
-	//format.setOption(QSurfaceFormat::DeprecatedFunctions);
-	//format.setOption(QSurfaceFormat::DebugContext);
 	format.setOptions(QSurfaceFormat::DebugContext | QSurfaceFormat::DeprecatedFunctions);
 	QSurfaceFormat::setDefaultFormat(format);
 
-	cout << "Surface format:";
-	cout << " Version:" << format.version().first << "." << format.version().second;
-	cout << " Profile:" << format.profile();
-	cout << " Renderable type:" << format.renderableType();
-	cout << " Option deprecated funcs:" << format.testOption(QSurfaceFormat::DeprecatedFunctions);
-	cout << " Option debug context:" << format.testOption(QSurfaceFormat::DebugContext);
-	cout << " Options:" << format.options() << endl;
-
-	MainWidget widget;
-	widget.show();
+	MainWindow mainWindow;
+	mainWindow.show();
 
 	return app.exec();
 }
