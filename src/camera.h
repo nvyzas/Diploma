@@ -9,7 +9,7 @@ class Camera : protected OPENGL_FUNCTIONS
 public:
     Camera();
 	bool OnKeyboardNum(unsigned char Key, bool printInfo);
-	bool OnKeyboardSpecial(int Key, bool printInfo);
+	bool onKeyboardArrow(int Key, bool printInfo);
 	void PrintInfo();
 	void Setup(const Vector3f& Pos, const Vector3f& Center, const Vector3f& Up);
 	void SetSteps(float Step, float angleStep);

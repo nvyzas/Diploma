@@ -168,7 +168,7 @@ bool SkinnedMesh::InitFromScene(const aiScene* pScene, const string& Filename)
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_Buffers[INDEX_BUFFER]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices[0]) * Indices.size(), &Indices[0], GL_STATIC_DRAW);
 
-	GLPrintError();
+	cout << "SkinnedMesh::InitFromScene: "; GLPrintError();
 	return GLCheckError();
 }
 void SkinnedMesh::InitMesh(uint MeshIndex,

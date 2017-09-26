@@ -1,4 +1,5 @@
 #include "main_widget.h"
+#include <QtGui\QKeyEvent>
 
 MainWidget::MainWidget(QWidget *parent) : QOpenGLWidget(parent)
 {
@@ -37,22 +38,32 @@ void MainWidget::paintGL()
 		m_Sensor->GetKinectData();
 		Transform(false);
 	}
-	if (m_renderObject) m_Mesh->Render();
+	if (m_renderModel) m_Mesh->Render();
 
 	m_Tech->Enable();
 	//m_Tech->SetDefault(m_Pipe->GetWVPTrans());
 	m_Tech->SetDefault(m_Pipe->GetVPTrans());
-	if (m_renderAxes)				DrawAxes();
-	if (m_renderCameraVectors)		m_Cam->DrawCameraVectors();
-	if (m_renderJoint)				m_Sensor->DrawActiveJoint();
+	if (m_renderAxes)				DrawAxes();		
 	if (m_renderSkeleton)			m_Sensor->DrawSkeleton(JointType_SpineBase);
+	if (m_renderActiveJoint)		m_Sensor->DrawActiveJoint();
 	if (m_renderCloud)				m_Sensor->DrawCloud();
+	if (m_renderCameraVectors)		m_Cam->DrawCameraVectors();
 	//*/
-	//glutSwapBuffers();
+}
+void MainWidget::keyPressEvent(QKeyEvent *event)
+{
+	m_Cam->onKeyboardArrow(event->key(), true);
+	m_Pipe->SetCamera(m_Cam->GetPos(), m_Cam->GetTarget(), m_Cam->GetUp());
+	m_Skin->Enable();
+	m_Skin->SetEyeWorldPos(m_Cam->GetPos());
+	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
+	m_Tech->Enable();
+	m_Tech->SetDefault(m_Pipe->GetVPTrans());
+	update();
 }
 void MainWidget::resizeGL(int w, int h)
 {
-
+	
 }
 void MainWidget::SetupOpenGL()
 {
@@ -219,4 +230,27 @@ void MainWidget::MySetup()
 		m_Skin->SetBoneVisibility(i, m_Mesh->GetBoneVisibility(i));
 	}
 	Transform(true);
+}
+void MainWidget::setRenderAxes(bool state)
+{
+	if (m_renderAxes != state) {
+		m_renderAxes = state;
+		
+		update();
+	}
+}
+bool MainWidget::renderAxes() const
+{
+	return m_renderAxes;
+}
+void MainWidget::setRenderModel(bool state)
+{
+	if (m_renderModel != state) {
+		m_renderModel = state;
+		update();
+	}
+}
+bool MainWidget::renderModel() const
+{
+	return m_renderModel;
 }

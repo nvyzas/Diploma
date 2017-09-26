@@ -13,7 +13,11 @@ public:
 	MainWindow(QWidget *parent = Q_NULLPTR);
 	~MainWindow();
 
+protected:
+	void keyPressEvent(QKeyEvent *);
+
 private:
 	Ui::MainWindow *ui;
-	void CreateActions();
+	void setupObjects();
+	void setupConnections();
 };

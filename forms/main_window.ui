@@ -14,8 +14,8 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <layout class="QGridLayout" name="gridLayout_2">
-    <item row="0" column="0">
+   <layout class="QHBoxLayout" name="horizontalLayout_2">
+    <item>
      <widget class="QSplitter" name="splitter">
       <property name="orientation">
        <enum>Qt::Vertical</enum>
@@ -23,43 +23,24 @@
       <property name="childrenCollapsible">
        <bool>false</bool>
       </property>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,0">
         <item>
-         <widget class="MainWidget" name="openGLWidget_2"/>
+         <widget class="MainWidget" name="openGLWidget">
+          <property name="focusPolicy">
+           <enum>Qt::StrongFocus</enum>
+          </property>
+         </widget>
         </item>
         <item>
          <layout class="QVBoxLayout" name="verticalLayout">
-          <item>
-           <widget class="QGroupBox" name="groupBox">
-            <property name="title">
-             <string>GroupBox</string>
-            </property>
-            <layout class="QVBoxLayout" name="verticalLayout_3">
-             <item>
-              <widget class="QCheckBox" name="checkBox">
-               <property name="text">
-                <string>CheckBox</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="checkBox_2">
-               <property name="text">
-                <string>CheckBox</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
           <item>
            <widget class="QGroupBox" name="groupBox_boneRotations">
             <property name="title">
              <string>Bone Rotations</string>
             </property>
             <layout class="QGridLayout" name="gridLayout">
-             <item row="3" column="0" colspan="2">
+             <item row="6" column="0" colspan="2">
               <widget class="QSlider" name="horizontalSlider_yRot">
                <property name="minimum">
                 <number>-180</number>
@@ -72,22 +53,15 @@
                </property>
               </widget>
              </item>
-             <item row="2" column="0">
-              <widget class="QLabel" name="label_yRot">
-               <property name="text">
-                <string>y-Rot:</string>
-               </property>
-              </widget>
-             </item>
-             <item row="4" column="0">
+             <item row="7" column="0">
               <widget class="QLabel" name="label_zRot">
                <property name="text">
                 <string>z-Rot:</string>
                </property>
               </widget>
              </item>
-             <item row="4" column="1">
-              <widget class="QSpinBox" name="spinBox_zRot">
+             <item row="5" column="1">
+              <widget class="QSpinBox" name="spinBox_yRot">
                <property name="minimum">
                 <number>-180</number>
                </property>
@@ -96,24 +70,21 @@
                </property>
               </widget>
              </item>
-             <item row="0" column="0">
+             <item row="3" column="0">
               <widget class="QLabel" name="label_xRot">
                <property name="text">
                 <string>x-Rot:</string>
                </property>
               </widget>
              </item>
-             <item row="0" column="1">
-              <widget class="QSpinBox" name="spinBox_xRot">
-               <property name="minimum">
-                <number>-180</number>
-               </property>
-               <property name="maximum">
-                <number>180</number>
+             <item row="5" column="0">
+              <widget class="QLabel" name="label_yRot">
+               <property name="text">
+                <string>y-Rot:</string>
                </property>
               </widget>
              </item>
-             <item row="5" column="0" colspan="2">
+             <item row="8" column="0" colspan="2">
               <widget class="QSlider" name="horizontalSlider_zRot">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -132,17 +103,7 @@
                </property>
               </widget>
              </item>
-             <item row="2" column="1">
-              <widget class="QSpinBox" name="spinBox_yRot">
-               <property name="minimum">
-                <number>-180</number>
-               </property>
-               <property name="maximum">
-                <number>180</number>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="0" colspan="2">
+             <item row="4" column="0" colspan="2">
               <widget class="QSlider" name="horizontalSlider_xRot">
                <property name="minimum">
                 <number>-180</number>
@@ -152,6 +113,36 @@
                </property>
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
+               </property>
+              </widget>
+             </item>
+             <item row="7" column="1">
+              <widget class="QSpinBox" name="spinBox_zRot">
+               <property name="minimum">
+                <number>-180</number>
+               </property>
+               <property name="maximum">
+                <number>180</number>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="1">
+              <widget class="QSpinBox" name="spinBox_xRot">
+               <property name="minimum">
+                <number>-180</number>
+               </property>
+               <property name="maximum">
+                <number>180</number>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="0" colspan="2">
+              <widget class="QComboBox" name="comboBox_activeBone"/>
+             </item>
+             <item row="1" column="0" colspan="2">
+              <widget class="QLabel" name="label">
+               <property name="text">
+                <string>Active Bone</string>
                </property>
               </widget>
              </item>
@@ -186,14 +177,17 @@
               </widget>
              </item>
              <item>
-              <widget class="QCheckBox" name="checkBox_quaternion">
+              <widget class="QCheckBox" name="checkBox_joint">
                <property name="text">
-                <string>Quaternion</string>
+                <string>Active Joint</string>
                </property>
               </widget>
              </item>
             </layout>
            </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="comboBox_activeJoint"/>
           </item>
           <item>
            <spacer name="verticalSpacer">
@@ -227,16 +221,6 @@
     </item>
    </layout>
   </widget>
-  <widget class="QMenuBar" name="menuBar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>504</width>
-     <height>21</height>
-    </rect>
-   </property>
-  </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -247,102 +231,5 @@
   </customwidget>
  </customwidgets>
  <resources/>
- <connections>
-  <connection>
-   <sender>horizontalSlider_xRot</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>spinBox_xRot</receiver>
-   <slot>setValue(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>525</x>
-     <y>102</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>544</x>
-     <y>75</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>horizontalSlider_yRot</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>spinBox_yRot</receiver>
-   <slot>setValue(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>525</x>
-     <y>156</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>544</x>
-     <y>129</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>horizontalSlider_zRot</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>spinBox_zRot</receiver>
-   <slot>setValue(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>525</x>
-     <y>210</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>544</x>
-     <y>183</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>spinBox_xRot</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>horizontalSlider_xRot</receiver>
-   <slot>setValue(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>544</x>
-     <y>75</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>525</x>
-     <y>102</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>spinBox_yRot</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>horizontalSlider_yRot</receiver>
-   <slot>setValue(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>544</x>
-     <y>129</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>525</x>
-     <y>156</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>spinBox_zRot</sender>
-   <signal>valueChanged(int)</signal>
-   <receiver>horizontalSlider_zRot</receiver>
-   <slot>setValue(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>544</x>
-     <y>183</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>525</x>
-     <y>210</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

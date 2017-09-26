@@ -94,62 +94,45 @@ bool Camera::OnKeyboardNum(unsigned char key, bool print)
 	}
 	return Ret;
 }
-bool Camera::OnKeyboardSpecial(int Key, bool print)
-{
-	bool Ret = false;
-	
+bool Camera::onKeyboardArrow(int Key, bool print)
+{	
 	switch (Key) {
-
-	case 0: 
+	case Qt::Key_Down:
 		m_phi -= m_angleStep;
 		m_phi = (m_phi <= 0.0f) ? m_phi + 360.0f : m_phi;
 		UpdateCartesian();
 		UpdateCamera();
 		PrintInfo();
 		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " RTF=" << GetRTF().GetString() << " XYZ=" << GetXYZ().GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
-		Ret = true;
-		break;
-
-	case 1:
+		return true;
+	case Qt::Key_Up:
 		m_phi += m_angleStep;
 		m_phi = (m_phi > 360.0f) ? m_phi - 360.0f : m_phi;
 		UpdateCartesian();
 		UpdateCamera();
 		PrintInfo();
 		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " RTF=" << GetRTF().GetString() << " XYZ=" << GetXYZ().GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
-		Ret = true;
-		break;
-
-	case 2:
+		return true;
+	case Qt::Key_Right:
 		m_theta += m_angleStep;
 		m_theta = ((m_theta <= 360.0f) ? m_theta : m_theta - 360.0f);
 		UpdateCartesian();
 		UpdateCamera();
 		PrintInfo();
 		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " RTF=" << GetRTF().GetString() << " XYZ=" << GetXYZ().GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
-		Ret = true;
-		break;
-
-	case 3:
+		return true;
+	case Qt::Key_Left:
 		m_theta -= m_angleStep;
 		m_theta = (m_theta >= 0.0f) ? m_theta : m_theta + 360.0f;
 		UpdateCartesian();
 		UpdateCamera();
 		PrintInfo();
 		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " RTF=" << GetRTF().GetString() << " XYZ=" << GetXYZ().GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
-		Ret = true;
-		break;
-
-	case 4:
-		break;
-
-	case 5:
-		break;
-
+		return true;
 	default:
-		break;
+		cout << "none of the arrows was pressed" << endl;
+		return false;
 	}
-		return Ret;	
 }
 void Camera::Setup(const Vector3f& Pos, const Vector3f& Center, const Vector3f& Up)
 {
