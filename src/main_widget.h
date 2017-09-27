@@ -1,12 +1,15 @@
 #pragma once
-#include "skinned_mesh.h"
-#include "skinning_technique.h"
-#include "pipeline.h"
-#include "camera.h"
+
 #include "math_3d.h"
-#include "sensor.h"
 #include "util.h"
 #include <QtWidgets\QOpenGLWidget>
+// Forward declarations
+class Camera;
+class KSensor;
+class SkinnedMesh;
+class Technique;
+class SkinningTechnique;
+class Pipeline;
 
 class MainWidget : public QOpenGLWidget, protected OPENGL_FUNCTIONS
 {
@@ -15,6 +18,7 @@ public:
 	MainWidget(QWidget *parent = Q_NULLPTR);
 	bool renderAxes() const;
 	bool renderModel() const;
+	QStringList ModelBoneList() const;
 	
 public slots:
 	void setRenderAxes(bool state);
@@ -25,7 +29,6 @@ protected:
 	void resizeGL(int w, int h);
 	void paintGL();
 	void keyPressEvent(QKeyEvent *event);
-	
 	
 	QOpenGLContext *m_context;
 
@@ -47,7 +50,7 @@ private:
 	bool m_play = false;
 
 	#define NUM_INFO_BLOCKS 3
-	uint activeJoint = JointType_SpineBase;
+	uint activeJoint = 0;
 	
 	uint activeInfo = 0;
 	void NextInfoBlock(int step);

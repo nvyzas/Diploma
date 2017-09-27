@@ -1,5 +1,6 @@
 #include "main_window.h"
 #include "ui_main_window.h"
+#include <QtCore\QStringList>
 //#include <QtWidgets\QMenu>
 
 MainWindow::MainWindow(QWidget *parent)
@@ -17,6 +18,7 @@ void MainWindow::setupObjects()
 {
 	ui->checkBox_model->setChecked(ui->openGLWidget->renderAxes());
 	ui->checkBox_axes->setChecked(ui->openGLWidget->renderModel());
+	ui->comboBox_activeBone->addItems(ui->openGLWidget->ModelBoneList());
 }
 void MainWindow::setupConnections()
 {

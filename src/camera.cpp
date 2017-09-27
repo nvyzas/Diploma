@@ -9,6 +9,7 @@ const static int MARGIN = 10;
 
 Camera::Camera()
 {
+	//initializeOpenGLFunctions();
     m_windowWidth  = 512;
     m_windowHeight = 424;
 	m_rho		   = 2.0f;
@@ -21,7 +22,6 @@ Camera::Camera()
 	UpdateCamera();
 	m_step = 0.25;
 	m_angleStep = 15;
-	initializeOpenGLFunctions();
 }
 // use it after setting XYZ, offset, center and up
 void Camera::UpdateCamera() {

@@ -49,7 +49,8 @@ public:
 	uint GetActiveBoneID() const;
 	bool GetBoneVisibility(uint BoneIndex) const;
 	uint GetNumBones() const;
-	
+	const map<string, uint>& Bones() const;
+
 private:
 
 #define NUM_BONES_PER_VERTEX 4

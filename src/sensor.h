@@ -49,12 +49,12 @@ public:
 	void PrintJointHierarchy() const;
 	void PrintJointData() const;
 	bool m_InvertedSides;
-	KJoint m_Joints[JointType_Count];
 	bool m_GotFrame;
 	void SwapSides();
 	void DrawActiveJoint();
 	void DrawSkeleton(uint id);
 	void DrawCloud();
+	const KJoint* getKJoints() const;
 
 private:
 	void InitJoints();	
@@ -62,7 +62,7 @@ private:
 	void GetRGBData(IMultiSourceFrame* frame, GLubyte* dest);
 	void GetBodyData(IMultiSourceFrame* frame);
 	void NextJoint(int step);
-	
+	KJoint m_Joints[JointType_Count];
 
 	IKinectSensor* m_Sensor;
 	IMultiSourceFrameReader* m_Reader;   // Kinect data source

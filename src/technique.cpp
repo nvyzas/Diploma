@@ -5,8 +5,8 @@
 
 Technique::Technique()
 {
-    m_shaderProg = 0;
-	initializeOpenGLFunctions();
+	//initializeOpenGLFunctions();
+    m_shaderProg = 0;	
 }
 Technique::~Technique()
 {
@@ -26,6 +26,7 @@ Technique::~Technique()
 }
 bool Technique::Init()
 {
+	initializeOpenGLFunctions();
     m_shaderProg = glCreateProgram();
 
     if (m_shaderProg == 0) {

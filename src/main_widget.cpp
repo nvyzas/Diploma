@@ -1,23 +1,48 @@
 #include "main_widget.h"
+#include "skinned_mesh.h"
+#include "skinning_technique.h"
+#include "pipeline.h"
+#include "camera.h"
+#include "sensor.h"
 #include <QtGui\QKeyEvent>
 
 MainWidget::MainWidget(QWidget *parent) : QOpenGLWidget(parent)
 {
-	// Setup scene and render it
-	//initializeGL();
-	//paintGL();	
+	m_Cam = new Camera();
+	m_Sensor = new KSensor();
+	m_Mesh = new SkinnedMesh(*m_Sensor);
+	m_Tech = new Technique();
+	m_Skin = new SkinningTechnique();
+	m_Pipe = new Pipeline();
 }
+// This virtual function is called once before the first call to paintGL() or resizeGL().
 void MainWidget::initializeGL()
 {
 	initializeOpenGLFunctions();
-	SetupOpenGL();
-	m_Cam		= new Camera();
-	m_Sensor	= new KSensor();
-	m_Mesh		= new SkinnedMesh(*m_Sensor); //Mesh(mySensor)
-	m_Tech		= new Technique();
-	m_Skin		= new SkinningTechnique();
-	m_Pipe		= new Pipeline();
-	MySetup();
+	cout << "GL version: " << glGetString(GL_VERSION) << endl;
+	cout << "GL renderer: " << glGetString(GL_RENDERER) << endl;
+	cout << "Shaders version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << endl;
+	
+	GLint i;
+	glGetIntegerv(GL_CONTEXT_FLAGS, &i);
+	
+	glEnable(GL_TEXTURE_2D);
+	glShadeModel(GL_SMOOTH);                            // Enable Smooth Shading
+	glClearColor(0.0f, 0.0f, 0.0f, 0.5f);               // Black Background
+	glClearDepth(1.0f);									// Depth Buffer Setup
+	glEnable(GL_POINT_SMOOTH);							// Points represented as circles
+	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+
+	glDepthFunc(GL_LEQUAL);
+	glEnable(GL_DEPTH_TEST);
+
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
+
+	glFrontFace(GL_CCW);
+	glCullFace(GL_BACK);
+	glDisable(GL_CULL_FACE);
+	
 	QSurfaceFormat format = context()->format();
 	cout << "Surface format:";
 	cout << " Version:" << format.version().first << "." << format.version().second;
@@ -26,6 +51,8 @@ void MainWidget::initializeGL()
 	cout << " Option deprecated funcs:" << format.testOption(QSurfaceFormat::DeprecatedFunctions);
 	cout << " Option debug context:" << format.testOption(QSurfaceFormat::DebugContext);
 	cout << " Options:" << format.options() << endl;
+	
+	MySetup();
 }
 void MainWidget::paintGL()
 {
@@ -67,32 +94,7 @@ void MainWidget::resizeGL(int w, int h)
 }
 void MainWidget::SetupOpenGL()
 {
-	cout << "GL version: "		<< glGetString(GL_VERSION)					<< endl;	
-	cout << "GL renderer: "		<< glGetString(GL_RENDERER)				    << endl;
-	cout << "Shaders version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << endl;
-	GLint i;
-	glGetIntegerv(GL_CONTEXT_FLAGS, &i);
-	/*
-	glGetIntegerv(GL_NUM_EXTENSIONS, &i);
-	for (uint j = 0; j < i; j++) cout << "Extension " << j << ": " << glGetStringi(GL_EXTENSIONS, j) << endl;
-	cout << "Legacy extensions: " << glGetString(GL_EXTENSIONS) << endl;
-	//*/
-	glEnable(GL_TEXTURE_2D);
-	//glShadeModel(GL_SMOOTH);                            // Enable Smooth Shading
-	glClearColor(0.0f, 0.0f, 0.0f, 0.5f);               // Black Background
-	//glClearDepth(1.0f);                                 // Depth Buffer Setup
-	glEnable(GL_POINT_SMOOTH);							// Points represented as circles
-	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-
-	glDepthFunc(GL_LEQUAL);
-	glEnable(GL_DEPTH_TEST);
-
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_BLEND);
-
-	glFrontFace(GL_CCW);
-	glCullFace(GL_BACK);
-	glDisable(GL_CULL_FACE);
+	
 }
 void MainWidget::DrawAxes()
 {
@@ -176,10 +178,11 @@ void MainWidget::MySetup()
 	// 1) Init KSensor
 	m_Sensor->Init();
 	m_Sensor->PrintJointHierarchy();
-	// 2) Init SkinnedMesh
+	
+	// 2) Init Mesh
 	m_Mesh->NextModel(0);
 	m_Sensor->GetKinectData(); // to successfully acquire frame init sensor before mesh and load mesh before getting data
-	
+
 	// 3) Init Camera
 	//m_Cam->SetCam(); Camera init in its constructor
 	m_Cam->PrintInfo();
@@ -253,4 +256,12 @@ void MainWidget::setRenderModel(bool state)
 bool MainWidget::renderModel() const
 {
 	return m_renderModel;
+}
+QStringList MainWidget::ModelBoneList() const
+{
+	QStringList qsl;
+	for (auto it = m_Mesh->Bones().cbegin(); it != m_Mesh->Bones().cend(); it++) {
+		qsl << QString(it->first.c_str());
+	}
+	return qsl;
 }

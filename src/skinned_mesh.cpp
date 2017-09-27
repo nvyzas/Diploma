@@ -14,12 +14,12 @@ SkinnedMesh::SkinnedMesh()
 }
 SkinnedMesh::SkinnedMesh(const KSensor &ks)
 {
-	initializeOpenGLFunctions();
+	//initializeOpenGLFunctions();
 	m_VAO = 0;
 	ZERO_MEM(m_Buffers);
 	m_pScene = NULL;
 	KBoneMapper();
-	m_pKBones = ks.m_Joints;
+	m_pKBones = ks.getKJoints();
 	m_BindPose = false;
 	m_NumBones = 0;
 	m_NumNodes = 0;
@@ -52,6 +52,7 @@ void SkinnedMesh::Clear()
 }
 bool SkinnedMesh::LoadMesh(const string& Filename)
 {
+	initializeOpenGLFunctions();
     // Release the previously loaded mesh (if it exists)
     Clear();
  
@@ -846,3 +847,10 @@ uint SkinnedMesh::GetNumBones() const
 {
 	return m_NumBones;
 }
+
+const map<string, uint>& SkinnedMesh::Bones() const
+{
+	return m_BoneMapping;
+}
+
+

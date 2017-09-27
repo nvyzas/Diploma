@@ -8,14 +8,15 @@
 
 KSensor::KSensor()
 {
+	//initializeOpenGLFunctions();
 	InitJoints();
-	m_GotFrame = false;
-	initializeOpenGLFunctions();
+	m_GotFrame = false;	
 }
 KSensor::~KSensor()
 {
 }
 bool KSensor::Init() {
+	initializeOpenGLFunctions();
 	//IKinectSensor* sensor;             
 	if (FAILED(GetDefaultKinectSensor(&m_Sensor))) {
 		cout << "Could not find kinect sensor" << endl;
@@ -199,6 +200,10 @@ void KSensor::DrawCloud() {
 
 	glDisableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_COLOR_ARRAY);
+}
+const KJoint* KSensor::getKJoints() const
+{
+	return m_Joints;
 }
 void KSensor::InitJoints() 
 {
