@@ -260,3 +260,6 @@ paket-files/
 __pycache__/
 *.pyc
 /shaders/skinning - Copy.vs
+
+# qt
+GeneratedFiles/
