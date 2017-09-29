@@ -30,7 +30,8 @@ void MainWindow::setupConnections()
 	connect(ui->spinBox_zRot, SIGNAL(valueChanged(int)), ui->horizontalSlider_zRot, SLOT(setValue(int)));
 	connect(ui->checkBox_axes, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setRenderAxes(bool)));
 	connect(ui->checkBox_model, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setRenderModel(bool)));
-	
+	connect(ui->comboBox_activeBone, SIGNAL(currentIndexChanged(QString)),
+		ui->openGLWidget, SLOT(setMeshActiveBone(QString)));
 }
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {

@@ -156,27 +156,27 @@ void Camera::PrintInfo()
 	cout << "Target=" << m_target.ToString() << " Up=" << m_up.ToString() << " Right=" << m_right.ToString() << endl;
 	//cout << "Step=" << m_Step << " AngleStep(degrees)=" << m_angleStep << endl;
 }
-void Camera::DrawCameraVectors()
-{
-	//*
-	glBegin(GL_LINES);
-	const Vector3f &c = GetCenter();
-	Vector3f v;
-	float f = 2;
-	v = c + (GetTarget()*f);
-	glColor3f(0, 0, 0xFF);
-	glVertex3f(c.x, c.y, c.z);
-	glVertex3f(v.x, v.y, v.z);
-
-	v = c + (GetUp()*f);
-	glColor3f(0, 0xFF, 0);
-	glVertex3f(c.x, c.y, c.z);
-	glVertex3f(v.x, v.y, v.z);
-
-	v = c + (GetRight()*f);
-	glColor3f(0xFF, 0, 0);
-	glVertex3f(c.x, c.y, c.z);
-	glVertex3f(v.x, v.y, v.z);
-	glEnd();
-	//*/
-}
+//void Camera::DrawCameraVectors()
+//{
+//	//*
+//	glBegin(GL_LINES);
+//	const Vector3f &c = GetCenter();
+//	Vector3f v;
+//	float f = 2;
+//	v = c + (GetTarget()*f);
+//	glColor3f(0, 0, 0xFF);
+//	glVertex3f(c.x, c.y, c.z);
+//	glVertex3f(v.x, v.y, v.z);
+//
+//	v = c + (GetUp()*f);
+//	glColor3f(0, 0xFF, 0);
+//	glVertex3f(c.x, c.y, c.z);
+//	glVertex3f(v.x, v.y, v.z);
+//
+//	v = c + (GetRight()*f);
+//	glColor3f(0xFF, 0, 0);
+//	glVertex3f(c.x, c.y, c.z);
+//	glVertex3f(v.x, v.y, v.z);
+//	glEnd();
+//	//*/
+//}

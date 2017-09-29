@@ -8,24 +8,22 @@
 #define BONE_ID_LOCATION     3
 #define BONE_WEIGHT_LOCATION 4
 
-
 SkinnedMesh::SkinnedMesh()
-{
-}
-SkinnedMesh::SkinnedMesh(const KSensor &ks)
 {
 	//initializeOpenGLFunctions();
 	m_VAO = 0;
 	ZERO_MEM(m_Buffers);
 	m_pScene = NULL;
-	KBoneMapper();
-	m_pKBones = ks.getKJoints();
+	initBoneMapping();
+	initKBoneMapping();	
 	m_BindPose = false;
-	m_NumBones = 0;
-	m_NumNodes = 0;
 	m_ActiveModel = 0;
 	m_ActiveBoneTransformInfo = 0;
 	m_SuccessfullyLoaded = false;
+}
+void SkinnedMesh::setKSensor(const KSensor &ks)
+{
+	m_pKBones = ks.getKJoints();
 }
 SkinnedMesh::~SkinnedMesh()
 {
@@ -33,9 +31,6 @@ SkinnedMesh::~SkinnedMesh()
 }
 void SkinnedMesh::Clear()
 {
-	m_NumBones = 0;
-	m_NumNodes = 0;
-	m_BoneMapping.clear();
     for (uint i = 0 ; i < m_Textures.size() ; i++) {
         SAFE_DELETE(m_Textures[i]);
     }
@@ -106,7 +101,7 @@ bool SkinnedMesh::InitFromScene(const aiScene* pScene, const string& Filename)
         NumVertices += pScene->mMeshes[i]->mNumVertices;
         NumIndices  += m_Entries[i].NumIndices;
     }
-	m_NumVertices = NumVertices;
+	m_numVertices = NumVertices;
 
 	// Reserve space in the vectors for the vertex attributes and indices
 	Positions.reserve(NumVertices);
@@ -120,20 +115,19 @@ bool SkinnedMesh::InitFromScene(const aiScene* pScene, const string& Filename)
 		const aiMesh* paiMesh = pScene->mMeshes[i];
 		InitMesh(i, paiMesh, Positions, Normals, TexCoords, Bones, Indices);
 	}
-	m_ActiveBone = m_BoneMapping.begin();
-	m_relQuats.resize(m_NumBones);
-	m_relVecs.resize(m_NumBones);
-	m_relMats.resize(m_NumBones);
-	m_absQuats.resize(m_NumBones);
-	m_absVecs.resize(m_NumBones);
-	m_absMats.resize(m_NumBones);
-	m_corQuats.resize(m_NumBones);
-	m_corVecs.resize(m_NumBones);
-	m_corMats.resize(m_NumBones);
-	m_conQuats.resize(m_NumBones);
-	m_conVecs.resize(m_NumBones);
-	m_conMats.resize(m_NumBones);	
-	m_BoneTransformInfo.resize(m_NumBones);
+	m_relQuats.resize(m_numBones);
+	m_relVecs.resize(m_numBones);
+	m_relMats.resize(m_numBones);
+	m_absQuats.resize(m_numBones);
+	m_absVecs.resize(m_numBones);
+	m_absMats.resize(m_numBones);
+	m_corQuats.resize(m_numBones);
+	m_corVecs.resize(m_numBones);
+	m_corMats.resize(m_numBones);
+	m_conQuats.resize(m_numBones);
+	m_conVecs.resize(m_numBones);
+	m_conMats.resize(m_numBones);	
+	m_BoneTransformInfo.resize(m_numBones);
 	SetConQuats();
 
 	if (!InitMaterials(pScene, Filename)) {
@@ -221,15 +215,19 @@ void SkinnedMesh::LoadBones(uint MeshIndex, const aiMesh* pMesh, vector<VertexBo
 		string BoneName(pMesh->mBones[i]->mName.data);
 		if (m_BoneMapping.find(BoneName) == m_BoneMapping.end()) {
 			// Allocate an index for a new bone
-			BoneIndex = m_NumBones;
-			m_NumBones++;
+			cout << MeshIndex << ": " << BoneName << " is a new bone." << endl;
+			BoneIndex = m_numBones;
+			m_numBones++;
 			BoneInfo bi;
-			m_BoneInfo.push_back(bi);
-			m_BoneInfo[BoneIndex].BoneOffset = pMesh->mBones[i]->mOffsetMatrix;
+			m_boneInfo.push_back(bi);
+			m_boneInfo[BoneIndex].BoneOffset = pMesh->mBones[i]->mOffsetMatrix;
 			m_BoneMapping[BoneName] = BoneIndex;
 		}
 		else {
+			cout << MeshIndex << ": " << BoneName << " already exists." << endl;
+			BoneInfo bi;
 			BoneIndex = m_BoneMapping[BoneName];
+			m_boneInfo[BoneIndex].BoneOffset = pMesh->mBones[i]->mOffsetMatrix;			
 		}
 		
 		for (uint j = 0; j < pMesh->mBones[i]->mNumWeights; j++) {
@@ -519,7 +517,7 @@ void SkinnedMesh::ReadNodeHierarchy(float AnimationTime, const aiNode* pNode, co
 
 	if (m_BoneMapping.find(NodeName) != m_BoneMapping.end()) {
 		uint BoneIndex = m_BoneMapping[NodeName];
-		m_BoneInfo[BoneIndex].FinalTransformation = m_GlobalInverseTransform * GlobalTransformation * m_BoneInfo[BoneIndex].BoneOffset;
+		m_boneInfo[BoneIndex].FinalTransformation = m_GlobalInverseTransform * GlobalTransformation * m_boneInfo[BoneIndex].BoneOffset;
 	}
 
 	for (uint i = 0; i < pNode->mNumChildren; i++) {
@@ -537,10 +535,10 @@ void SkinnedMesh::BoneTransform(float TimeInSeconds, vector<Matrix4f>& Transform
 
 	ReadNodeHierarchy(AnimationTime, m_pScene->mRootNode, Identity);
 
-	Transforms.resize(m_NumBones);
+	Transforms.resize(m_numBones);
 
-	for (uint i = 0; i < m_NumBones; i++) {
-		Transforms[i] = m_BoneInfo[i].FinalTransformation;
+	for (uint i = 0; i < m_numBones; i++) {
+		Transforms[i] = m_boneInfo[i].FinalTransformation;
 	}
 }
 void SkinnedMesh::PrintInfo()
@@ -569,17 +567,15 @@ void SkinnedMesh::PrintSceneInfo()
 		cout << " Bones:" << setw(3) << m_pScene->mMeshes[i]->mNumBones;
 		cout << endl;
 	}
-	cout << "Total: Vertices:" << m_NumVertices;
-	cout << " Nodes:" << m_NumNodes;
-	cout << " Bones:" << m_NumBones;
+	cout << "Total: Vertices:" << m_numVertices;
+	cout << " Bones:" << m_numBones;
+	cout << " KBones:" << m_numKBones;
 	cout << endl;
 }
 void SkinnedMesh::PrintNodeHierarchy(const aiNode* pNode)
 {	
 	string NodeName(pNode->mName.data);
 	string ParentName(pNode->mParent ? pNode->mParent->mName.data : "Root");
-	if (!pNode->mParent) m_NumNodes = 0;
-	m_NumNodes += 1;
 	cout << "Node " << setw(2) << m_NumNodes << ": " << setw(20) << left << NodeName << setw(10) << left;
 	if (m_KBoneMapping.find(NodeName) != m_KBoneMapping.end()) cout << "(KBone)";
 	else if (m_BoneMapping.find(NodeName) != m_BoneMapping.end()) cout << " (Bone)";
@@ -612,9 +608,9 @@ void SkinnedMesh::PrintNodeMatching(const aiNode* pNode)
 void SkinnedMesh::GetBoneTransforms(vector<Matrix4f>& Transforms)
 {
 	TraverseNodeHierarchy(m_pScene->mRootNode, Matrix4f::Identity());
-	Transforms.resize(m_NumBones);
-	for (uint i = 0; i < m_NumBones; i++) {
-		Transforms[i] = m_BoneInfo[i].FinalTransformation;
+	Transforms.resize(m_numBones);
+	for (uint i = 0; i < m_numBones; i++) {
+		Transforms[i] = m_boneInfo[i].FinalTransformation;
 	}
 }
 void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
@@ -647,7 +643,7 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 		sso << "Global transformation:" << endl << G;
 		if (it != m_BoneMapping.end()) {
 			uint i = it->second;
-			m_BoneInfo[i].FinalTransformation = G * m_BoneInfo[i].BoneOffset;
+			m_boneInfo[i].FinalTransformation = G * m_boneInfo[i].BoneOffset;
 		}
 	}
 	else {
@@ -680,8 +676,8 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 			sso << "Translation matrix (local) from model:" << endl << T;
 			sso << "Local transformation:" << endl << L;
 			sso << "Global transformation:" << endl << G;
-			m_BoneInfo[i].FinalTransformation = G * m_BoneInfo[i].BoneOffset;
-			sso << "Final Transformation:" << endl << m_BoneInfo[i].FinalTransformation;
+			m_boneInfo[i].FinalTransformation = G * m_boneInfo[i].BoneOffset;
+			sso << "Final Transformation:" << endl << m_boneInfo[i].FinalTransformation;
 			m_BoneTransformInfo[counter] = sso.str();
 			sso.clear();
 			counter++;
@@ -710,8 +706,8 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 			sso << "Translation matrix (local) from model:" << endl << T;
 			sso << "Local transformation:" << endl << L;			
 			sso << "Global transformation:" << endl << G;
-			m_BoneInfo[i].FinalTransformation = m_Parameters[0] ? Matrix4f::Zero() : G * m_BoneInfo[i].BoneOffset;				
-			sso << "Final Transformation:" << endl << m_BoneInfo[i].FinalTransformation;
+			m_boneInfo[i].FinalTransformation = m_Parameters[0] ? Matrix4f::Zero() : G * m_boneInfo[i].BoneOffset;				
+			sso << "Final Transformation:" << endl << m_boneInfo[i].FinalTransformation;
 			m_BoneTransformInfo[counter] = sso.str();
 			sso.clear();
 			counter++;
@@ -737,7 +733,47 @@ void SkinnedMesh::SetConQuats()
 	q.FromAxisAngle(Vector4f(0, 1, 0, 90));
 	//*/
 }
-void SkinnedMesh::KBoneMapper()
+void SkinnedMesh::initBoneMapping()
+{
+	uint counter = 0;
+	// core
+	m_BoneMapping["Hips"]					= counter; counter++;
+	m_BoneMapping["LowerBack"]				= counter; counter++;
+	m_BoneMapping["Spine"]					= counter; counter++;
+	m_BoneMapping["Spine1"]					= counter; counter++;
+	m_BoneMapping["Neck"]					= counter; counter++;
+	m_BoneMapping["Neck1"]					= counter; counter++;
+	m_BoneMapping["Head"]					= counter; counter++;											  
+	// legs									  
+	m_BoneMapping["LHipJoint"]				= counter; counter++;
+	m_BoneMapping["RHipJoint"]				= counter; counter++;
+	m_BoneMapping["LeftUpLeg"]				= counter; counter++;
+	m_BoneMapping["RightUpLeg"]				= counter; counter++;
+	m_BoneMapping["LeftLeg"]				= counter; counter++;
+	m_BoneMapping["RightLeg"]				= counter; counter++;
+	m_BoneMapping["LeftFoot"]				= counter; counter++;
+	m_BoneMapping["RightFoot"]				= counter; counter++;
+	m_BoneMapping["LeftToeBase"]			= counter; counter++;
+	m_BoneMapping["RightToeBase"]			= counter; counter++;											  
+	// arms									  
+	m_BoneMapping["LeftShoulder"]			= counter; counter++;
+	m_BoneMapping["RightShoulder"]			= counter; counter++;
+	m_BoneMapping["LeftArm"]				= counter; counter++;
+	m_BoneMapping["RightArm"]				= counter; counter++;
+	m_BoneMapping["LeftForeArm"]			= counter; counter++;
+	m_BoneMapping["RightForeArm"]			= counter; counter++;
+	m_BoneMapping["LeftHand"]				= counter; counter++;
+	m_BoneMapping["RightHand"]				= counter; counter++;
+	m_BoneMapping["LeftThumb"]				= counter; counter++;
+	m_BoneMapping["RightThumb"]				= counter; counter++;
+	m_BoneMapping["LeftFingerBase"]			= counter; counter++;
+	m_BoneMapping["RightFingerBase"]	    = counter; counter++;
+	m_BoneMapping["LeftHandFinger1"]	    = counter; counter++;
+	m_BoneMapping["RightHandFinger1"]		= counter; counter++;
+	m_numBones = m_BoneMapping.size();
+	m_boneInfo.resize(m_numBones);
+}
+void SkinnedMesh::initKBoneMapping()
 {
 	// JointType SpineBase, Head, HandTipLeft/Right, ThumbLeft/Right, FootLeft/Right are always q(0,0,0,0)
 	// core
@@ -776,6 +812,14 @@ void SkinnedMesh::KBoneMapper()
 	//m_KBoneMapping["RightFingerBase"]	    = INVALID_JOINT_ID;
 	//m_KBoneMapping["LeftHandFinger1"]	    = INVALID_JOINT_ID;
 	//m_KBoneMapping["RightHandFinger1"]	= INVALID_JOINT_ID;
+	m_numKBones = m_KBoneMapping.size();
+}
+void SkinnedMesh::setActiveBone(const QString &qs)
+{
+	// std::map<std::string, uint>::iterator
+	string s(qs.toLocal8Bit());
+	auto it = m_BoneMapping.find(s);// find(qs.toStdString());
+	if (it != m_BoneMapping.end()) m_ActiveBone = it;
 }
 const aiNodeAnim* SkinnedMesh::FindNodeAnim(const aiAnimation* pAnimation, const string NodeName)
 {
@@ -791,7 +835,7 @@ const aiNodeAnim* SkinnedMesh::FindNodeAnim(const aiAnimation* pAnimation, const
 void SkinnedMesh::NextModel(int step)
 {	
 	m_ActiveModel = Mod(m_ActiveModel, NUM_MODELS, step);
-	LoadMesh("models/" + m_MeshNames[m_ActiveModel] + ".dae");
+	LoadMesh("models/" + m_modelNames[m_ActiveModel] + ".dae");
 }
 void SkinnedMesh::NextJoint(int step)
 {
@@ -805,9 +849,9 @@ void SkinnedMesh::NextJoint(int step)
 	}
 	uint i = m_ActiveBone->second;// m_BoneMapIterator->second;
 	cout << "Active joint " << setw(2) << m_ActiveBone->second << ": " << setw(15) << m_ActiveBone->first;
-	cout << " Visible:" << m_BoneInfo[i].Visible;
-	cout << " Offset:" << m_BoneInfo[i].Offset;
-	cout << " BindPose:" << m_BoneInfo[i].BindPose;
+	cout << " Visible:" << m_boneInfo[i].Visible;
+	cout << " Offset:" << m_boneInfo[i].Offset;
+	cout << " BindPose:" << m_boneInfo[i].BindPose;
 	cout << endl;
 	//cout << m_BoneMapping.size() << endl;
 }
@@ -819,7 +863,7 @@ void SkinnedMesh::FlipParameter(uint i)
 }
 void SkinnedMesh::NextBoneTransformInfo(int step)
 {
-	m_ActiveBoneTransformInfo = Mod(m_ActiveBoneTransformInfo, m_NumBones, step);
+	m_ActiveBoneTransformInfo = Mod(m_ActiveBoneTransformInfo, m_numBones, step);
 	cout << m_BoneTransformInfo[m_ActiveBoneTransformInfo] << endl;
 }
 void SkinnedMesh::PrintParameters()
@@ -831,13 +875,13 @@ void SkinnedMesh::PrintParameters()
 }
 void SkinnedMesh::ToggleActiveBoneVisibility()
 {
-	bool &vis = m_BoneInfo[m_ActiveBone->second].Visible;
+	bool &vis = m_boneInfo[m_ActiveBone->second].Visible;
 	vis = !vis;
 	cout << m_ActiveBone->first << " visibility " << (vis ? " ON: " : " OFF: ") << endl;
 }
 bool SkinnedMesh::GetBoneVisibility(uint BoneIndex) const
 {
-	return m_BoneInfo[BoneIndex].Visible;
+	return m_boneInfo[BoneIndex].Visible;
 }
 uint SkinnedMesh::GetActiveBoneID() const
 {
@@ -845,7 +889,7 @@ uint SkinnedMesh::GetActiveBoneID() const
 }
 uint SkinnedMesh::GetNumBones() const
 {
-	return m_NumBones;
+	return m_numBones;
 }
 
 const map<string, uint>& SkinnedMesh::Bones() const

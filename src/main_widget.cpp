@@ -8,9 +8,10 @@
 
 MainWidget::MainWidget(QWidget *parent) : QOpenGLWidget(parent)
 {
+	makeCurrent();
 	m_Cam = new Camera();
 	m_Sensor = new KSensor();
-	m_Mesh = new SkinnedMesh(*m_Sensor);
+	m_Mesh = new SkinnedMesh();
 	m_Tech = new Technique();
 	m_Skin = new SkinningTechnique();
 	m_Pipe = new Pipeline();
@@ -74,7 +75,7 @@ void MainWidget::paintGL()
 	if (m_renderSkeleton)			m_Sensor->DrawSkeleton(JointType_SpineBase);
 	if (m_renderActiveJoint)		m_Sensor->DrawActiveJoint();
 	if (m_renderCloud)				m_Sensor->DrawCloud();
-	if (m_renderCameraVectors)		m_Cam->DrawCameraVectors();
+	//if (m_renderCameraVectors)		m_Cam->DrawCameraVectors();
 	//*/
 }
 void MainWidget::keyPressEvent(QKeyEvent *event)
@@ -180,6 +181,7 @@ void MainWidget::MySetup()
 	m_Sensor->PrintJointHierarchy();
 	
 	// 2) Init Mesh
+	m_Mesh->setKSensor(*m_Sensor);
 	m_Mesh->NextModel(0);
 	m_Sensor->GetKinectData(); // to successfully acquire frame init sensor before mesh and load mesh before getting data
 
@@ -253,6 +255,10 @@ void MainWidget::setRenderModel(bool state)
 		update();
 	}
 }
+void MainWidget::setMeshActiveBone(const QString &qs)
+{
+	m_Mesh->setActiveBone(qs);
+}
 bool MainWidget::renderModel() const
 {
 	return m_renderModel;
@@ -260,8 +266,8 @@ bool MainWidget::renderModel() const
 QStringList MainWidget::ModelBoneList() const
 {
 	QStringList qsl;
-	for (auto it = m_Mesh->Bones().cbegin(); it != m_Mesh->Bones().cend(); it++) {
-		qsl << QString(it->first.c_str());
+	for (const auto& it : m_Mesh->Bones()) {
+		qsl << QString::fromLocal8Bit(it.first.c_str());
 	}
 	return qsl;
 }

@@ -22,7 +22,6 @@ class SkinnedMesh : protected OPENGL_FUNCTIONS
 {
 public:
 	SkinnedMesh();
-	SkinnedMesh(const KSensor &ks);
 	~SkinnedMesh();
 	bool LoadMesh(const string& Filename);
 	void Render();
@@ -35,7 +34,6 @@ public:
 	void PrintNodeMatching(const aiNode* pNode);
 	void PrintParameters();
 	void PrintSceneInfo();
-	void KBoneMapper();
 	void AdjustBones(); // Not used
 	void ToggleSkinning();
 	void NextModel(int step);
@@ -50,6 +48,11 @@ public:
 	bool GetBoneVisibility(uint BoneIndex) const;
 	uint GetNumBones() const;
 	const map<string, uint>& Bones() const;
+	void setKSensor(const KSensor &ks);
+	void loadBoneNames();
+	void initBoneMapping();
+	void initKBoneMapping();
+	void setActiveBone(const QString &qs);
 
 private:
 
@@ -164,11 +167,12 @@ private:
 	vector<Vector3f> m_corVecs; // correction vectors
 	vector<Quaternion> m_corQuats; // correction quaternions 
 	vector<Matrix4f> m_corMats;
-	uint m_NumBones;
+	uint m_numBones;
+	uint m_numKBones;
 	uint m_NumNodes;
-	uint m_NumVertices; // total number of vertices
+	uint m_numVertices; // total number of vertices
 	unsigned long long m_vertexArrayBytes;
-	vector<BoneInfo> m_BoneInfo;
+	vector<BoneInfo> m_boneInfo;
 	vector<VertexBoneData> m_VertexBoneData;
 	Matrix4f m_GlobalInverseTransform;
 
@@ -177,7 +181,7 @@ private:
 
 	std::map<std::string, uint>::iterator m_ActiveBone;
 	uint m_ActiveModel;
-	string m_MeshNames[NUM_MODELS] = { "cmu_test","cmu", "cmumb_localy_180","bobby","" };
+	string m_modelNames[NUM_MODELS] = { "cmu_test","cmu", "cmumb_localy_180","bobby","" };
 	bitset<NUM_PARAMETERS> m_Parameters;
 	const string m_ParametersStringTrue[NUM_PARAMETERS] = { "Invisible parts", "Composed local", "My quaternion", "My matrix", "qRel=qAbs*qAbsParInv","qAbs=qAbsPar*qRel" };
 	const string m_ParametersStringFalse[NUM_PARAMETERS] = { "Visible parts", "Ready local", "AI quaternion", "AI matrix", "qRel=qAbsParInv*qAbs","qAbs=qRel*qAbsPar" };

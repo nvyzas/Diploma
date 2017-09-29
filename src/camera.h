@@ -4,7 +4,7 @@
 #include "math_3d.h"
 #include "util.h"
 
-class Camera : protected OPENGL_FUNCTIONS
+class Camera
 {
 public:
     Camera();
@@ -69,7 +69,7 @@ public:
 		return Vector3f(m_rho, m_theta, m_phi);
 	}
 	void UpdateCamera();
-	void DrawCameraVectors();
+	//void DrawCameraVectors();
 
 private:
     Vector3f m_pos;

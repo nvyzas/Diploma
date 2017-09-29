@@ -23,6 +23,8 @@ public:
 public slots:
 	void setRenderAxes(bool state);
 	void setRenderModel(bool state);
+	void setMeshActiveBone(const QString &qs);
+	
 	
 protected:
 	void initializeGL();
