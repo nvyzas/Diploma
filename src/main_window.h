@@ -1,10 +1,11 @@
 #pragma once
-#include "main_widget.h"
-#include <QtWidgets\QMainWindow>
 
+// Project
 namespace Ui {
 	class MainWindow;
 }
+// Qt
+#include <QtWidgets\QMainWindow>
 
 class MainWindow : public QMainWindow
 {
@@ -12,12 +13,12 @@ class MainWindow : public QMainWindow
 public:
 	MainWindow(QWidget *parent = Q_NULLPTR);
 	~MainWindow();
-
-protected:
-	void keyPressEvent(QKeyEvent *);
-
+private slots:
+	void loadActiveBoneInfo();
+	void setActiveBoneVisibility(bool state);
 private:
-	Ui::MainWindow *ui;
 	void setupObjects();
 	void setupConnections();
+
+	Ui::MainWindow *ui;
 };

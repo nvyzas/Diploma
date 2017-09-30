@@ -232,7 +232,7 @@ void MainWidget::MySetup()
 	m_Skin->SetSkinningSwitch(m_Mesh->m_Skinned);
 	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
 	for (uint i = 0; i < m_Mesh->GetNumBones(); i++) {
-		m_Skin->SetBoneVisibility(i, m_Mesh->GetBoneVisibility(i));
+		m_Skin->SetBoneVisibility(i, m_Mesh->boneVisibility(i));
 	}
 	Transform(true);
 }
@@ -255,10 +255,6 @@ void MainWidget::setRenderModel(bool state)
 		update();
 	}
 }
-void MainWidget::setMeshActiveBone(const QString &qs)
-{
-	m_Mesh->setActiveBone(qs);
-}
 bool MainWidget::renderModel() const
 {
 	return m_renderModel;
@@ -270,4 +266,15 @@ QStringList MainWidget::ModelBoneList() const
 		qsl << QString::fromLocal8Bit(it.first.c_str());
 	}
 	return qsl;
+}
+bool MainWidget::boneVisibility(const QString &boneName) const
+{
+	return m_Mesh->boneVisibility(boneName);
+}
+void MainWidget::setBoneVisibility(const QString &boneName, bool state)
+{
+	m_Mesh->setBoneVisibility(boneName, state);
+	m_Skin->Enable();
+	m_Skin->SetBoneVisibility(m_Mesh->findBoneId(boneName), state);
+	update();
 }

@@ -40,19 +40,18 @@ public:
 	void NextJoint(int step);
 	void FlipParameter(uint i);	
 	void NextBoneTransformInfo(int step);
-	void ToggleActiveBoneVisibility();
 	bool m_Skinned;
 	bool m_BindPose;
 	bool m_SuccessfullyLoaded;
-	uint GetActiveBoneID() const;
-	bool GetBoneVisibility(uint BoneIndex) const;
 	uint GetNumBones() const;
 	const map<string, uint>& Bones() const;
 	void setKSensor(const KSensor &ks);
-	void loadBoneNames();
 	void initBoneMapping();
 	void initKBoneMapping();
-	void setActiveBone(const QString &qs);
+	bool boneVisibility(uint boneIndex) const;
+	uint findBoneId(const QString &boneName) const;
+	bool boneVisibility(const QString &boneName) const;
+	void setBoneVisibility(const QString &boneName, bool state);
 
 private:
 
@@ -60,18 +59,22 @@ private:
 
 	struct BoneInfo
 	{
+		enum RenderPose
+		{
+			Bind,
+			Kinect,
+			Offset
+		};
 		Matrix4f BoneOffset;
 		Matrix4f FinalTransformation;
 		bool Visible;
-		bool Offset;
-		bool BindPose;
+		RenderPose Pose;
 		BoneInfo()
 		{
 			BoneOffset.SetZero();
 			FinalTransformation.SetZero();
 			Visible = true;
-			Offset = false;
-			BindPose = false;
+			Pose = Bind;
 		}
 	};
 
@@ -150,9 +153,9 @@ private:
 	vector<MeshEntry> m_Entries;
 	vector<Texture*> m_Textures;
 
-	map<string, uint> m_BoneMapping; // maps a model bone name to its index (key = bone name, value = index)
-	map<string, uint> m_KBoneMapping; // maps a model bone name to its kinect JointType index
-	map<string, uint> m_BoneFlags;
+	vector<BoneInfo> m_boneInfo;
+	map<string, uint> m_boneMap; // maps a model bone name to its index (key = bone name, value = index)
+	map<string, uint> m_kboneMap; // maps a model bone name to its kinect JointType index
 	const KJoint *m_pKBones;
 
 	vector<Vector3f> m_relVecs; // relative vectors (for hierarchical translation)
@@ -172,14 +175,13 @@ private:
 	uint m_NumNodes;
 	uint m_numVertices; // total number of vertices
 	unsigned long long m_vertexArrayBytes;
-	vector<BoneInfo> m_boneInfo;
 	vector<VertexBoneData> m_VertexBoneData;
 	Matrix4f m_GlobalInverseTransform;
 
 	const aiScene* m_pScene;
 	Assimp::Importer m_Importer;
 
-	std::map<std::string, uint>::iterator m_ActiveBone;
+	
 	uint m_ActiveModel;
 	string m_modelNames[NUM_MODELS] = { "cmu_test","cmu", "cmumb_localy_180","bobby","" };
 	bitset<NUM_PARAMETERS> m_Parameters;

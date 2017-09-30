@@ -19,12 +19,12 @@ public:
 	bool renderAxes() const;
 	bool renderModel() const;
 	QStringList ModelBoneList() const;
+	bool boneVisibility(const QString &boneName) const;
 	
 public slots:
 	void setRenderAxes(bool state);
 	void setRenderModel(bool state);
-	void setMeshActiveBone(const QString &qs);
-	
+	void setBoneVisibility(const QString &boneName, bool state);
 	
 protected:
 	void initializeGL();
@@ -50,6 +50,7 @@ private:
 	bool m_renderCameraVectors = false;	
 	
 	bool m_play = false;
+	
 
 	#define NUM_INFO_BLOCKS 3
 	uint activeJoint = 0;
