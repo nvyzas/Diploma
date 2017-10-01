@@ -15,11 +15,10 @@ SkinnedMesh::SkinnedMesh()
 	ZERO_MEM(m_Buffers);
 	m_pScene = NULL;
 	initBoneMapping();
-	initKBoneMapping();	
-	m_BindPose = false;
-	m_ActiveModel = 0;
+	initKBoneMapping();
 	m_ActiveBoneTransformInfo = 0;
 	m_SuccessfullyLoaded = false;
+	
 }
 void SkinnedMesh::setKSensor(const KSensor &ks)
 {
@@ -45,8 +44,9 @@ void SkinnedMesh::Clear()
     }
 	m_SuccessfullyLoaded = false;
 }
-bool SkinnedMesh::LoadMesh(const string& Filename)
+bool SkinnedMesh::LoadMesh(const string& basename)
 {
+	string Filename = "models/" + basename + ".dae";
 	initializeOpenGLFunctions();
     // Release the previously loaded mesh (if it exists)
     Clear();
@@ -60,7 +60,7 @@ bool SkinnedMesh::LoadMesh(const string& Filename)
 
     bool Ret = false;    
 	cout << endl;
-	cout << "Loading model " << m_ActiveModel << ": " << Filename.c_str() << endl;
+	cout << "Loading model: " << Filename << endl;
     m_pScene = m_Importer.ReadFile(Filename.c_str(), ASSIMP_LOAD_FLAGS);    
     if (m_pScene) {  
         m_GlobalInverseTransform = m_pScene->mRootNode->mTransformation;
@@ -625,8 +625,8 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 	Quaternion q;
 	stringstream sso;
 	sso << endl << "Node name " << counter << ": " << NodeName << endl;
-	std::map<std::string, uint>::iterator it = m_boneMap.find(NodeName);
-	if (m_BindPose || (it == m_boneMap.end())){
+	auto it = m_boneMap.find(NodeName);
+	if (m_Parameters[6] || (it == m_boneMap.end())){
 		if (m_Parameters[1]) {
 			q = (m_Parameters[2]) ? L.ExtractQuaternion1() : L.ExtractQuaternion2();
 			sso << "q rel from model " << ": " << q.ToString() << q.ToEulerAnglesString() << q.ToAxisAngleString() << endl;
@@ -650,7 +650,7 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 	}
 	else {
 		uint i = it->second;
-		std::map<std::string, uint>::iterator kit = m_kboneMap.find(NodeName);
+		auto kit = m_kboneMap.find(NodeName);
 		uint c;
 		if (kit != m_kboneMap.end() && (c = kit->second) != INVALID_JOINT_ID) {			
 			q = m_pKBones[c].Orientation;
@@ -827,11 +827,6 @@ const aiNodeAnim* SkinnedMesh::FindNodeAnim(const aiAnimation* pAnimation, const
 	}
 	return NULL;
 }
-void SkinnedMesh::NextModel(int step)
-{	
-	m_ActiveModel = Mod(m_ActiveModel, NUM_MODELS, step);
-	LoadMesh("models/" + m_modelNames[m_ActiveModel] + ".dae");
-}
 void SkinnedMesh::NextJoint(int step)
 {
 	//if (step < 0) {
@@ -890,7 +885,7 @@ void SkinnedMesh::setBoneVisibility(const QString &boneName, bool state)
 {
 	m_boneInfo[findBoneId(boneName)].Visible = state;
 }
-uint SkinnedMesh::GetNumBones() const
+uint SkinnedMesh::getNumBones() const
 {
 	return m_numBones;
 }

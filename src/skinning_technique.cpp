@@ -221,16 +221,16 @@ void SkinningTechnique::SetSpotLights(uint NumLights, const SpotLight* pLights)
         glUniform1f(m_spotLightsLocation[i].Atten.Exp,      pLights[i].Attenuation.Exp);
     }
 }
-void SkinningTechnique::SetBoneTransform(uint Index, const Matrix4f& Transform)
+void SkinningTechnique::setBoneTransform(uint Index, const Matrix4f& Transform)
 {
     assert(Index < MAX_BONES);
     glUniformMatrix4fv(m_boneLocation[Index], 1, GL_TRUE, (const GLfloat*)Transform);       
 }
-void SkinningTechnique::SetSkinningSwitch(int value) // use 0 value to switch off
+void SkinningTechnique::setSkinning(int value) // use 0 value to switch off
 {
 	glUniform1i(m_skinningOnLocation, value);
 }
-void SkinningTechnique::SetBoneVisibility(uint Index, const bool& Visibility)
+void SkinningTechnique::setBoneVisibility(uint Index, const bool& Visibility)
 {
 	assert(Index < MAX_BONES);
 	//cout << "Setting variable at location " << m_visibilityLocation[Index] << " to " << Visibility << endl;

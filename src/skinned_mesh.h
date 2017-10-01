@@ -14,7 +14,6 @@
 
 #define ASSIMP_LOAD_FLAGS aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices | aiProcess_FlipWindingOrder | aiProcess_LimitBoneWeights 
 #define NUM_PARAMETERS 10
-#define NUM_MODELS 5
 
 using namespace std;
 
@@ -41,9 +40,8 @@ public:
 	void FlipParameter(uint i);	
 	void NextBoneTransformInfo(int step);
 	bool m_Skinned;
-	bool m_BindPose;
 	bool m_SuccessfullyLoaded;
-	uint GetNumBones() const;
+	uint getNumBones() const;
 	const map<string, uint>& Bones() const;
 	void setKSensor(const KSensor &ks);
 	void initBoneMapping();
@@ -181,12 +179,9 @@ private:
 	const aiScene* m_pScene;
 	Assimp::Importer m_Importer;
 
-	
-	uint m_ActiveModel;
-	string m_modelNames[NUM_MODELS] = { "cmu_test","cmu", "cmumb_localy_180","bobby","" };
 	bitset<NUM_PARAMETERS> m_Parameters;
-	const string m_ParametersStringTrue[NUM_PARAMETERS] = { "Invisible parts", "Composed local", "My quaternion", "My matrix", "qRel=qAbs*qAbsParInv","qAbs=qAbsPar*qRel" };
-	const string m_ParametersStringFalse[NUM_PARAMETERS] = { "Visible parts", "Ready local", "AI quaternion", "AI matrix", "qRel=qAbsParInv*qAbs","qAbs=qRel*qAbsPar" };
+	const string m_ParametersStringTrue[NUM_PARAMETERS] = { "Invisible parts",  "My local", "My quaternion", "My matrix", "qRel=qAbs*qAbsParInv","qAbs=qAbsPar*qRel", "Bind pose" };
+	const string m_ParametersStringFalse[NUM_PARAMETERS] = { "Visible parts", "AI local", "AI quaternion", "AI matrix", "qRel=qAbsParInv*qAbs","qAbs=qRel*qAbsPar", "Mixed pose" };
 	uint m_ActiveBoneTransformInfo;
 	vector<string> m_BoneTransformInfo;
 };

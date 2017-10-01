@@ -80,13 +80,36 @@ void MainWidget::paintGL()
 }
 void MainWidget::keyPressEvent(QKeyEvent *event)
 {
-	m_Cam->onKeyboardArrow(event->key(), true);
-	m_Pipe->SetCamera(m_Cam->GetPos(), m_Cam->GetTarget(), m_Cam->GetUp());
-	m_Skin->Enable();
-	m_Skin->SetEyeWorldPos(m_Cam->GetPos());
-	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
-	m_Tech->Enable();
-	m_Tech->SetDefault(m_Pipe->GetVPTrans());
+	switch (event->key()) {
+	case Qt::Key_Down:
+	case Qt::Key_Up:
+	case Qt::Key_Left:
+	case Qt::Key_Right:
+		m_Cam->onKeyboardArrow(event->key(), true);
+		m_Pipe->SetCamera(m_Cam->GetPos(), m_Cam->GetTarget(), m_Cam->GetUp());
+		m_Skin->Enable();
+		m_Skin->SetEyeWorldPos(m_Cam->GetPos());
+		m_Skin->SetWVP(m_Pipe->GetWVPTrans());
+		m_Tech->Enable();
+		m_Tech->SetDefault(m_Pipe->GetVPTrans());
+		break;
+	case Qt::Key_0:
+	case Qt::Key_1:
+	case Qt::Key_2:
+	case Qt::Key_3:
+	case Qt::Key_4:
+	case Qt::Key_5:
+	case Qt::Key_6:
+	case Qt::Key_7:
+	case Qt::Key_8:
+	case Qt::Key_9:
+		m_Mesh->FlipParameter(event->key() - Qt::Key_0);
+		Transform(true);
+		break;
+	default:
+		cout << "This key does not do anything." << endl;
+		break;
+	}
 	update();
 }
 void MainWidget::resizeGL(int w, int h)
@@ -165,7 +188,7 @@ void MainWidget::Transform(bool print)
 		m_Mesh->GetBoneTransforms(Transforms); // update bone transforms from kinect
 		m_Skin->Enable();
 		for (uint i = 0; i < Transforms.size(); i++) {
-			m_Skin->SetBoneTransform(i, Transforms[i]); // send transforms to vertex shader
+			m_Skin->setBoneTransform(i, Transforms[i]); // send transforms to vertex shader
 		}
 	}
 	else {
@@ -182,7 +205,8 @@ void MainWidget::MySetup()
 	
 	// 2) Init Mesh
 	m_Mesh->setKSensor(*m_Sensor);
-	m_Mesh->NextModel(0);
+	// TODO: hard coded value. must purge!
+	m_Mesh->LoadMesh("cmu_test");
 	m_Sensor->GetKinectData(); // to successfully acquire frame init sensor before mesh and load mesh before getting data
 
 	// 3) Init Camera
@@ -229,18 +253,17 @@ void MainWidget::MySetup()
 	m_Skin->SetDirectionalLight(directionalLight);
 	m_Skin->SetMatSpecularIntensity(0.0f);
 	m_Skin->SetMatSpecularPower(0);
-	m_Skin->SetSkinningSwitch(m_Mesh->m_Skinned);
+	m_Skin->setSkinning(m_Mesh->m_Skinned);
 	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
-	for (uint i = 0; i < m_Mesh->GetNumBones(); i++) {
-		m_Skin->SetBoneVisibility(i, m_Mesh->boneVisibility(i));
+	for (uint i = 0; i < m_Mesh->getNumBones(); i++) {
+		m_Skin->setBoneVisibility(i, m_Mesh->boneVisibility(i));
 	}
 	Transform(true);
 }
 void MainWidget::setRenderAxes(bool state)
 {
 	if (m_renderAxes != state) {
-		m_renderAxes = state;
-		
+		m_renderAxes = state;		
 		update();
 	}
 }
@@ -271,10 +294,26 @@ bool MainWidget::boneVisibility(const QString &boneName) const
 {
 	return m_Mesh->boneVisibility(boneName);
 }
+bool MainWidget::modelSkinning() const
+{
+	return m_modelSkinning;
+}
 void MainWidget::setBoneVisibility(const QString &boneName, bool state)
 {
 	m_Mesh->setBoneVisibility(boneName, state);
 	m_Skin->Enable();
-	m_Skin->SetBoneVisibility(m_Mesh->findBoneId(boneName), state);
+	m_Skin->setBoneVisibility(m_Mesh->findBoneId(boneName), state);
+	update();
+}
+void MainWidget::setModelSkinning(bool state)
+{
+	m_Skin->Enable();
+	m_Skin->setSkinning(state);
+	update();
+}
+
+void MainWidget::setModel(const QString& model)
+{
+	m_Mesh->LoadMesh(string(model.toLocal8Bit()));
 	update();
 }

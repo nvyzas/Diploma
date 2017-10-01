@@ -19,12 +19,15 @@ public:
 	bool renderAxes() const;
 	bool renderModel() const;
 	QStringList ModelBoneList() const;
-	bool boneVisibility(const QString &boneName) const;
+	bool boneVisibility(const QString& boneName) const;
+	bool modelSkinning() const;
 	
 public slots:
 	void setRenderAxes(bool state);
 	void setRenderModel(bool state);
-	void setBoneVisibility(const QString &boneName, bool state);
+	void setBoneVisibility(const QString& boneName, bool state);
+	void setModelSkinning(bool state);
+	void setModel(const QString& model);
 	
 protected:
 	void initializeGL();
@@ -50,7 +53,7 @@ private:
 	bool m_renderCameraVectors = false;	
 	
 	bool m_play = false;
-	
+	bool m_modelSkinning = true;
 
 	#define NUM_INFO_BLOCKS 3
 	uint activeJoint = 0;

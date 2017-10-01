@@ -81,9 +81,9 @@ public:
     void SetEyeWorldPos(const Vector3f& EyeWorldPos);
     void SetMatSpecularIntensity(float Intensity);
     void SetMatSpecularPower(float Power);
-    void SetBoneTransform(uint Index, const Matrix4f& Transform);
-	void SetSkinningSwitch(int value);
-	void SetBoneVisibility(uint Index, const bool& Visibility);
+    void setBoneTransform(uint Index, const Matrix4f& Transform);
+	void setSkinning(int value);
+	void setBoneVisibility(uint Index, const bool& Visibility);
 private:
     
     GLuint m_WVPLocation;
