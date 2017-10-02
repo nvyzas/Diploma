@@ -1,9 +1,11 @@
-#pragma once
+#ifndef MAIN_WINDOW_H
+#define MAIN_WINDOW_H
 
 // Project
 namespace Ui {
 	class MainWindow;
 }
+
 // Qt
 #include <QtWidgets\QMainWindow>
 
@@ -22,3 +24,5 @@ private:
 
 	Ui::MainWindow *ui;
 };
+
+#endif /* MAIN_WINDOW_H */

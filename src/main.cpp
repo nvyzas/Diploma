@@ -1,24 +1,21 @@
-#pragma once
+// Project
 #include "main_window.h"
-#include <iostream>
-#include <iomanip>
-#include <QtWidgets/QOpenGLWidget>
-#include <QtWidgets/QApplication>
 
-using namespace std;
+// Qt
+#include <QtCore\QDebug>
+#include <QtGui\QSurfaceFormat>
+#include <QtWidgets\QApplication>
 
-int main(int argc, char* argv[]) {
-	QApplication app(argc, argv);
-
+int main(int argc, char* argv[])
+{
 	QSurfaceFormat format;
 	format.setVersion(3, 3);
 	format.setProfile(QSurfaceFormat::CompatibilityProfile);
-	format.setRenderableType(QSurfaceFormat::OpenGL);
-	format.setOptions(QSurfaceFormat::DebugContext | QSurfaceFormat::DeprecatedFunctions);
 	QSurfaceFormat::setDefaultFormat(format);
+	qDebug() << "Requested format:" << format;
 
+	QApplication app(argc, argv);
 	MainWindow mainWindow;
 	mainWindow.show();
-
 	return app.exec();
 }

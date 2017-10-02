@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MAIN_WIDGET_H
+#define MAIN_WIDGET_H
 
 #include "math_3d.h"
 #include "util.h"
@@ -21,6 +22,7 @@ public:
 	QStringList ModelBoneList() const;
 	bool boneVisibility(const QString& boneName) const;
 	bool modelSkinning() const;
+	void keyPressEvent(QKeyEvent *event);
 	
 public slots:
 	void setRenderAxes(bool state);
@@ -28,15 +30,9 @@ public slots:
 	void setBoneVisibility(const QString& boneName, bool state);
 	void setModelSkinning(bool state);
 	void setModel(const QString& model);
-	
 protected:
 	void initializeGL();
-	void resizeGL(int w, int h);
 	void paintGL();
-	void keyPressEvent(QKeyEvent *event);
-	
-	QOpenGLContext *m_context;
-
 private:
 	Camera* m_Cam; // width, height?
 	KSensor* m_Sensor;
@@ -64,7 +60,7 @@ private:
 	void DrawAxes();
 	void DrawAxes(Vector3f center, Vector3f vx, Vector3f vy, Vector3f vz, float length);
 	void DrawTestAxes();
-	void SetupOpenGL();
 	void MySetup();
 };
 
+#endif /* MAIN_WIDGET_H */

@@ -1,6 +1,8 @@
+// Own
 #include "skinned_mesh.h"
-#include <iostream>
-#include <iomanip>
+
+// Standard C/C++
+#include <cassert>
 
 #define POSITION_LOCATION    0
 #define TEX_COORD_LOCATION   1
@@ -10,7 +12,6 @@
 
 SkinnedMesh::SkinnedMesh()
 {
-	//initializeOpenGLFunctions();
 	m_VAO = 0;
 	ZERO_MEM(m_Buffers);
 	m_pScene = NULL;
@@ -18,7 +19,6 @@ SkinnedMesh::SkinnedMesh()
 	initKBoneMapping();
 	m_ActiveBoneTransformInfo = 0;
 	m_SuccessfullyLoaded = false;
-	
 }
 void SkinnedMesh::setKSensor(const KSensor &ks)
 {
@@ -46,8 +46,8 @@ void SkinnedMesh::Clear()
 }
 bool SkinnedMesh::LoadMesh(const string& basename)
 {
-	string Filename = "models/" + basename + ".dae";
 	initializeOpenGLFunctions();
+
     // Release the previously loaded mesh (if it exists)
     Clear();
  
@@ -58,7 +58,8 @@ bool SkinnedMesh::LoadMesh(const string& basename)
     // Create the buffers for the vertices attributes
     glGenBuffers(ARRAY_SIZE_IN_ELEMENTS(m_Buffers), m_Buffers);
 
-    bool Ret = false;    
+    bool Ret = false;
+	string Filename = "models/" + basename + ".dae";
 	cout << endl;
 	cout << "Loading model: " << Filename << endl;
     m_pScene = m_Importer.ReadFile(Filename.c_str(), ASSIMP_LOAD_FLAGS);    
@@ -627,6 +628,7 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 	sso << endl << "Node name " << counter << ": " << NodeName << endl;
 	auto it = m_boneMap.find(NodeName);
 	if (m_Parameters[6] || (it == m_boneMap.end())){
+		// bind pose on
 		if (m_Parameters[1]) {
 			q = (m_Parameters[2]) ? L.ExtractQuaternion1() : L.ExtractQuaternion2();
 			sso << "q rel from model " << ": " << q.ToString() << q.ToEulerAnglesString() << q.ToAxisAngleString() << endl;
@@ -645,7 +647,7 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 		sso << "Global transformation:" << endl << G;
 		if (it != m_boneMap.end()) {
 			uint i = it->second;
-			m_boneInfo[i].FinalTransformation = G * m_boneInfo[i].BoneOffset;
+			m_boneInfo[i].FinalTransformation = (m_Parameters[7] ? m_boneInfo[i].BoneOffset : G * m_boneInfo[i].BoneOffset);
 		}
 	}
 	else {
@@ -678,7 +680,7 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 			sso << "Translation matrix (local) from model:" << endl << T;
 			sso << "Local transformation:" << endl << L;
 			sso << "Global transformation:" << endl << G;
-			m_boneInfo[i].FinalTransformation = G * m_boneInfo[i].BoneOffset;
+			m_boneInfo[i].FinalTransformation = m_Parameters[7] ? m_boneInfo[i].BoneOffset: G * m_boneInfo[i].BoneOffset;
 			sso << "Final Transformation:" << endl << m_boneInfo[i].FinalTransformation;
 			m_BoneTransformInfo[counter] = sso.str();
 			sso.clear();
@@ -708,7 +710,7 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 			sso << "Translation matrix (local) from model:" << endl << T;
 			sso << "Local transformation:" << endl << L;			
 			sso << "Global transformation:" << endl << G;
-			m_boneInfo[i].FinalTransformation = m_Parameters[0] ? Matrix4f::Zero() : G * m_boneInfo[i].BoneOffset;				
+			m_boneInfo[i].FinalTransformation = m_Parameters[7] ? m_boneInfo[i].BoneOffset : G * m_boneInfo[i].BoneOffset;
 			sso << "Final Transformation:" << endl << m_boneInfo[i].FinalTransformation;
 			m_BoneTransformInfo[counter] = sso.str();
 			sso.clear();

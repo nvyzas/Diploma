@@ -35,7 +35,6 @@ public:
 	void PrintSceneInfo();
 	void AdjustBones(); // Not used
 	void ToggleSkinning();
-	void NextModel(int step);
 	void NextJoint(int step);
 	void FlipParameter(uint i);	
 	void NextBoneTransformInfo(int step);
@@ -180,8 +179,8 @@ private:
 	Assimp::Importer m_Importer;
 
 	bitset<NUM_PARAMETERS> m_Parameters;
-	const string m_ParametersStringTrue[NUM_PARAMETERS] = { "Invisible parts",  "My local", "My quaternion", "My matrix", "qRel=qAbs*qAbsParInv","qAbs=qAbsPar*qRel", "Bind pose" };
-	const string m_ParametersStringFalse[NUM_PARAMETERS] = { "Visible parts", "AI local", "AI quaternion", "AI matrix", "qRel=qAbsParInv*qAbs","qAbs=qRel*qAbsPar", "Mixed pose" };
+	const string m_ParametersStringTrue[NUM_PARAMETERS] = { "",  "My local", "My quaternion", "My matrix", "qRel=qAbs*qAbsParInv","qAbs=qAbsPar*qRel", "Bind pose", "Offset pose" };
+	const string m_ParametersStringFalse[NUM_PARAMETERS] = { "", "AI local", "AI quaternion", "AI matrix", "qRel=qAbsParInv*qAbs","qAbs=qRel*qAbsPar", "Kinect pose", "Kinect pose" };
 	uint m_ActiveBoneTransformInfo;
 	vector<string> m_BoneTransformInfo;
 };

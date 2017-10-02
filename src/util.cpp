@@ -1,4 +1,7 @@
+// Own
 #include "util.h"
+
+// Standard C/C++
 #include <iostream>
 #include <fstream>
 using namespace std;
@@ -26,7 +29,6 @@ bool ReadFile(const char* pFileName, string& outFile)
     
     return ret;
 }
-
 uint Mod(uint start, uint edge, int step)
 {
 	if (step >= 0) return (start + step) % edge;

@@ -1,10 +1,7 @@
 #ifndef UTIL_H
 #define	UTIL_H
 
-#include <string>
-#include <assert.h>
 #include <QtGui\QOpenGLFunctions_3_3_Compatibility>
-#include <QtGui\QOpenGLFunctions_3_3_Core>
 
 #define OPENGL_FUNCTIONS QOpenGLFunctions_3_3_Compatibility
 #define ZERO_MEM(a) memset(a, 0, sizeof(a))
@@ -48,5 +45,5 @@ inline bool GetBit(int number, int position)
 {
 	return (number >> position) & 1;
 }
-#endif	/* UTIL_H */
 
+#endif	/* UTIL_H */

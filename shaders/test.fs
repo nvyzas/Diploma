@@ -1,6 +1,5 @@
 #version 330 compatibility
 
-
 varying vec4 vColor;
 
 void main()

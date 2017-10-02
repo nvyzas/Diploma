@@ -1,7 +1,8 @@
+// Own
 #include "skinning_technique.h"
-#include "util.h"
-#include <iostream>
-#include <iomanip>
+
+// Standard C/C++
+#include <cassert>
 
 SkinningTechnique::SkinningTechnique()
 {   

@@ -4,25 +4,30 @@
 #include "pipeline.h"
 #include "camera.h"
 #include "sensor.h"
+
+// Qt
+#include <QtCore\QDebug>
 #include <QtGui\QKeyEvent>
 
 MainWidget::MainWidget(QWidget *parent) : QOpenGLWidget(parent)
 {
-	makeCurrent();
-	m_Cam = new Camera();
-	m_Sensor = new KSensor();
 	m_Mesh = new SkinnedMesh();
-	m_Tech = new Technique();
-	m_Skin = new SkinningTechnique();
-	m_Pipe = new Pipeline();
 }
+
 // This virtual function is called once before the first call to paintGL() or resizeGL().
 void MainWidget::initializeGL()
 {
+	m_Cam = new Camera();
+	m_Sensor = new KSensor();
+	m_Tech = new Technique();
+	m_Skin = new SkinningTechnique();
+	m_Pipe = new Pipeline();
+
+	qDebug() << "Obtained format:" << format();
 	initializeOpenGLFunctions();
-	cout << "GL version: " << glGetString(GL_VERSION) << endl;
-	cout << "GL renderer: " << glGetString(GL_RENDERER) << endl;
-	cout << "Shaders version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << endl;
+	//cout << "GL version: " << glGetString(GL_VERSION) << endl;
+	//cout << "GL renderer: " << glGetString(GL_RENDERER) << endl;
+	//cout << "GLSL version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << endl;
 	
 	GLint i;
 	glGetIntegerv(GL_CONTEXT_FLAGS, &i);
@@ -43,15 +48,6 @@ void MainWidget::initializeGL()
 	glFrontFace(GL_CCW);
 	glCullFace(GL_BACK);
 	glDisable(GL_CULL_FACE);
-	
-	QSurfaceFormat format = context()->format();
-	cout << "Surface format:";
-	cout << " Version:" << format.version().first << "." << format.version().second;
-	cout << " Profile:" << format.profile();
-	cout << " Renderable type:" << format.renderableType();
-	cout << " Option deprecated funcs:" << format.testOption(QSurfaceFormat::DeprecatedFunctions);
-	cout << " Option debug context:" << format.testOption(QSurfaceFormat::DebugContext);
-	cout << " Options:" << format.options() << endl;
 	
 	MySetup();
 }
@@ -80,12 +76,13 @@ void MainWidget::paintGL()
 }
 void MainWidget::keyPressEvent(QKeyEvent *event)
 {
-	switch (event->key()) {
+	int key = event->key();
+	switch (key) {
 	case Qt::Key_Down:
 	case Qt::Key_Up:
 	case Qt::Key_Left:
 	case Qt::Key_Right:
-		m_Cam->onKeyboardArrow(event->key(), true);
+		m_Cam->onKeyboardArrow(key, true);
 		m_Pipe->SetCamera(m_Cam->GetPos(), m_Cam->GetTarget(), m_Cam->GetUp());
 		m_Skin->Enable();
 		m_Skin->SetEyeWorldPos(m_Cam->GetPos());
@@ -103,7 +100,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_7:
 	case Qt::Key_8:
 	case Qt::Key_9:
-		m_Mesh->FlipParameter(event->key() - Qt::Key_0);
+		m_Mesh->FlipParameter(key - Qt::Key_0);
 		Transform(true);
 		break;
 	default:
@@ -111,14 +108,6 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		break;
 	}
 	update();
-}
-void MainWidget::resizeGL(int w, int h)
-{
-	
-}
-void MainWidget::SetupOpenGL()
-{
-	
 }
 void MainWidget::DrawAxes()
 {
@@ -169,7 +158,6 @@ void MainWidget::DrawTestAxes()
 	DrawAxes(o, vx, vy, vz, 1);
 	Matrix4f R;
 	R.InitRotateTransform(45, 0, 0);
-
 }
 void MainWidget::NextInfoBlock(int step)
 {

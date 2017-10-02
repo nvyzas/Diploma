@@ -31,23 +31,23 @@ void MainWindow::setActiveBoneVisibility(bool state)
 
 void MainWindow::setupObjects()
 {
-	QDir modelDir("models/", "*.dae");
-	for (const auto& fi : modelDir.entryInfoList()) {
+	for (const auto& fi : QDir("models/", "*.dae").entryInfoList()) {
 		ui->comboBox_activeModel->addItem(fi.baseName());
 	}
 	//ui->openGLWidget->setModel(ui->comboBox_activeModel->currentText());
+	ui->checkBox_modelSkinning->setChecked(ui->openGLWidget->modelSkinning());
 
 	ui->comboBox_activeBone->addItems(ui->openGLWidget->ModelBoneList());
 	loadActiveBoneInfo();
-	
+
 	ui->checkBox_axes->setChecked(ui->openGLWidget->renderModel());
 	ui->checkBox_model->setChecked(ui->openGLWidget->renderAxes());
-	ui->checkBox_modelSkinning->setChecked(ui->openGLWidget->modelSkinning());
 	
 }
 void MainWindow::setupConnections()
 {
 	connect(ui->comboBox_activeModel, SIGNAL(currentIndexChanged(QString)), ui->openGLWidget, SLOT(setModel(QString)));
+	connect(ui->checkBox_modelSkinning, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setModelSkinning(bool)));
 	connect(ui->comboBox_activeBone, SIGNAL(currentIndexChanged(QString)), SLOT(loadActiveBoneInfo()));
 	connect(ui->checkBox_boneVisible, SIGNAL(toggled(bool)), SLOT(setActiveBoneVisibility(bool)));
 	connect(ui->spinBox_xRot, SIGNAL(valueChanged(int)), ui->horizontalSlider_xRot, SLOT(setValue(int)));
@@ -58,5 +58,4 @@ void MainWindow::setupConnections()
 	connect(ui->horizontalSlider_zRot, SIGNAL(valueChanged(int)), ui->spinBox_zRot, SLOT(setValue(int)));
 	connect(ui->checkBox_axes, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setRenderAxes(bool)));
 	connect(ui->checkBox_model, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setRenderModel(bool)));
-	connect(ui->checkBox_modelSkinning, SIGNAL(toggled(bool)),ui->openGLWidget, SLOT(setModelSkinning(bool)));
 }
