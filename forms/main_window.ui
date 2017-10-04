@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>520</width>
-    <height>622</height>
+    <height>655</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -46,7 +46,30 @@
              <string>Skinned Mesh</string>
             </property>
             <layout class="QGridLayout" name="gridLayout">
-             <item row="20" column="0" colspan="2">
+             <item row="6" column="0" colspan="2">
+              <widget class="QComboBox" name="comboBox_activeBone"/>
+             </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_2">
+               <property name="text">
+                <string>Active Model</string>
+               </property>
+              </widget>
+             </item>
+             <item row="17" column="0" colspan="2">
+              <widget class="QSlider" name="horizontalSlider_xRot">
+               <property name="minimum">
+                <number>-180</number>
+               </property>
+               <property name="maximum">
+                <number>180</number>
+               </property>
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+              </widget>
+             </item>
+             <item row="21" column="0" colspan="2">
               <widget class="QSlider" name="horizontalSlider_zRot">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -65,30 +88,7 @@
                </property>
               </widget>
              </item>
-             <item row="6" column="0" colspan="2">
-              <widget class="QComboBox" name="comboBox_activeBone"/>
-             </item>
-             <item row="1" column="0">
-              <widget class="QLabel" name="label_2">
-               <property name="text">
-                <string>Active Model</string>
-               </property>
-              </widget>
-             </item>
-             <item row="16" column="0" colspan="2">
-              <widget class="QSlider" name="horizontalSlider_xRot">
-               <property name="minimum">
-                <number>-180</number>
-               </property>
-               <property name="maximum">
-                <number>180</number>
-               </property>
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-              </widget>
-             </item>
-             <item row="12" column="0" colspan="2">
+             <item row="14" column="0" colspan="2">
               <widget class="QCheckBox" name="checkBox_boneVisible">
                <property name="sizePolicy">
                 <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -101,7 +101,7 @@
                </property>
               </widget>
              </item>
-             <item row="17" column="1">
+             <item row="18" column="1">
               <widget class="QSpinBox" name="spinBox_yRot">
                <property name="minimum">
                 <number>-180</number>
@@ -111,14 +111,27 @@
                </property>
               </widget>
              </item>
-             <item row="17" column="0">
-              <widget class="QLabel" name="label_yRot">
+             <item row="5" column="0" colspan="2">
+              <widget class="QLabel" name="label">
                <property name="text">
-                <string>y-Rot:</string>
+                <string>Active Bone</string>
                </property>
               </widget>
              </item>
-             <item row="18" column="0" colspan="2">
+             <item row="23" column="0" colspan="2">
+              <widget class="QComboBox" name="comboBox_activeJoint"/>
+             </item>
+             <item row="16" column="1">
+              <widget class="QSpinBox" name="spinBox_xRot">
+               <property name="minimum">
+                <number>-180</number>
+               </property>
+               <property name="maximum">
+                <number>180</number>
+               </property>
+              </widget>
+             </item>
+             <item row="19" column="0" colspan="2">
               <widget class="QSlider" name="horizontalSlider_yRot">
                <property name="minimum">
                 <number>-180</number>
@@ -131,64 +144,20 @@
                </property>
               </widget>
              </item>
-             <item row="5" column="0" colspan="2">
-              <widget class="QLabel" name="label">
-               <property name="text">
-                <string>Active Bone</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="0" colspan="2">
-              <widget class="QComboBox" name="comboBox_activeModel"/>
-             </item>
-             <item row="19" column="0">
-              <widget class="QLabel" name="label_zRot">
-               <property name="text">
-                <string>z-Rot:</string>
-               </property>
-              </widget>
-             </item>
-             <item row="15" column="1">
-              <widget class="QSpinBox" name="spinBox_xRot">
-               <property name="minimum">
-                <number>-180</number>
-               </property>
-               <property name="maximum">
-                <number>180</number>
-               </property>
-              </widget>
-             </item>
-             <item row="21" column="0">
+             <item row="22" column="0">
               <widget class="QLabel" name="label_3">
                <property name="text">
                 <string>Active Joint</string>
                </property>
               </widget>
              </item>
-             <item row="15" column="0">
-              <widget class="QLabel" name="label_xRot">
+             <item row="2" column="0" colspan="2">
+              <widget class="QComboBox" name="comboBox_activeModel"/>
+             </item>
+             <item row="18" column="0">
+              <widget class="QLabel" name="label_yRot">
                <property name="text">
-                <string>x-Rot:</string>
-               </property>
-              </widget>
-             </item>
-             <item row="19" column="1">
-              <widget class="QSpinBox" name="spinBox_zRot">
-               <property name="minimum">
-                <number>-180</number>
-               </property>
-               <property name="maximum">
-                <number>180</number>
-               </property>
-              </widget>
-             </item>
-             <item row="22" column="0" colspan="2">
-              <widget class="QComboBox" name="comboBox_activeJoint"/>
-             </item>
-             <item row="13" column="0" colspan="2">
-              <widget class="QCheckBox" name="checkBox_boneOffset">
-               <property name="text">
-                <string>Offset</string>
+                <string>y-Rot:</string>
                </property>
               </widget>
              </item>
@@ -199,17 +168,41 @@
                </property>
               </widget>
              </item>
-             <item row="4" column="0" colspan="2">
-              <widget class="QCheckBox" name="checkBox_modelBindpose">
+             <item row="20" column="0">
+              <widget class="QLabel" name="label_zRot">
                <property name="text">
-                <string>Bindpose</string>
+                <string>z-Rot:</string>
                </property>
               </widget>
              </item>
-             <item row="1" column="1">
+             <item row="20" column="1">
+              <widget class="QSpinBox" name="spinBox_zRot">
+               <property name="minimum">
+                <number>-180</number>
+               </property>
+               <property name="maximum">
+                <number>180</number>
+               </property>
+              </widget>
+             </item>
+             <item row="16" column="0">
+              <widget class="QLabel" name="label_xRot">
+               <property name="text">
+                <string>x-Rot:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="13" column="0" colspan="2">
               <widget class="QPushButton" name="pushButton">
                <property name="text">
-                <string>Visibility</string>
+                <string>Transform info</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="0" colspan="2">
+              <widget class="QPushButton" name="pushButton_flipBonesVisibility">
+               <property name="text">
+                <string>Flip visibility</string>
                </property>
               </widget>
              </item>

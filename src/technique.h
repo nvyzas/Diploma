@@ -15,7 +15,7 @@ public:
 
     virtual bool Init();
 
-    void Enable();
+    void enable();
 
 	bool InitDefault();
 	void SetDefault(const Matrix4f& mat);

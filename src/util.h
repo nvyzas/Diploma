@@ -37,8 +37,6 @@
 #define RANDOM rand
 #define SRANDOM srand((unsigned)time(NULL))
 
-typedef unsigned int uint;
-
 bool ReadFile(const char* fileName, std::string& outFile);
 uint Mod(uint start, uint edge, int step);
 inline bool GetBit(int number, int position)

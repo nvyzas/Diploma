@@ -4,10 +4,6 @@
 // Standard C/C++
 #include <cassert>
 
-SkinningTechnique::SkinningTechnique()
-{   
-}
-
 bool SkinningTechnique::Init()
 {
     if (!Technique::Init()) {

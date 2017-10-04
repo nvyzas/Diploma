@@ -97,7 +97,7 @@ bool Camera::OnKeyboardNum(unsigned char key, bool print)
 bool Camera::onKeyboardArrow(int Key, bool print)
 {	
 	switch (Key) {
-	case Qt::Key_Down:
+	case Qt::Key_Up:
 		m_phi -= m_angleStep;
 		m_phi = (m_phi <= 0.0f) ? m_phi + 360.0f : m_phi;
 		UpdateCartesian();
@@ -105,7 +105,7 @@ bool Camera::onKeyboardArrow(int Key, bool print)
 		PrintInfo();
 		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " RTF=" << GetRTF().GetString() << " XYZ=" << GetXYZ().GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
 		return true;
-	case Qt::Key_Up:
+	case Qt::Key_Down:
 		m_phi += m_angleStep;
 		m_phi = (m_phi > 360.0f) ? m_phi - 360.0f : m_phi;
 		UpdateCartesian();
@@ -113,7 +113,7 @@ bool Camera::onKeyboardArrow(int Key, bool print)
 		PrintInfo();
 		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " RTF=" << GetRTF().GetString() << " XYZ=" << GetXYZ().GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
 		return true;
-	case Qt::Key_Right:
+	case Qt::Key_Left:
 		m_theta += m_angleStep;
 		m_theta = ((m_theta <= 360.0f) ? m_theta : m_theta - 360.0f);
 		UpdateCartesian();
@@ -121,7 +121,7 @@ bool Camera::onKeyboardArrow(int Key, bool print)
 		PrintInfo();
 		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " RTF=" << GetRTF().GetString() << " XYZ=" << GetXYZ().GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
 		return true;
-	case Qt::Key_Left:
+	case Qt::Key_Right:
 		m_theta -= m_angleStep;
 		m_theta = (m_theta >= 0.0f) ? m_theta : m_theta + 360.0f;
 		UpdateCartesian();
@@ -151,9 +151,9 @@ void Camera::SetSteps(float Step, float angleStep)
 void Camera::PrintInfo()
 {
 	cout << "Camera:" << endl;
-	cout << "RTF=" << GetRTF().ToString() << " XYZ=" << GetXYZ().ToString() << " Offset=" << m_offset.ToString() << endl;
-	cout << "Position=" << m_pos.ToString() << " Center=" << m_center.ToString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
-	cout << "Target=" << m_target.ToString() << " Up=" << m_up.ToString() << " Right=" << m_right.ToString() << endl;
+	cout << "RTF     =" << GetRTF().ToString() << " XYZ   =" << GetXYZ().ToString() << " Offset  =" << m_offset.ToString() << endl;
+	cout << "Position=" << m_pos.ToString()    << " Center=" << m_center.ToString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
+	cout << "Target  =" << m_target.ToString() << " Up    =" << m_up.ToString()     << " Right   =" << m_right.ToString() << endl;
 	//cout << "Step=" << m_Step << " AngleStep(degrees)=" << m_angleStep << endl;
 }
 //void Camera::DrawCameraVectors()

@@ -73,7 +73,7 @@ bool SkinnedMesh::LoadMesh(const string& basename)
         printf("Error parsing '%s': '%s'\n", Filename.c_str(), m_Importer.GetErrorString());
     }
 	m_SuccessfullyLoaded = Ret;
-	m_Skinned = true;
+	m_Skinning = true;
 
     // Make sure the VAO is not changed from the outside
     glBindVertexArray(0);
@@ -281,7 +281,7 @@ void SkinnedMesh::VertexBoneData::AdjustBoneData()
 void SkinnedMesh::ToggleSkinning()
 { 
 	unsigned long long vertexBoneDataBytes = sizeof(m_VertexBoneData[0]) * m_VertexBoneData.size();
-	if (m_Skinned){		
+	if (m_Skinning){		
 		for (uint i = 0; i < m_VertexBoneData.size(); i++) {
 			m_VertexBoneData[i].AdjustBoneData();
 		}		
@@ -293,7 +293,7 @@ void SkinnedMesh::ToggleSkinning()
 		glEnableVertexAttribArray(BONE_WEIGHT_LOCATION);
 		glVertexAttribPointer(BONE_WEIGHT_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(VertexBoneData), (const GLvoid*)16);
 		//*/
-		m_Skinned = false;
+		m_Skinning = false;
 	}
 	else {
 		for (uint i = 0; i < m_VertexBoneData.size(); i++) {
@@ -301,7 +301,7 @@ void SkinnedMesh::ToggleSkinning()
 		}
 		glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[BONE_VB]);
 		glBufferSubData(GL_ARRAY_BUFFER, m_vertexArrayBytes - vertexBoneDataBytes, vertexBoneDataBytes, &m_VertexBoneData);
-		m_Skinned = true;
+		m_Skinning = true;
 	}
 }
 void SkinnedMesh::VertexBoneData::RestoreBoneData()
@@ -887,7 +887,11 @@ void SkinnedMesh::setBoneVisibility(const QString &boneName, bool state)
 {
 	m_boneInfo[findBoneId(boneName)].Visible = state;
 }
-uint SkinnedMesh::getNumBones() const
+void SkinnedMesh::flipBonesVisibility()
+{
+	for (uint i = 0; i < m_boneInfo.size(); i++) m_boneInfo[i].Visible = !m_boneInfo[i].Visible;
+}
+uint SkinnedMesh::numBones() const
 {
 	return m_numBones;
 }

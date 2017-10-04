@@ -1,9 +1,8 @@
 #ifndef SKINNING_TECHNIQUE_H
 #define	SKINNING_TECHNIQUE_H
 
+// Project
 #include "technique.h"
-#include "math_3d.h"
-typedef unsigned int uint;
 
 struct BaseLight
 {
@@ -68,8 +67,6 @@ public:
     static const uint MAX_SPOT_LIGHTS = 2;
     static const uint MAX_BONES = 100;
 
-    SkinningTechnique();
-
     virtual bool Init();
 
     void SetWVP(const Matrix4f& WVP);
@@ -133,6 +130,5 @@ private:
     GLuint m_boneLocation[MAX_BONES];
 	GLuint m_visibilityLocation[MAX_BONES];
 };
-
 
 #endif	/* SKINNING_TECHNIQUE_H */

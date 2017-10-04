@@ -27,12 +27,15 @@ public:
 public slots:
 	void setRenderAxes(bool state);
 	void setRenderModel(bool state);
+	void flipBonesVisibility();
 	void setBoneVisibility(const QString& boneName, bool state);
 	void setModelSkinning(bool state);
-	void setModel(const QString& model);
+	void setModelName(const QString& model);
+	
 protected:
 	void initializeGL();
 	void paintGL();
+
 private:
 	Camera* m_Cam; // width, height?
 	KSensor* m_Sensor;
@@ -50,6 +53,7 @@ private:
 	
 	bool m_play = false;
 	bool m_modelSkinning = true;
+	QString m_modelName;
 
 	#define NUM_INFO_BLOCKS 3
 	uint activeJoint = 0;

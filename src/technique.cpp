@@ -115,7 +115,7 @@ bool Technique::Finalize()
 	GLCheckError();
     return GLCheckError();
 }
-void Technique::Enable()
+void Technique::enable()
 {
     glUseProgram(m_shaderProg);
 }

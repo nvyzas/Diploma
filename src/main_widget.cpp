@@ -56,15 +56,19 @@ void MainWidget::paintGL()
 	glClearColor(0.f, 0.f, 0.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	//*
-	m_Skin->Enable();
+	m_Skin->enable();
 	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
 	if (m_play) {
 		m_Sensor->GetKinectData();
 		Transform(false);
 	}
+	if (!m_modelName.isEmpty()) {
+		m_Mesh->LoadMesh(string(m_modelName.toLocal8Bit()));
+		m_modelName.clear();
+	}
 	if (m_renderModel) m_Mesh->Render();
 
-	m_Tech->Enable();
+	m_Tech->enable();
 	//m_Tech->SetDefault(m_Pipe->GetWVPTrans());
 	m_Tech->SetDefault(m_Pipe->GetVPTrans());
 	if (m_renderAxes)				DrawAxes();		
@@ -84,10 +88,10 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_Right:
 		m_Cam->onKeyboardArrow(key, true);
 		m_Pipe->SetCamera(m_Cam->GetPos(), m_Cam->GetTarget(), m_Cam->GetUp());
-		m_Skin->Enable();
+		m_Skin->enable();
 		m_Skin->SetEyeWorldPos(m_Cam->GetPos());
 		m_Skin->SetWVP(m_Pipe->GetWVPTrans());
-		m_Tech->Enable();
+		m_Tech->enable();
 		m_Tech->SetDefault(m_Pipe->GetVPTrans());
 		break;
 	case Qt::Key_0:
@@ -174,7 +178,7 @@ void MainWidget::Transform(bool print)
 		if (print) cout << "Transforming bones." << endl;
 		vector<Matrix4f> Transforms;
 		m_Mesh->GetBoneTransforms(Transforms); // update bone transforms from kinect
-		m_Skin->Enable();
+		m_Skin->enable();
 		for (uint i = 0; i < Transforms.size(); i++) {
 			m_Skin->setBoneTransform(i, Transforms[i]); // send transforms to vertex shader
 		}
@@ -193,7 +197,6 @@ void MainWidget::MySetup()
 	
 	// 2) Init Mesh
 	m_Mesh->setKSensor(*m_Sensor);
-	// TODO: hard coded value. must purge!
 	m_Mesh->LoadMesh("cmu_test");
 	m_Sensor->GetKinectData(); // to successfully acquire frame init sensor before mesh and load mesh before getting data
 
@@ -226,12 +229,12 @@ void MainWidget::MySetup()
 
 	// 5) Init Technique
 	if (!m_Tech->InitDefault()) cout << "Could not initialize default shaders" << endl;
-	m_Tech->Enable();
+	m_Tech->enable();
 	m_Tech->SetDefault(m_Pipe->GetWVPTrans());
 
 	// 6) Init SkinningTechnique
 	if (!m_Skin->Init()) cout << "Could not initialize skinning shaders" << endl;
-	m_Skin->Enable();
+	m_Skin->enable();
 	m_Skin->SetColorTextureUnit(0);
 	DirectionalLight directionalLight;
 	directionalLight.Color = Vector3f(1.0f, 1.0f, 1.0f);
@@ -241,9 +244,9 @@ void MainWidget::MySetup()
 	m_Skin->SetDirectionalLight(directionalLight);
 	m_Skin->SetMatSpecularIntensity(0.0f);
 	m_Skin->SetMatSpecularPower(0);
-	m_Skin->setSkinning(m_Mesh->m_Skinned);
+	m_Skin->setSkinning(m_Mesh->m_Skinning);
 	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
-	for (uint i = 0; i < m_Mesh->getNumBones(); i++) {
+	for (uint i = 0; i < m_Mesh->numBones(); i++) {
 		m_Skin->setBoneVisibility(i, m_Mesh->boneVisibility(i));
 	}
 	Transform(true);
@@ -286,22 +289,33 @@ bool MainWidget::modelSkinning() const
 {
 	return m_modelSkinning;
 }
+void MainWidget::flipBonesVisibility()
+{
+	m_Mesh->flipBonesVisibility();
+	m_Skin->enable();
+	for (uint i = 0; i < m_Mesh->numBones(); i++) {
+		m_Skin->setBoneVisibility(i, m_Mesh->boneVisibility(i));
+	}
+	update();
+}
 void MainWidget::setBoneVisibility(const QString &boneName, bool state)
 {
 	m_Mesh->setBoneVisibility(boneName, state);
-	m_Skin->Enable();
+	m_Skin->enable();
 	m_Skin->setBoneVisibility(m_Mesh->findBoneId(boneName), state);
 	update();
 }
 void MainWidget::setModelSkinning(bool state)
 {
-	m_Skin->Enable();
+	m_Skin->enable();
 	m_Skin->setSkinning(state);
 	update();
 }
-
-void MainWidget::setModel(const QString& model)
+void MainWidget::setModelName(const QString& modelName)
 {
-	m_Mesh->LoadMesh(string(model.toLocal8Bit()));
+	m_modelName = modelName;
 	update();
 }
+
+
+

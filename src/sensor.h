@@ -12,7 +12,6 @@
 #define INVALID_JOINT_ID 123
 
 using namespace std;
-typedef unsigned int uint;
 
 struct KJoint
 {

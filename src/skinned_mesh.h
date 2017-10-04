@@ -38,9 +38,9 @@ public:
 	void NextJoint(int step);
 	void FlipParameter(uint i);	
 	void NextBoneTransformInfo(int step);
-	bool m_Skinned;
+	bool m_Skinning;
 	bool m_SuccessfullyLoaded;
-	uint getNumBones() const;
+	uint numBones() const;
 	const map<string, uint>& Bones() const;
 	void setKSensor(const KSensor &ks);
 	void initBoneMapping();
@@ -49,7 +49,8 @@ public:
 	uint findBoneId(const QString &boneName) const;
 	bool boneVisibility(const QString &boneName) const;
 	void setBoneVisibility(const QString &boneName, bool state);
-
+	void flipBonesVisibility();
+	
 private:
 
 #define NUM_BONES_PER_VERTEX 4

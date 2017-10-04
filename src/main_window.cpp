@@ -34,7 +34,7 @@ void MainWindow::setupObjects()
 	for (const auto& fi : QDir("models/", "*.dae").entryInfoList()) {
 		ui->comboBox_activeModel->addItem(fi.baseName());
 	}
-	//ui->openGLWidget->setModel(ui->comboBox_activeModel->currentText());
+	ui->openGLWidget->setModelName(ui->comboBox_activeModel->currentText());
 	ui->checkBox_modelSkinning->setChecked(ui->openGLWidget->modelSkinning());
 
 	ui->comboBox_activeBone->addItems(ui->openGLWidget->ModelBoneList());
@@ -42,20 +42,29 @@ void MainWindow::setupObjects()
 
 	ui->checkBox_axes->setChecked(ui->openGLWidget->renderModel());
 	ui->checkBox_model->setChecked(ui->openGLWidget->renderAxes());
-	
 }
 void MainWindow::setupConnections()
 {
-	connect(ui->comboBox_activeModel, SIGNAL(currentIndexChanged(QString)), ui->openGLWidget, SLOT(setModel(QString)));
+	// active model
+	connect(ui->comboBox_activeModel, SIGNAL(currentIndexChanged(QString)), ui->openGLWidget, SLOT(setModelName(QString)));
+	// skinning on
 	connect(ui->checkBox_modelSkinning, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setModelSkinning(bool)));
+	// flip bones visibility
+	connect(ui->pushButton_flipBonesVisibility, SIGNAL(clicked()), ui->openGLWidget, SLOT(flipBonesVisibility()));
+	connect(ui->pushButton_flipBonesVisibility, SIGNAL(clicked()), SLOT(loadActiveBoneInfo()));
+	// active bone
 	connect(ui->comboBox_activeBone, SIGNAL(currentIndexChanged(QString)), SLOT(loadActiveBoneInfo()));
+	// bone visible
 	connect(ui->checkBox_boneVisible, SIGNAL(toggled(bool)), SLOT(setActiveBoneVisibility(bool)));
+	// sliders
 	connect(ui->spinBox_xRot, SIGNAL(valueChanged(int)), ui->horizontalSlider_xRot, SLOT(setValue(int)));
 	connect(ui->horizontalSlider_xRot, SIGNAL(valueChanged(int)), ui->spinBox_xRot, SLOT(setValue(int)));
 	connect(ui->spinBox_yRot, SIGNAL(valueChanged(int)), ui->horizontalSlider_yRot, SLOT(setValue(int)));
 	connect(ui->horizontalSlider_yRot, SIGNAL(valueChanged(int)), ui->spinBox_yRot, SLOT(setValue(int)));
 	connect(ui->spinBox_zRot, SIGNAL(valueChanged(int)), ui->horizontalSlider_zRot, SLOT(setValue(int)));
 	connect(ui->horizontalSlider_zRot, SIGNAL(valueChanged(int)), ui->spinBox_zRot, SLOT(setValue(int)));
+	// render axes
 	connect(ui->checkBox_axes, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setRenderAxes(bool)));
+	// render model
 	connect(ui->checkBox_model, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setRenderModel(bool)));
 }
