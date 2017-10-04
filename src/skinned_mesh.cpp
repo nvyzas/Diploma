@@ -3,6 +3,7 @@
 
 // Standard C/C++
 #include <cassert>
+#include <sstream>
 
 #define POSITION_LOCATION    0
 #define TEX_COORD_LOCATION   1

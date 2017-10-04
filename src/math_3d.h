@@ -1,26 +1,19 @@
 #ifndef MATH_3D_H
 #define	MATH_3D_H
 
-#include "util.h"
-#include <cmath>
-#include <sstream>
-#include <iostream>
-#include <iomanip>
+// Assimp
 #include <assimp/vector3.h>
 #include <assimp/matrix3x3.h>
 #include <assimp/matrix4x4.h>
 
-#define PI 3.141592653589 
+// Standard C/C++
+#include <iostream>
+#include <iomanip>
+using namespace std;
+
+#define PI 3.141592653589
 #define ToRadian(x) (float)(((x) * PI / 180.0f))
 #define ToDegree(x) (float)(((x) * 180.0f / PI))
-using namespace std;
-float RandomFloat();
-
-struct Vector2i
-{
-    int x;
-    int y;
-};
 
 struct Vector2f
 {
@@ -302,7 +295,7 @@ public:
 	}
     void SetZero()
     {
-        ZERO_MEM(m);
+        memset(m, 0, sizeof(m));
     }
    
     Matrix4f Transpose() const

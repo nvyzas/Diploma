@@ -514,11 +514,3 @@ string Quaternion::ToAxisAngleString() const
 	//printf("3: %s\n", buf);
 	return string(buf);
 }
-
-float RandomFloat()
-{
-    float Max = RAND_MAX;
-    return ((float)RANDOM() / Max);
-}
-
-
