@@ -15,23 +15,6 @@ using namespace std;
 #define ToRadian(x) (float)(((x) * PI / 180.0f))
 #define ToDegree(x) (float)(((x) * 180.0f / PI))
 
-struct Vector2f
-{
-    float x;
-    float y;
-
-    Vector2f()
-    {
-    }
-
-    Vector2f(float _x, float _y)
-    {
-        x = _x;
-        y = _y;
-    }
-};
-
-
 struct Vector3f
 {
     float x;

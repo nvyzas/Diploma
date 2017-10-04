@@ -1,6 +1,10 @@
 // Own
 #include "skinned_mesh.h"
 
+// Qt
+#include <QtCore\QVector>
+#include <QtGui\QVector2D>
+
 // Standard C/C++
 #include <cassert>
 #include <sstream>
@@ -87,7 +91,7 @@ bool SkinnedMesh::InitFromScene(const aiScene* pScene, const string& Filename)
     m_Textures.resize(pScene->mNumMaterials);
 	vector<Vector3f> Positions;
 	vector<Vector3f> Normals;
-	vector<Vector2f> TexCoords;
+	QVector<QVector2D> TexCoords;
 	vector<VertexBoneData> Bones;
 	vector<uint> Indices;
        
@@ -145,7 +149,7 @@ bool SkinnedMesh::InitFromScene(const aiScene* pScene, const string& Filename)
 	glVertexAttribPointer(POSITION_LOCATION, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[TEXCOORD_VB]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(TexCoords[0]) * TexCoords.size(), &TexCoords[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(TexCoords[0]) * TexCoords.size(), TexCoords.constData(), GL_STATIC_DRAW);
 	glEnableVertexAttribArray(TEX_COORD_LOCATION);
 	glVertexAttribPointer(TEX_COORD_LOCATION, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
@@ -174,7 +178,7 @@ void SkinnedMesh::InitMesh(uint MeshIndex,
 	const aiMesh* paiMesh,
 	vector<Vector3f>& Positions,
 	vector<Vector3f>& Normals,
-	vector<Vector2f>& TexCoords,
+	QVector<QVector2D>& TexCoords,
 	vector<VertexBoneData>& Bones,
 	vector<uint>& Indices)
 {
@@ -188,7 +192,7 @@ void SkinnedMesh::InitMesh(uint MeshIndex,
 
 		Positions.push_back(Vector3f(pPos->x, pPos->y, pPos->z));
 		Normals.push_back(Vector3f(pNormal->x, pNormal->y, pNormal->z));
-		TexCoords.push_back(Vector2f(pTexCoord->x, pTexCoord->y));
+		TexCoords.push_back(QVector2D(pTexCoord->x, pTexCoord->y));
 	}
 
 	LoadBones(MeshIndex, paiMesh, Bones);

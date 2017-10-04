@@ -112,7 +112,7 @@ private:
 		const aiMesh* paiMesh,
 		vector<Vector3f>& Positions,
 		vector<Vector3f>& Normals,
-		vector<Vector2f>& TexCoords,
+		QVector<QVector2D>& TexCoords,
 		vector<VertexBoneData>& Bones,
 		vector<uint>& Indices);
 	void LoadBones(uint MeshIndex, const aiMesh* paiMesh, vector<VertexBoneData>& Bones);
