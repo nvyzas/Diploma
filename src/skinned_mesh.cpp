@@ -1,6 +1,10 @@
 // Own
 #include "skinned_mesh.h"
 
+// Qt
+#include <QtCore\QVector>
+#include <QtGui\QVector2D>
+
 // Standard C/C++
 #include <cassert>
 #include <sstream>
@@ -112,9 +116,9 @@ void SkinnedMesh::InitMesh(uint MeshIndex,
 		const aiVector3D* pNormal = &(paiMesh->mNormals[i]);
 		const aiVector3D* pTexCoord = paiMesh->HasTextureCoords(0) ? &(paiMesh->mTextureCoords[0][i]) : &Zero3D;
 
-		m_positions.push_back(Vector3f(pPos->x, pPos->y, pPos->z));
-		m_normals.push_back(Vector3f(pNormal->x, pNormal->y, pNormal->z));
-		m_texCoords.push_back(Vector2f(pTexCoord->x, pTexCoord->y));
+		Positions.push_back(Vector3f(pPos->x, pPos->y, pPos->z));
+		Normals.push_back(Vector3f(pNormal->x, pNormal->y, pNormal->z));
+		TexCoords.push_back(QVector2D(pTexCoord->x, pTexCoord->y));
 	}
 
 	LoadBones(MeshIndex, paiMesh, m_vertexBoneData);
