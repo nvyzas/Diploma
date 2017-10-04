@@ -1,9 +1,19 @@
 #ifndef MAIN_WIDGET_H
 #define MAIN_WIDGET_H
 
+// Project
+class Texture;
+
+// Assimp
+struct aiScene;
+
 #include "math_3d.h"
 #include "util.h"
 #include <QtWidgets\QOpenGLWidget>
+
+// Standard C/C++
+//#include <vector>
+
 // Forward declarations
 class Camera;
 class KSensor;
@@ -44,6 +54,7 @@ private:
 	SkinningTechnique* m_Skin;
 	Pipeline* m_Pipe;
 
+
 	bool m_renderAxes = true;
 	bool m_renderModel = true;
 	bool m_renderSkeleton = false;
@@ -65,6 +76,22 @@ private:
 	void DrawAxes(Vector3f center, Vector3f vx, Vector3f vy, Vector3f vz, float length);
 	void DrawTestAxes();
 	void MySetup();
+	bool loadToGPU(const string& basename);
+	void unloadFromGPU();
+	enum VB_TYPES {
+		INDEX_BUFFER,
+		POS_VB,
+		NORMAL_VB,
+		TEXCOORD_VB,
+		BONE_VB,
+		NUM_VBs
+	};
+	GLuint m_VAO;
+	GLuint m_Buffers[NUM_VBs];
+	bool InitMaterials(const aiScene* pScene, const string& Filename);
+	vector<Texture*> m_Textures;
+	void drawSkinnedMesh();
+	bool m_successfullyLoaded = false;
 };
 
 #endif /* MAIN_WIDGET_H */

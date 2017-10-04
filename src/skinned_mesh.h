@@ -12,10 +12,69 @@
 #include <vector>
 #include <bitset>
 
+//using namespace std;
+
 #define ASSIMP_LOAD_FLAGS aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices | aiProcess_FlipWindingOrder | aiProcess_LimitBoneWeights 
 #define NUM_PARAMETERS 10
 
-using namespace std;
+#define NUM_BONES_PER_VERTEX 4
+struct VertexBoneData
+{
+	uint IDs[NUM_BONES_PER_VERTEX];
+	float Weights[NUM_BONES_PER_VERTEX];
+	float OldWeights[NUM_BONES_PER_VERTEX];
+
+	VertexBoneData()
+	{
+		Reset();
+	};
+
+	void Reset()
+	{
+		ZERO_MEM(IDs);
+		ZERO_MEM(Weights);
+		ZERO_MEM(OldWeights); // Not used
+	}
+
+	void AddBoneData(uint BoneID, float Weight);
+	void AdjustBoneData(); // Not used
+	void RestoreBoneData(); // Not used
+};
+#define INVALID_MATERIAL 0xFFFFFFFF
+struct MeshEntry {
+	MeshEntry()
+	{
+		NumIndices = 0;
+		BaseVertex = 0;
+		BaseIndex = 0;
+		MaterialIndex = INVALID_MATERIAL;
+	}
+
+	uint NumIndices;
+	uint BaseVertex;
+	uint BaseIndex;
+	uint MaterialIndex;
+};
+struct BoneInfo
+{
+	enum RenderPose
+	{
+		Bind,
+		Kinect,
+		Offset
+	};
+	Matrix4f BoneOffset;
+	Matrix4f FinalTransformation;
+	bool Visible;
+	RenderPose Pose;
+	BoneInfo()
+	{
+		BoneOffset.SetZero();
+		FinalTransformation.SetZero();
+		Visible = true;
+		Pose = Bind;
+	}
+};
 
 class SkinnedMesh : protected OPENGL_FUNCTIONS
 {
@@ -51,53 +110,15 @@ public:
 	void setBoneVisibility(const QString &boneName, bool state);
 	void flipBonesVisibility();
 	
+	// Get vertex attribute functions
+	vector<Vector3f>& positions();
+	vector<Vector3f>& normals();
+	vector<Vector2f>& texCoords();
+	vector<VertexBoneData>& vertexBoneData();
+	vector<uint>& indices();
+	vector<MeshEntry>& entries();
+
 private:
-
-#define NUM_BONES_PER_VERTEX 4
-
-	struct BoneInfo
-	{
-		enum RenderPose
-		{
-			Bind,
-			Kinect,
-			Offset
-		};
-		Matrix4f BoneOffset;
-		Matrix4f FinalTransformation;
-		bool Visible;
-		RenderPose Pose;
-		BoneInfo()
-		{
-			BoneOffset.SetZero();
-			FinalTransformation.SetZero();
-			Visible = true;
-			Pose = Bind;
-		}
-	};
-
-	struct VertexBoneData
-	{
-		uint IDs[NUM_BONES_PER_VERTEX];
-		float Weights[NUM_BONES_PER_VERTEX];
-		float OldWeights[NUM_BONES_PER_VERTEX];
-
-		VertexBoneData()
-		{
-			Reset();
-		};
-
-		void Reset()
-		{
-			ZERO_MEM(IDs);
-			ZERO_MEM(Weights);
-			ZERO_MEM(OldWeights); // Not used
-		}
-
-		void AddBoneData(uint BoneID, float Weight);
-		void AdjustBoneData(); // Not used
-		void RestoreBoneData(); // Not used
-	};
 
 	void CalcInterpolatedScaling(aiVector3D& Out, float AnimationTime, const aiNodeAnim* pNodeAnim);
 	void CalcInterpolatedRotation(aiQuaternion& Out, float AnimationTime, const aiNodeAnim* pNodeAnim);
@@ -108,50 +129,26 @@ private:
 	const aiNodeAnim* FindNodeAnim(const aiAnimation* pAnimation, const string NodeName);
 	void ReadNodeHierarchy(float AnimationTime, const aiNode* pNode, const Matrix4f& ParentTransform);
 	bool InitFromScene(const aiScene* pScene, const string& Filename);
-	void InitMesh(uint MeshIndex,
-		const aiMesh* paiMesh,
-		vector<Vector3f>& Positions,
-		vector<Vector3f>& Normals,
-		vector<Vector2f>& TexCoords,
-		vector<VertexBoneData>& Bones,
-		vector<uint>& Indices);
+	void InitMesh(uint MeshIndex, const aiMesh* paiMesh);
 	void LoadBones(uint MeshIndex, const aiMesh* paiMesh, vector<VertexBoneData>& Bones);
 	bool InitMaterials(const aiScene* pScene, const string& Filename);
 	void Clear();
 
-#define INVALID_MATERIAL 0xFFFFFFFF
 
-	enum VB_TYPES {
-		INDEX_BUFFER,
-		POS_VB,
-		NORMAL_VB,
-		TEXCOORD_VB,
-		BONE_VB,
-		NUM_VBs
-	};
-
-	GLuint m_VAO;
-	GLuint m_Buffers[NUM_VBs];
-
-	struct MeshEntry {
-		MeshEntry()
-		{
-			NumIndices = 0;
-			BaseVertex = 0;
-			BaseIndex = 0;
-			MaterialIndex = INVALID_MATERIAL;
-		}
-
-		uint NumIndices;
-		uint BaseVertex;
-		uint BaseIndex;
-		uint MaterialIndex;
-	};
-
+	// Data loaded in CPU by LoadMesh		
 	vector<MeshEntry> m_Entries;
-	vector<Texture*> m_Textures;
 
+	// Vertex Attributes
+	vector<Vector3f> m_positions;
+	vector<Vector3f> m_normals;
+	vector<Vector2f> m_texCoords;
+	vector<VertexBoneData> m_vertexBoneData;
+	vector<uint> m_indices;
+	
+	// Bones
 	vector<BoneInfo> m_boneInfo;
+
+
 	map<string, uint> m_boneMap; // maps a model bone name to its index (key = bone name, value = index)
 	map<string, uint> m_kboneMap; // maps a model bone name to its kinect JointType index
 	const KJoint *m_pKBones;
@@ -173,7 +170,6 @@ private:
 	uint m_NumNodes;
 	uint m_numVertices; // total number of vertices
 	unsigned long long m_vertexArrayBytes;
-	vector<VertexBoneData> m_VertexBoneData;
 	Matrix4f m_GlobalInverseTransform;
 
 	const aiScene* m_pScene;
@@ -184,6 +180,8 @@ private:
 	const string m_ParametersStringFalse[NUM_PARAMETERS] = { "", "AI local", "AI quaternion", "AI matrix", "qRel=qAbsParInv*qAbs","qAbs=qRel*qAbsPar", "Kinect pose", "Kinect pose" };
 	uint m_ActiveBoneTransformInfo;
 	vector<string> m_BoneTransformInfo;
+
+	
 };
 
 

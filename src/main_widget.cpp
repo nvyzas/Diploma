@@ -1,3 +1,4 @@
+// Project
 #include "main_widget.h"
 #include "skinned_mesh.h"
 #include "skinning_technique.h"
@@ -5,13 +6,22 @@
 #include "camera.h"
 #include "sensor.h"
 
+// Assimp
+#include <assimp/Importer.hpp>      // C++ importer interface
+#include <assimp/scene.h>			 // Output data structure
+#include <assimp/postprocess.h>     // Post processing flags
+
 // Qt
 #include <QtCore\QDebug>
 #include <QtGui\QKeyEvent>
 
+#include <cassert>
+
 MainWidget::MainWidget(QWidget *parent) : QOpenGLWidget(parent)
 {
 	m_Mesh = new SkinnedMesh();
+	m_VAO = 0;
+	ZERO_MEM(m_Buffers);
 }
 
 // This virtual function is called once before the first call to paintGL() or resizeGL().
@@ -62,11 +72,11 @@ void MainWidget::paintGL()
 		m_Sensor->GetKinectData();
 		Transform(false);
 	}
-	if (!m_modelName.isEmpty()) {
+	/*if (!m_modelName.isEmpty()) {
 		m_Mesh->LoadMesh(string(m_modelName.toLocal8Bit()));
 		m_modelName.clear();
-	}
-	if (m_renderModel) m_Mesh->Render();
+	}*/
+	if (m_renderModel) drawSkinnedMesh();
 
 	m_Tech->enable();
 	//m_Tech->SetDefault(m_Pipe->GetWVPTrans());
@@ -198,6 +208,7 @@ void MainWidget::MySetup()
 	// 2) Init Mesh
 	m_Mesh->setKSensor(*m_Sensor);
 	m_Mesh->LoadMesh("cmu_test");
+	loadToGPU("cmu_test");
 	m_Sensor->GetKinectData(); // to successfully acquire frame init sensor before mesh and load mesh before getting data
 
 	// 3) Init Camera
@@ -316,6 +327,169 @@ void MainWidget::setModelName(const QString& modelName)
 	m_modelName = modelName;
 	update();
 }
+bool MainWidget::loadToGPU(const string& basename)
+{
+	// Release the previously loaded mesh (if it exists)
+	unloadFromGPU();
 
+	bool Ret = false;
+	string Filename = "models/" + basename + ".dae";
+	cout << endl;
+	cout << "Loading model: " << Filename << endl;
+	Assimp::Importer Importer;
+	const aiScene* pScene = Importer.ReadFile(Filename.c_str(), ASSIMP_LOAD_FLAGS);
+	if (!InitMaterials(pScene, Filename)) {
+		return false;
+	}
+
+	// Create the VAO
+	glGenVertexArrays(1, &m_VAO);
+	glBindVertexArray(m_VAO);
+
+	// Create the buffers for the vertices attributes
+	glGenBuffers(ARRAY_SIZE_IN_ELEMENTS(m_Buffers), m_Buffers);
+
+#define POSITION_LOCATION    0
+#define TEX_COORD_LOCATION   1
+#define NORMAL_LOCATION      2
+#define BONE_ID_LOCATION     3
+#define BONE_WEIGHT_LOCATION 4
+
+	auto Positions = m_Mesh->positions();
+	auto TexCoords = m_Mesh->texCoords();
+	auto Normals = m_Mesh->normals();
+	auto Bones = m_Mesh->vertexBoneData();
+	auto Indices = m_Mesh->indices();
+
+	// Generate and populate the buffers with vertex attributes and the indices
+	glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[POS_VB]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Positions[0]) * Positions.size(), &Positions[0], GL_STATIC_DRAW);
+	glEnableVertexAttribArray(POSITION_LOCATION);
+	glVertexAttribPointer(POSITION_LOCATION, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[TEXCOORD_VB]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(TexCoords[0]) * TexCoords.size(), &TexCoords[0], GL_STATIC_DRAW);
+	glEnableVertexAttribArray(TEX_COORD_LOCATION);
+	glVertexAttribPointer(TEX_COORD_LOCATION, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[NORMAL_VB]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Normals[0]) * Normals.size(), &Normals[0], GL_STATIC_DRAW);
+	glEnableVertexAttribArray(NORMAL_LOCATION);
+	glVertexAttribPointer(NORMAL_LOCATION, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[BONE_VB]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Bones[0]) * Bones.size(), &Bones[0], GL_STATIC_DRAW);
+	glEnableVertexAttribArray(BONE_ID_LOCATION);
+	glVertexAttribIPointer(BONE_ID_LOCATION, 4, GL_INT, sizeof(VertexBoneData), (const GLvoid*)0);
+	glEnableVertexAttribArray(BONE_WEIGHT_LOCATION);
+	glVertexAttribPointer(BONE_WEIGHT_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(VertexBoneData), (const GLvoid*)16);
+
+	//m_vertexArrayBytes = sizeof(Positions[0]) * Positions.size() + sizeof(TexCoords[0]) * TexCoords.size()
+	//	+ sizeof(Normals[0]) * Normals.size() + sizeof(Bones[0]) * Bones.size();
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_Buffers[INDEX_BUFFER]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices[0]) * Indices.size(), &Indices[0], GL_STATIC_DRAW);
+
+	// Make sure the VAO is not changed from the outside
+	glBindVertexArray(0);
+
+	cout << "SkinnedMesh::InitFromScene: "; GLPrintError();
+	return GLCheckError();
+}
+void MainWidget::unloadFromGPU()
+{
+	for (uint i = 0; i < m_Textures.size(); i++) {
+		SAFE_DELETE(m_Textures[i]);
+	}
+
+	if (m_Buffers[0] != 0) {
+		glDeleteBuffers(ARRAY_SIZE_IN_ELEMENTS(m_Buffers), m_Buffers);
+	}
+
+	if (m_VAO != 0) {
+		glDeleteVertexArrays(1, &m_VAO);
+		m_VAO = 0;
+	}
+	m_successfullyLoaded = false;
+}
+bool MainWidget::InitMaterials(const aiScene* pScene, const string& Filename)
+{
+	m_Textures.resize(pScene->mNumMaterials);
+
+	// Extract the directory part from the file name
+	string::size_type SlashIndex = Filename.find_last_of("/");
+	string Dir;
+
+	if (SlashIndex == string::npos) {
+		Dir = ".";
+	}
+	else if (SlashIndex == 0) {
+		Dir = "/";
+	}
+	else {
+		Dir = Filename.substr(0, SlashIndex);
+	}
+
+	bool Ret = true;
+
+	// Initialize the materials
+	for (uint i = 0; i < pScene->mNumMaterials; i++) {
+		const aiMaterial* pMaterial = pScene->mMaterials[i];
+
+		m_Textures[i] = NULL;
+
+		if (pMaterial->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
+			aiString Path;
+
+			if (pMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS) {
+				string p(Path.data);
+
+				if (p.substr(0, 2) == ".\\") {
+					p = p.substr(2, p.size() - 2);
+				}
+
+				string FullPath = Dir + "/" + p;
+
+				m_Textures[i] = new Texture(GL_TEXTURE_2D, FullPath.c_str());
+
+				if (!m_Textures[i]->Load()) {
+					printf("Error loading texture '%s'\n", FullPath.c_str());
+					delete m_Textures[i];
+					m_Textures[i] = NULL;
+					Ret = false;
+				}
+				else {
+					printf("Material[%d]: - loaded texture '%s'\n", i, FullPath.c_str());
+				}
+			}
+		}
+	}
+
+	return Ret;
+}
+void MainWidget::drawSkinnedMesh()
+{
+	if (m_successfullyLoaded) {
+		glBindVertexArray(m_VAO);
+		auto Entries = m_Mesh->entries();
+		for (uint i = 0; i < Entries.size(); i++) {
+			const uint MaterialIndex = Entries[i].MaterialIndex;
+
+			assert(MaterialIndex < m_Textures.size());
+
+			if (m_Textures[MaterialIndex]) {
+				m_Textures[MaterialIndex]->Bind(GL_TEXTURE0);
+			}
+			glDrawElementsBaseVertex(GL_TRIANGLES,
+				Entries[i].NumIndices,
+				GL_UNSIGNED_INT,
+				(void*)(sizeof(uint) * Entries[i].BaseIndex),
+				Entries[i].BaseVertex);
+		}
+
+		// Make sure the VAO is not changed from the outside    
+		glBindVertexArray(0);
+	}
+}
 
 

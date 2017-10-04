@@ -4,16 +4,8 @@
 // Standard C/C++
 #include <cassert>
 
-#define POSITION_LOCATION    0
-#define TEX_COORD_LOCATION   1
-#define NORMAL_LOCATION      2
-#define BONE_ID_LOCATION     3
-#define BONE_WEIGHT_LOCATION 4
-
 SkinnedMesh::SkinnedMesh()
 {
-	m_VAO = 0;
-	ZERO_MEM(m_Buffers);
 	m_pScene = NULL;
 	initBoneMapping();
 	initKBoneMapping();
@@ -29,34 +21,17 @@ SkinnedMesh::~SkinnedMesh()
     Clear();
 }
 void SkinnedMesh::Clear()
-{
-    for (uint i = 0 ; i < m_Textures.size() ; i++) {
-        SAFE_DELETE(m_Textures[i]);
-    }
-
-    if (m_Buffers[0] != 0) {
-        glDeleteBuffers(ARRAY_SIZE_IN_ELEMENTS(m_Buffers), m_Buffers);
-    }
-       
-    if (m_VAO != 0) {
-        glDeleteVertexArrays(1, &m_VAO);
-        m_VAO = 0;
-    }
-	m_SuccessfullyLoaded = false;
+{	
+	m_positions.clear();
+	m_normals.clear();
+	m_texCoords.clear();
+	m_vertexBoneData.clear();
+	m_indices.clear();
+	m_boneInfo.clear();
 }
 bool SkinnedMesh::LoadMesh(const string& basename)
 {
-	initializeOpenGLFunctions();
-
-    // Release the previously loaded mesh (if it exists)
-    Clear();
- 
-    // Create the VAO
-    glGenVertexArrays(1, &m_VAO);   
-    glBindVertexArray(m_VAO);
-    
-    // Create the buffers for the vertices attributes
-    glGenBuffers(ARRAY_SIZE_IN_ELEMENTS(m_Buffers), m_Buffers);
+	Clear();
 
     bool Ret = false;
 	string Filename = "models/" + basename + ".dae";
@@ -75,20 +50,11 @@ bool SkinnedMesh::LoadMesh(const string& basename)
 	m_SuccessfullyLoaded = Ret;
 	m_Skinning = true;
 
-    // Make sure the VAO is not changed from the outside
-    glBindVertexArray(0);
-
     return Ret;
 }
 bool SkinnedMesh::InitFromScene(const aiScene* pScene, const string& Filename)
 {  
     m_Entries.resize(pScene->mNumMeshes);
-    m_Textures.resize(pScene->mNumMaterials);
-	vector<Vector3f> Positions;
-	vector<Vector3f> Normals;
-	vector<Vector2f> TexCoords;
-	vector<VertexBoneData> Bones;
-	vector<uint> Indices;
        
     uint NumVertices = 0;
     uint NumIndices = 0;
@@ -105,19 +71,19 @@ bool SkinnedMesh::InitFromScene(const aiScene* pScene, const string& Filename)
 	m_numVertices = NumVertices;
 
 	// Reserve space in the vectors for the vertex attributes and indices
-	Positions.reserve(NumVertices);
-	Normals.reserve(NumVertices);
-	TexCoords.reserve(NumVertices);
-	Bones.resize(NumVertices);
-	Indices.reserve(NumIndices);
+	m_positions.reserve(NumVertices);
+	m_normals.reserve(NumVertices);
+	m_texCoords.reserve(NumVertices);
+	m_vertexBoneData.resize(NumVertices);
+	m_indices.reserve(NumIndices);
 
 	// Initialize the meshes in the scene one by one
 	for (uint i = 0; i < m_Entries.size(); i++) {
 		const aiMesh* paiMesh = pScene->mMeshes[i];
-		InitMesh(i, paiMesh, Positions, Normals, TexCoords, Bones, Indices);
+		InitMesh(i, paiMesh);
 	}
 	// TODO: check that mesh is correctly skinned
-	m_VertexBoneData = Bones; // keep vertex bone data copy in class member (necessary?)
+
 	m_relQuats.resize(m_numBones);
 	m_relVecs.resize(m_numBones);
 	m_relMats.resize(m_numBones);
@@ -132,50 +98,10 @@ bool SkinnedMesh::InitFromScene(const aiScene* pScene, const string& Filename)
 	m_conMats.resize(m_numBones);	
 	m_BoneTransformInfo.resize(m_numBones);
 	SetConQuats();
-
-	if (!InitMaterials(pScene, Filename)) {
-		return false;
-	}
-
-	// Generate and populate the buffers with vertex attributes and the indices
-	glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[POS_VB]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Positions[0]) * Positions.size(), &Positions[0], GL_STATIC_DRAW);
-	glEnableVertexAttribArray(POSITION_LOCATION);
-	glVertexAttribPointer(POSITION_LOCATION, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[TEXCOORD_VB]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(TexCoords[0]) * TexCoords.size(), &TexCoords[0], GL_STATIC_DRAW);
-	glEnableVertexAttribArray(TEX_COORD_LOCATION);
-	glVertexAttribPointer(TEX_COORD_LOCATION, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[NORMAL_VB]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Normals[0]) * Normals.size(), &Normals[0], GL_STATIC_DRAW);
-	glEnableVertexAttribArray(NORMAL_LOCATION);
-	glVertexAttribPointer(NORMAL_LOCATION, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[BONE_VB]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Bones[0]) * Bones.size(), &Bones[0], GL_STATIC_DRAW);
-	glEnableVertexAttribArray(BONE_ID_LOCATION);
-	glVertexAttribIPointer(BONE_ID_LOCATION, 4, GL_INT, sizeof(VertexBoneData), (const GLvoid*)0);
-	glEnableVertexAttribArray(BONE_WEIGHT_LOCATION);
-	glVertexAttribPointer(BONE_WEIGHT_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(VertexBoneData), (const GLvoid*)16);
-
-	m_vertexArrayBytes = sizeof(Positions[0]) * Positions.size() + sizeof(TexCoords[0]) * TexCoords.size()
-		+ sizeof(Normals[0]) * Normals.size() + sizeof(Bones[0]) * Bones.size();
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_Buffers[INDEX_BUFFER]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices[0]) * Indices.size(), &Indices[0], GL_STATIC_DRAW);
-
-	cout << "SkinnedMesh::InitFromScene: "; GLPrintError();
-	return GLCheckError();
+	return true;
 }
 void SkinnedMesh::InitMesh(uint MeshIndex,
-	const aiMesh* paiMesh,
-	vector<Vector3f>& Positions,
-	vector<Vector3f>& Normals,
-	vector<Vector2f>& TexCoords,
-	vector<VertexBoneData>& Bones,
-	vector<uint>& Indices)
+	const aiMesh* paiMesh)
 {
 	const aiVector3D Zero3D(0.0f, 0.0f, 0.0f);
 
@@ -185,18 +111,18 @@ void SkinnedMesh::InitMesh(uint MeshIndex,
 		const aiVector3D* pNormal = &(paiMesh->mNormals[i]);
 		const aiVector3D* pTexCoord = paiMesh->HasTextureCoords(0) ? &(paiMesh->mTextureCoords[0][i]) : &Zero3D;
 
-		Positions.push_back(Vector3f(pPos->x, pPos->y, pPos->z));
-		Normals.push_back(Vector3f(pNormal->x, pNormal->y, pNormal->z));
-		TexCoords.push_back(Vector2f(pTexCoord->x, pTexCoord->y));
+		m_positions.push_back(Vector3f(pPos->x, pPos->y, pPos->z));
+		m_normals.push_back(Vector3f(pNormal->x, pNormal->y, pNormal->z));
+		m_texCoords.push_back(Vector2f(pTexCoord->x, pTexCoord->y));
 	}
 
-	LoadBones(MeshIndex, paiMesh, Bones);
+	LoadBones(MeshIndex, paiMesh, m_vertexBoneData);
 	bool SumNot1 = false;
 	for (uint i = 0; i < paiMesh->mNumVertices; i++) {
 		float sum = 0;
 		uint VertexID = m_Entries[MeshIndex].BaseVertex + i;
 		for (uint i = 0; i < NUM_BONES_PER_VERTEX; i++) {
-			sum += Bones[VertexID].Weights[i];
+			sum += m_vertexBoneData[VertexID].Weights[i];
 		}
 		if (sum<0.99 || sum >1.01) SumNot1 = true; // Must be equal to 1
 	}
@@ -206,9 +132,9 @@ void SkinnedMesh::InitMesh(uint MeshIndex,
 	for (uint i = 0; i < paiMesh->mNumFaces; i++) {
 		const aiFace& Face = paiMesh->mFaces[i];
 		assert(Face.mNumIndices == 3);
-		Indices.push_back(Face.mIndices[0]);
-		Indices.push_back(Face.mIndices[1]);
-		Indices.push_back(Face.mIndices[2]);
+		m_indices.push_back(Face.mIndices[0]);
+		m_indices.push_back(Face.mIndices[1]);
+		m_indices.push_back(Face.mIndices[2]);
 	}
 }
 void SkinnedMesh::LoadBones(uint MeshIndex, const aiMesh* pMesh, vector<VertexBoneData>& Bones)
@@ -241,7 +167,7 @@ void SkinnedMesh::LoadBones(uint MeshIndex, const aiMesh* pMesh, vector<VertexBo
 		
 	}
 }
-void SkinnedMesh::VertexBoneData::AddBoneData(uint BoneID, float Weight)
+void VertexBoneData::AddBoneData(uint BoneID, float Weight)
 {
 	for (uint i = 0; i < ARRAY_SIZE_IN_ELEMENTS(IDs); i++) {
 		if (Weights[i] == 0.0) {
@@ -255,7 +181,7 @@ void SkinnedMesh::VertexBoneData::AddBoneData(uint BoneID, float Weight)
 	// should never get here - more bones than we have space for
 	assert(0);
 }
-void SkinnedMesh::VertexBoneData::AdjustBoneData()
+void VertexBoneData::AdjustBoneData()
 {
 	float max = 0.0f;
 	for (uint i = 0; i < ARRAY_SIZE_IN_ELEMENTS(IDs); i++) {
@@ -278,117 +204,41 @@ void SkinnedMesh::VertexBoneData::AdjustBoneData()
 	// should never get here
 	assert(0);
 }
-void SkinnedMesh::ToggleSkinning()
-{ 
-	unsigned long long vertexBoneDataBytes = sizeof(m_VertexBoneData[0]) * m_VertexBoneData.size();
-	if (m_Skinning){		
-		for (uint i = 0; i < m_VertexBoneData.size(); i++) {
-			m_VertexBoneData[i].AdjustBoneData();
-		}		
-		glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[BONE_VB]);
-		glBufferSubData(GL_ARRAY_BUFFER, m_vertexArrayBytes - vertexBoneDataBytes, vertexBoneDataBytes, &m_VertexBoneData);
-		/*
-		glEnableVertexAttribArray(BONE_ID_LOCATION);
-		glVertexAttribIPointer(BONE_ID_LOCATION, 4, GL_INT, sizeof(VertexBoneData), (const GLvoid*)0);
-		glEnableVertexAttribArray(BONE_WEIGHT_LOCATION);
-		glVertexAttribPointer(BONE_WEIGHT_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(VertexBoneData), (const GLvoid*)16);
-		//*/
-		m_Skinning = false;
-	}
-	else {
-		for (uint i = 0; i < m_VertexBoneData.size(); i++) {
-			m_VertexBoneData[i].RestoreBoneData();
-		}
-		glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[BONE_VB]);
-		glBufferSubData(GL_ARRAY_BUFFER, m_vertexArrayBytes - vertexBoneDataBytes, vertexBoneDataBytes, &m_VertexBoneData);
-		m_Skinning = true;
-	}
-}
-void SkinnedMesh::VertexBoneData::RestoreBoneData()
+
+//void SkinnedMesh::ToggleSkinning()
+//{ 
+//	unsigned long long vertexBoneDataBytes = sizeof(m_vertexBoneData[0]) * m_vertexBoneData.size();
+//	if (m_Skinning){		
+//		for (uint i = 0; i < m_vertexBoneData.size(); i++) {
+//			m_vertexBoneData[i].AdjustBoneData();
+//		}		
+//		glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[BONE_VB]); 
+//		glBufferSubData(GL_ARRAY_BUFFER, m_vertexArrayBytes - vertexBoneDataBytes, vertexBoneDataBytes, &m_vertexBoneData);
+//		/*
+//		glEnableVertexAttribArray(BONE_ID_LOCATION);
+//		glVertexAttribIPointer(BONE_ID_LOCATION, 4, GL_INT, sizeof(VertexBoneData), (const GLvoid*)0);
+//		glEnableVertexAttribArray(BONE_WEIGHT_LOCATION);
+//		glVertexAttribPointer(BONE_WEIGHT_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(VertexBoneData), (const GLvoid*)16);
+//		//*/
+//		m_Skinning = false;
+//	}
+//	else {
+//		for (uint i = 0; i < m_vertexBoneData.size(); i++) {
+//			m_vertexBoneData[i].RestoreBoneData();
+//		}
+//		glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[BONE_VB]);
+//		glBufferSubData(GL_ARRAY_BUFFER, m_vertexArrayBytes - vertexBoneDataBytes, vertexBoneDataBytes, &m_vertexBoneData);
+//		m_Skinning = true;
+//	}
+//}
+void VertexBoneData::RestoreBoneData()
 {
 	for (uint i = 0; i < ARRAY_SIZE_IN_ELEMENTS(IDs); i++)
 	{
 		Weights[i] = OldWeights[i];
 	}
 }
-bool SkinnedMesh::InitMaterials(const aiScene* pScene, const string& Filename)
-{
-	// Extract the directory part from the file name
-	string::size_type SlashIndex = Filename.find_last_of("/");
-	string Dir;
 
-	if (SlashIndex == string::npos) {
-		Dir = ".";
-	}
-	else if (SlashIndex == 0) {
-		Dir = "/";
-	}
-	else {
-		Dir = Filename.substr(0, SlashIndex);
-	}
-
-	bool Ret = true;
-
-	// Initialize the materials
-	for (uint i = 0; i < pScene->mNumMaterials; i++) {
-		const aiMaterial* pMaterial = pScene->mMaterials[i];
-
-		m_Textures[i] = NULL;
-
-		if (pMaterial->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
-			aiString Path;
-
-			if (pMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS) {
-				string p(Path.data);
-
-				if (p.substr(0, 2) == ".\\") {
-					p = p.substr(2, p.size() - 2);
-				}
-
-				string FullPath = Dir + "/" + p;
-
-				m_Textures[i] = new Texture(GL_TEXTURE_2D, FullPath.c_str());
-
-				if (!m_Textures[i]->Load()) {
-					printf("Error loading texture '%s'\n", FullPath.c_str());
-					delete m_Textures[i];
-					m_Textures[i] = NULL;
-					Ret = false;
-				}
-				else {
-					printf("Material[%d]: - loaded texture '%s'\n", i, FullPath.c_str());
-				}
-			}
-		}
-	}
-
-	return Ret;
-}
-void SkinnedMesh::Render()
-{
-	if (m_SuccessfullyLoaded) {
-		glBindVertexArray(m_VAO);
-
-		for (uint i = 0; i < m_Entries.size(); i++) {
-			const uint MaterialIndex = m_Entries[i].MaterialIndex;
-
-			assert(MaterialIndex < m_Textures.size());
-
-			if (m_Textures[MaterialIndex]) {
-				m_Textures[MaterialIndex]->Bind(GL_TEXTURE0);
-			}
-
-			glDrawElementsBaseVertex(GL_TRIANGLES,
-				m_Entries[i].NumIndices,
-				GL_UNSIGNED_INT,
-				(void*)(sizeof(uint) * m_Entries[i].BaseIndex),
-				m_Entries[i].BaseVertex);
-		}
-
-		// Make sure the VAO is not changed from the outside    
-		glBindVertexArray(0);
-	}
-}
 uint SkinnedMesh::FindPosition(float AnimationTime, const aiNodeAnim* pNodeAnim)
 {
 	for (uint i = 0; i < pNodeAnim->mNumPositionKeys - 1; i++) {
@@ -890,6 +740,30 @@ void SkinnedMesh::setBoneVisibility(const QString &boneName, bool state)
 void SkinnedMesh::flipBonesVisibility()
 {
 	for (uint i = 0; i < m_boneInfo.size(); i++) m_boneInfo[i].Visible = !m_boneInfo[i].Visible;
+}
+vector<Vector3f>& SkinnedMesh::positions()
+{
+	return m_positions;
+}
+vector<Vector3f>& SkinnedMesh::normals()
+{
+	return m_normals;
+}
+vector<Vector2f>& SkinnedMesh::texCoords()
+{
+	return m_texCoords;
+}
+vector<VertexBoneData>& SkinnedMesh::vertexBoneData()
+{
+	return m_vertexBoneData;
+}
+vector<uint>& SkinnedMesh::indices()
+{
+	return m_indices;
+}
+vector<MeshEntry>& SkinnedMesh::entries()
+{
+	return m_Entries;
 }
 uint SkinnedMesh::numBones() const
 {
