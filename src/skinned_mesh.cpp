@@ -3,6 +3,7 @@
 
 // Standard C/C++
 #include <cassert>
+#include <sstream>
 
 SkinnedMesh::SkinnedMesh()
 {
