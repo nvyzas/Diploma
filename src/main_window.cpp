@@ -20,6 +20,10 @@ MainWindow::~MainWindow()
 	delete ui;
 }
 
+void MainWindow::printActiveBoneTransform()
+{
+	ui->plainTextEdit->appendPlainText(ui->openGLWidget->boneTransformInfo(ui->comboBox_activeBone->currentText()));
+}
 void MainWindow::loadActiveBoneInfo()
 {
 	ui->checkBox_boneVisible->setChecked(ui->openGLWidget->boneVisibility(ui->comboBox_activeBone->currentText()));
@@ -54,6 +58,7 @@ void MainWindow::setupConnections()
 	connect(ui->pushButton_flipBonesVisibility, SIGNAL(clicked()), SLOT(loadActiveBoneInfo()));
 	// active bone
 	connect(ui->comboBox_activeBone, SIGNAL(currentIndexChanged(QString)), SLOT(loadActiveBoneInfo()));
+	connect(ui->pushButton_printBoneTransform, SIGNAL(clicked()), SLOT(printActiveBoneTransform()));
 	// bone visible
 	connect(ui->checkBox_boneVisible, SIGNAL(toggled(bool)), SLOT(setActiveBoneVisibility(bool)));
 	// sliders

@@ -302,6 +302,10 @@ QStringList MainWidget::ModelBoneList() const
 	}
 	return qsl;
 }
+QString MainWidget::boneTransformInfo(const QString& boneName) const
+{
+	return m_Mesh->boneTransformInfo(boneName);
+}
 bool MainWidget::boneVisibility(const QString &boneName) const
 {
 	return m_Mesh->boneVisibility(boneName);

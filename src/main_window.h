@@ -16,6 +16,7 @@ public:
 	MainWindow(QWidget *parent = Q_NULLPTR);
 	~MainWindow();
 private slots:
+	void printActiveBoneTransform();
 	void loadActiveBoneInfo();
 	void setActiveBoneVisibility(bool state);
 private:

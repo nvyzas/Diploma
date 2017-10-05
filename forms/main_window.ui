@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>520</width>
-    <height>655</height>
+    <height>675</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -193,7 +193,7 @@
               </widget>
              </item>
              <item row="13" column="0" colspan="2">
-              <widget class="QPushButton" name="pushButton">
+              <widget class="QPushButton" name="pushButton_printBoneTransform">
                <property name="text">
                 <string>Transform info</string>
                </property>

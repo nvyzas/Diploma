@@ -734,6 +734,10 @@ void SkinnedMesh::setBoneVisibility(const QString &boneName, bool state)
 {
 	m_boneInfo[findBoneId(boneName)].Visible = state;
 }
+QString SkinnedMesh::boneTransformInfo(const QString& boneName) const
+{
+	return QString::fromLocal8Bit(m_BoneTransformInfo[findBoneId(boneName)].c_str());
+}
 void SkinnedMesh::flipBonesVisibility()
 {
 	for (uint i = 0; i < m_boneInfo.size(); i++) m_boneInfo[i].Visible = !m_boneInfo[i].Visible;

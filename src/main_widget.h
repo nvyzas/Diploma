@@ -31,6 +31,7 @@ public:
 	bool renderAxes() const;
 	bool renderModel() const;
 	QStringList ModelBoneList() const;
+	QString boneTransformInfo(const QString& boneName) const;
 	bool boneVisibility(const QString& boneName) const;
 	bool modelSkinning() const;
 	void keyPressEvent(QKeyEvent *event);

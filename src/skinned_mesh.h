@@ -20,7 +20,6 @@
 #include <vector>
 #include <bitset>
 
-
 #define ASSIMP_LOAD_FLAGS aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices | aiProcess_FlipWindingOrder | aiProcess_LimitBoneWeights 
 #define NUM_PARAMETERS 10
 
@@ -114,6 +113,7 @@ public:
 	uint findBoneId(const QString &boneName) const;
 	bool boneVisibility(const QString &boneName) const;
 	void setBoneVisibility(const QString &boneName, bool state);
+	QString boneTransformInfo(const QString& boneName) const;
 	void flipBonesVisibility();
 	
 	// Get vertex attribute functions
@@ -186,6 +186,4 @@ private:
 	vector<string> m_BoneTransformInfo;
 };
 
-
 #endif	/* SKINNED_MESH_H */
-
