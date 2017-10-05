@@ -27,6 +27,7 @@ class MainWidget : public QOpenGLWidget, protected OPENGL_FUNCTIONS
 	Q_OBJECT
 public:
 	MainWidget(QWidget *parent = Q_NULLPTR);
+	~MainWidget();
 	bool renderAxes() const;
 	bool renderModel() const;
 	QStringList ModelBoneList() const;
@@ -47,9 +48,9 @@ protected:
 	void paintGL();
 
 private:
-	Camera* m_Cam; // width, height?
+	Camera* m_Cam; 
 	KSensor* m_Sensor;
-	SkinnedMesh* m_Mesh; //Mesh(mySensor)
+	SkinnedMesh* m_Mesh;
 	Technique* m_Tech;
 	SkinningTechnique* m_Skin;
 	Pipeline* m_Pipe;

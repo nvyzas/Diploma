@@ -1,18 +1,25 @@
 #ifndef SKINNED_MESH_H
 #define	SKINNED_MESH_H
 
+// Project
 #include "sensor.h"
 #include "texture.h"
 #include "util.h"
 #include "math_3d.h"
+
+// Assimp
 #include <assimp/Importer.hpp>      // C++ importer interface
 #include <assimp/scene.h>			 // Output data structure
 #include <assimp/postprocess.h>     // Post processing flags
+
+// Qt
+#include <QtCore\QVector>
+
+// Standard C/C++
 #include <map>
 #include <vector>
 #include <bitset>
 
-//using namespace std;
 
 #define ASSIMP_LOAD_FLAGS aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices | aiProcess_FlipWindingOrder | aiProcess_LimitBoneWeights 
 #define NUM_PARAMETERS 10
@@ -82,22 +89,21 @@ public:
 	SkinnedMesh();
 	~SkinnedMesh();
 	bool LoadMesh(const string& Filename);
-	void Render();
 	void BoneTransform(float TimeInSeconds, vector<Matrix4f>& Transforms);
 	void GetBoneTransforms(vector<Matrix4f>& Transforms);
 	void TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P);
 	void SetConQuats();
-	void PrintInfo();
-	void PrintNodeHierarchy(const aiNode* pNode);
-	void PrintNodeMatching(const aiNode* pNode);
-	void PrintParameters();
-	void PrintSceneInfo();
-	void AdjustBones(); // Not used
+	void PrintInfo() const;
+	void PrintNodeHierarchy(const aiNode* pNode) const;
+	void PrintNodeMatching(const aiNode* pNode) const;
+	void PrintParameters() const;
+	void PrintSceneInfo() const;
+	// TODO: implement skinning on/off
+	void AdjustBones(); 
 	void ToggleSkinning();
-	void NextJoint(int step);
 	void FlipParameter(uint i);	
-	void NextBoneTransformInfo(int step);
-	bool m_Skinning;
+	void NextJoint(int step);
+
 	bool m_SuccessfullyLoaded;
 	uint numBones() const;
 	const map<string, uint>& Bones() const;
@@ -113,7 +119,7 @@ public:
 	// Get vertex attribute functions
 	vector<Vector3f>& positions();
 	vector<Vector3f>& normals();
-	vector<Vector2f>& texCoords();
+	QVector<QVector2D>& texCoords();
 	vector<VertexBoneData>& vertexBoneData();
 	vector<uint>& indices();
 	vector<MeshEntry>& entries();
@@ -131,17 +137,16 @@ private:
 	bool InitFromScene(const aiScene* pScene, const string& Filename);
 	void InitMesh(uint MeshIndex, const aiMesh* paiMesh);
 	void LoadBones(uint MeshIndex, const aiMesh* paiMesh, vector<VertexBoneData>& Bones);
-	bool InitMaterials(const aiScene* pScene, const string& Filename);
 	void Clear();
 
 
 	// Data loaded in CPU by LoadMesh		
-	vector<MeshEntry> m_Entries;
+	vector<MeshEntry> m_entries;
 
 	// Vertex Attributes
 	vector<Vector3f> m_positions;
 	vector<Vector3f> m_normals;
-	vector<Vector2f> m_texCoords;
+	QVector<QVector2D> m_texCoords;
 	vector<VertexBoneData> m_vertexBoneData;
 	vector<uint> m_indices;
 	
@@ -167,7 +172,6 @@ private:
 	vector<Matrix4f> m_corMats;
 	uint m_numBones;
 	uint m_numKBones;
-	uint m_NumNodes;
 	uint m_numVertices; // total number of vertices
 	unsigned long long m_vertexArrayBytes;
 	Matrix4f m_GlobalInverseTransform;
@@ -180,8 +184,6 @@ private:
 	const string m_ParametersStringFalse[NUM_PARAMETERS] = { "", "AI local", "AI quaternion", "AI matrix", "qRel=qAbsParInv*qAbs","qAbs=qRel*qAbsPar", "Kinect pose", "Kinect pose" };
 	uint m_ActiveBoneTransformInfo;
 	vector<string> m_BoneTransformInfo;
-
-	
 };
 
 

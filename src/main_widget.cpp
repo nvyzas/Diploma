@@ -23,7 +23,16 @@ MainWidget::MainWidget(QWidget *parent) : QOpenGLWidget(parent)
 	m_VAO = 0;
 	ZERO_MEM(m_Buffers);
 }
-
+MainWidget::~MainWidget()
+{
+	unloadFromGPU();
+	delete m_Mesh;
+	delete m_Cam;
+	delete m_Sensor;
+	delete m_Tech;
+	delete m_Skin;
+	delete m_Pipe;
+}
 // This virtual function is called once before the first call to paintGL() or resizeGL().
 void MainWidget::initializeGL()
 {
@@ -61,6 +70,68 @@ void MainWidget::initializeGL()
 	
 	MySetup();
 }
+void MainWidget::MySetup()
+{
+	// 1) Init KSensor
+	m_Sensor->Init();
+	m_Sensor->PrintJointHierarchy();
+
+	// 2) Init Mesh
+	m_Mesh->setKSensor(*m_Sensor);
+	m_successfullyLoaded = loadToGPU("cmu_test");
+	m_Sensor->GetKinectData(); // to successfully acquire frame init sensor before mesh and load mesh before getting data
+
+	// 3) Init Camera
+	//m_Cam->SetCam(); Camera init in its constructor
+	m_Cam->PrintInfo();
+
+	// 4) Init Pipeline
+	m_Pipe->Scale(1.f, 1.f, 1.f);
+	m_Pipe->Rotate(0.f, 0.f, 0.f);
+	m_Pipe->WorldPos(0.f, 0.f, 2.f);
+	/*
+	if (mySensor.m_GotFrame) {
+	const Vector3f &fl = mySensor.m_Joints[JointType_FootLeft].Position;
+	const Vector3f &fr = mySensor.m_Joints[JointType_FootRight].Position;
+	const Vector3f &sb = mySensor.m_Joints[JointType_SpineBase].Position;
+	myPipe.WorldPos((fl.x + fr.x) / 2.0f, (fl.y + fr.y) / 2.0f, (fl.z + fr.z) / 2.0f);
+	myPipe.WorldPos(sb.x, sb.y, sb.z);
+	}
+	else myPipe.WorldPos(0, 0, 1);
+	//*/
+	m_Pipe->SetCamera(m_Cam->GetPos(), m_Cam->GetTarget(), m_Cam->GetUp());
+	PersProjInfo persProjInfo;
+	persProjInfo.FOV = 60.0f;
+	persProjInfo.Height = m_Cam->GetHeight();
+	persProjInfo.Width = m_Cam->GetWidth();
+	persProjInfo.zNear = 0.1f;
+	persProjInfo.zFar = 1000.0f;
+	m_Pipe->SetPerspectiveProj(persProjInfo);
+
+	// 5) Init Technique
+	if (!m_Tech->InitDefault()) cout << "Could not initialize default shaders" << endl;
+	m_Tech->enable();
+	m_Tech->SetDefault(m_Pipe->GetWVPTrans());
+
+	// 6) Init SkinningTechnique
+	if (!m_Skin->Init()) cout << "Could not initialize skinning shaders" << endl;
+	m_Skin->enable();
+	m_Skin->SetColorTextureUnit(0);
+	DirectionalLight directionalLight;
+	directionalLight.Color = Vector3f(1.0f, 1.0f, 1.0f);
+	directionalLight.AmbientIntensity = 0.7f;
+	directionalLight.DiffuseIntensity = 0.9f;
+	directionalLight.Direction = Vector3f(0.0f, -1.0, 0.0);
+	m_Skin->SetDirectionalLight(directionalLight);
+	m_Skin->SetMatSpecularIntensity(0.0f);
+	m_Skin->SetMatSpecularPower(0);
+	m_Skin->setSkinning(true);
+	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
+	for (uint i = 0; i < m_Mesh->numBones(); i++) {
+		m_Skin->setBoneVisibility(i, m_Mesh->boneVisibility(i));
+	}
+	Transform(true);
+}
 void MainWidget::paintGL()
 {
 	glClearColor(0.f, 0.f, 0.f, 1.f);
@@ -76,10 +147,11 @@ void MainWidget::paintGL()
 		m_Mesh->LoadMesh(string(m_modelName.toLocal8Bit()));
 		m_modelName.clear();
 	}*/
-	if (m_renderModel) drawSkinnedMesh();
+	if (m_renderModel) {
+		drawSkinnedMesh();
+	}
 
 	m_Tech->enable();
-	//m_Tech->SetDefault(m_Pipe->GetWVPTrans());
 	m_Tech->SetDefault(m_Pipe->GetVPTrans());
 	if (m_renderAxes)				DrawAxes();		
 	if (m_renderSkeleton)			m_Sensor->DrawSkeleton(JointType_SpineBase);
@@ -199,69 +271,7 @@ void MainWidget::Transform(bool print)
 	//if (!print) cout.clear();
 }
 //*/
-void MainWidget::MySetup()
-{
-	// 1) Init KSensor
-	m_Sensor->Init();
-	m_Sensor->PrintJointHierarchy();
-	
-	// 2) Init Mesh
-	m_Mesh->setKSensor(*m_Sensor);
-	m_Mesh->LoadMesh("cmu_test");
-	loadToGPU("cmu_test");
-	m_Sensor->GetKinectData(); // to successfully acquire frame init sensor before mesh and load mesh before getting data
 
-	// 3) Init Camera
-	//m_Cam->SetCam(); Camera init in its constructor
-	m_Cam->PrintInfo();
-
-	// 4) Init Pipeline
-	m_Pipe->Scale(1.f, 1.f, 1.f);
-	m_Pipe->Rotate(0.f, 0.f, 0.f);
-	m_Pipe->WorldPos(0.f, 0.f, 2.f);
-	/*
-	if (mySensor.m_GotFrame) {
-	const Vector3f &fl = mySensor.m_Joints[JointType_FootLeft].Position;
-	const Vector3f &fr = mySensor.m_Joints[JointType_FootRight].Position;
-	const Vector3f &sb = mySensor.m_Joints[JointType_SpineBase].Position;
-	myPipe.WorldPos((fl.x + fr.x) / 2.0f, (fl.y + fr.y) / 2.0f, (fl.z + fr.z) / 2.0f);
-	myPipe.WorldPos(sb.x, sb.y, sb.z);
-	}
-	else myPipe.WorldPos(0, 0, 1);
-	//*/	
-	m_Pipe->SetCamera(m_Cam->GetPos(), m_Cam->GetTarget(), m_Cam->GetUp());	
-	PersProjInfo persProjInfo;
-	persProjInfo.FOV = 60.0f;
-	persProjInfo.Height = m_Cam->GetHeight();
-	persProjInfo.Width = m_Cam->GetWidth();
-	persProjInfo.zNear = 0.1f;
-	persProjInfo.zFar = 1000.0f;
-	m_Pipe->SetPerspectiveProj(persProjInfo);
-
-	// 5) Init Technique
-	if (!m_Tech->InitDefault()) cout << "Could not initialize default shaders" << endl;
-	m_Tech->enable();
-	m_Tech->SetDefault(m_Pipe->GetWVPTrans());
-
-	// 6) Init SkinningTechnique
-	if (!m_Skin->Init()) cout << "Could not initialize skinning shaders" << endl;
-	m_Skin->enable();
-	m_Skin->SetColorTextureUnit(0);
-	DirectionalLight directionalLight;
-	directionalLight.Color = Vector3f(1.0f, 1.0f, 1.0f);
-	directionalLight.AmbientIntensity = 0.7f;
-	directionalLight.DiffuseIntensity = 0.9f;
-	directionalLight.Direction = Vector3f(0.0f, -1.0, 0.0);
-	m_Skin->SetDirectionalLight(directionalLight);
-	m_Skin->SetMatSpecularIntensity(0.0f);
-	m_Skin->SetMatSpecularPower(0);
-	m_Skin->setSkinning(m_Mesh->m_Skinning);
-	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
-	for (uint i = 0; i < m_Mesh->numBones(); i++) {
-		m_Skin->setBoneVisibility(i, m_Mesh->boneVisibility(i));
-	}
-	Transform(true);
-}
 void MainWidget::setRenderAxes(bool state)
 {
 	if (m_renderAxes != state) {
@@ -335,7 +345,7 @@ bool MainWidget::loadToGPU(const string& basename)
 	bool Ret = false;
 	string Filename = "models/" + basename + ".dae";
 	cout << endl;
-	cout << "Loading model: " << Filename << endl;
+	cout << "Loading model " << Filename << " to GPU." << endl;
 	Assimp::Importer Importer;
 	const aiScene* pScene = Importer.ReadFile(Filename.c_str(), ASSIMP_LOAD_FLAGS);
 	if (!InitMaterials(pScene, Filename)) {
@@ -355,11 +365,11 @@ bool MainWidget::loadToGPU(const string& basename)
 #define BONE_ID_LOCATION     3
 #define BONE_WEIGHT_LOCATION 4
 
-	auto Positions = m_Mesh->positions();
-	auto TexCoords = m_Mesh->texCoords();
-	auto Normals = m_Mesh->normals();
-	auto Bones = m_Mesh->vertexBoneData();
-	auto Indices = m_Mesh->indices();
+	const auto& Positions = m_Mesh->positions();
+	const auto& TexCoords = m_Mesh->texCoords();
+	const auto& Normals = m_Mesh->normals();
+	const auto& Bones = m_Mesh->vertexBoneData();
+	const auto& Indices = m_Mesh->indices();
 
 	// Generate and populate the buffers with vertex attributes and the indices
 	glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[POS_VB]);
@@ -368,7 +378,7 @@ bool MainWidget::loadToGPU(const string& basename)
 	glVertexAttribPointer(POSITION_LOCATION, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[TEXCOORD_VB]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(TexCoords[0]) * TexCoords.size(), &TexCoords[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(TexCoords[0]) * TexCoords.size(), TexCoords.constData(), GL_STATIC_DRAW);
 	glEnableVertexAttribArray(TEX_COORD_LOCATION);
 	glVertexAttribPointer(TEX_COORD_LOCATION, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
