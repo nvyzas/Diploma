@@ -172,11 +172,11 @@ void KSensor::GetBodyData(IMultiSourceFrame* frame) {
 		if (m_InvertedSides) {
 			uint j = m_Joints[i].idOpposite;
 			m_Joints[j].Position = Vector3f(jt.Position.X, jt.Position.Y, jt.Position.Z);
-			m_Joints[j].Orientation = Quaternion(or .Orientation.x, or .Orientation.y, or .Orientation.z, or .Orientation.w);
+			m_Joints[j].Orientation = QQuaternion(or.Orientation.w, or.Orientation.x, or.Orientation.y, or.Orientation.z);
 		}
 		else {
 			m_Joints[i].Position = Vector3f(jt.Position.X, jt.Position.Y, jt.Position.Z);
-			m_Joints[i].Orientation = Quaternion(or .Orientation.x, or .Orientation.y, or .Orientation.z, or .Orientation.w);
+			m_Joints[i].Orientation = QQuaternion(or.Orientation.w, or.Orientation.x, or.Orientation.y, or.Orientation.z);
 		}
 		const KJoint &j = m_Joints[i];
 		//cout << left << setw(2) << i << ": " << left << setw(15) << j.name << " p=" << left << setw(25) << j.Position.ToString() << " q=" << j.Orientation.ToString() << j.Orientation.ToEulerAnglesString() << j.Orientation.ToAxisAngleString() << endl;
@@ -240,7 +240,7 @@ void KSensor::InitJoints()
 	// Set children
 	for (uint i = 0; i < JointType_Count; i++) {
 		m_Joints[i].Position = Vector3f(0.f, 0.f, 0.f);
-		m_Joints[i].Orientation = Quaternion(0.f, 0.f, 0.f, 1.f);
+		m_Joints[i].Orientation = QQuaternion(1.f, 0.f, 0.f, 0.f);
 		uint p = m_Joints[i].parent;
 		if (p != INVALID_JOINT_ID) (m_Joints[p].children).push_back(i);
 	}
@@ -284,7 +284,7 @@ void KSensor::PrintJointData() const
 {
 	for (uint i = 0; i < JointType_Count; i++) {
 		const KJoint &j = m_Joints[i];
-		cout << setw(15) << j.name << "p: " << setw(25) << j.Position.ToString() << " q: " << j.Orientation.ToString() << j.Orientation.ToEulerAnglesString() << j.Orientation.ToAxisAngleString() << endl;
+		cout << setw(15) << j.name << "p: " << setw(25) << j.Position.ToString() << " q: " << printQuaternion1(j.Orientation) << printQuaternion2(j.Orientation) << printQuaternion3(j.Orientation) << endl;
 	}
 	cout << endl;
 }
@@ -320,31 +320,29 @@ void KSensor::DrawActiveJoint()
 {
 	glBegin(GL_LINES);
 	const Vector3f &p = m_Joints[m_ActiveJoint].Position;
-	const Quaternion &q = m_Joints[m_ActiveJoint].Orientation;
-	Vector3f v;
+	QVector3D qp(p.x, p.y, p.z);
+	const QQuaternion &q = m_Joints[m_ActiveJoint].Orientation;
+	QVector3D v;
 
-	v = q.RotateVector(Vector3f(1, 0, 0));
-	v += p;
+	v = q.rotatedVector(QVector3D(1.f, 0.f, 0.f)) + qp;
 	glColor3f(0xFF, 0xFF, 0);
 	glVertex3f(p.x, p.y, p.z);
-	glVertex3f(v.x, v.y, v.z);
+	glVertex3f(v.x(), v.y(), v.z());
 
-	v = q.RotateVector(Vector3f(0, 1, 0));
-	v += p;
+	v = q.rotatedVector(QVector3D(0.f, 1.f, 0.f)) + qp;
 	glColor3f(0, 0xFF, 0xFF);
 	glVertex3f(p.x, p.y, p.z);
-	glVertex3f(v.x, v.y, v.z);
+	glVertex3f(v.x(), v.y(), v.z());
 
-	v = q.RotateVector(Vector3f(0, 0, 1));
-	v += p;
+	v = q.rotatedVector(QVector3D(0.f, 0.f, 1.f)) + qp;
 	glColor3f(0xFF, 0, 0xFF);
 	glVertex3f(p.x, p.y, p.z);
-	glVertex3f(v.x, v.y, v.z);
+	glVertex3f(v.x(), v.y(), v.z());
 	glEnd();
 }
 void KSensor::NextJoint(int step)
 {
 	m_ActiveJoint = Mod(m_ActiveJoint, JointType_Count, step);
 	const KJoint &j = m_Joints[m_ActiveJoint];
-	cout << left << setw(2) << m_ActiveJoint << ": " << setw(15) << j.name << " p=" << left << setw(25) << j.Position.ToString() << " q=" << j.Orientation.ToString() << j.Orientation.ToEulerAnglesString() << j.Orientation.ToAxisAngleString() << endl;
+	cout << left << setw(2) << m_ActiveJoint << ": " << setw(15) << j.name << " p=" << left << setw(25) << j.Position.ToString() << " q=" << printQuaternion1(j.Orientation) << printQuaternion2(j.Orientation) << printQuaternion3(j.Orientation) << endl;
 }

@@ -17,9 +17,9 @@ struct KJoint
 {
 	string name;
 	Vector3f Position;
-	Quaternion Orientation;
-	Quaternion relOrientation; // relative orientation
-	Quaternion corOrientation; // corrected orientation
+	QQuaternion Orientation;
+	QQuaternion relOrientation; // relative orientation
+	QQuaternion corOrientation; // corrected orientation
 	uint id;
 	uint idOpposite; // id of corresponding opposite side joint (eg. left->right)
 	uint parent;

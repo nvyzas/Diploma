@@ -27,26 +27,6 @@ Vector3f& Vector3f::Normalize()
     return *this;
 }
 
-void Vector3f::Rotate(float Angle, const Vector3f& Axe)
-{
-    const float SinHalfAngle = sinf(ToRadian(Angle/2));
-    const float CosHalfAngle = cosf(ToRadian(Angle/2));
-
-    const float Rx = Axe.x * SinHalfAngle;
-    const float Ry = Axe.y * SinHalfAngle;
-    const float Rz = Axe.z * SinHalfAngle;
-    const float Rw = CosHalfAngle;
-    Quaternion RotationQ(Rx, Ry, Rz, Rw);
-
-    Quaternion ConjugateQ = RotationQ.Conjugate();
-  //  ConjugateQ.Normalize();
-    Quaternion W = RotationQ * (*this) * ConjugateQ;
-
-    x = W.x;
-    y = W.y;
-    z = W.z;
-}
-
 float Vector3f::DistanceFrom(const Vector3f& v) const
 {
 	return sqrt(pow((double(this->x - v.x)), 2) + pow((double(this->y - v.y)), 2) + pow((double(this->z - v.z)), 2));
@@ -89,17 +69,17 @@ void Matrix4f::InitRotateTransform(float RotateX, float RotateY, float RotateZ)
 
     *this = rz * ry * rx;
 }
-void Matrix4f::InitRotateTransform1(const Quaternion& quat)
+void Matrix4f::InitRotateTransform1(const QQuaternion& quat)
 {
-    float yy2 = 2.0f * quat.y * quat.y;
-    float xy2 = 2.0f * quat.x * quat.y;
-    float xz2 = 2.0f * quat.x * quat.z;
-    float yz2 = 2.0f * quat.y * quat.z;
-    float zz2 = 2.0f * quat.z * quat.z;
-    float wz2 = 2.0f * quat.w * quat.z;
-    float wy2 = 2.0f * quat.w * quat.y;
-    float wx2 = 2.0f * quat.w * quat.x;
-    float xx2 = 2.0f * quat.x * quat.x;
+    float yy2 = 2.0f * quat.y() * quat.y();
+    float xy2 = 2.0f * quat.x() * quat.y();
+    float xz2 = 2.0f * quat.x() * quat.z();
+    float yz2 = 2.0f * quat.y() * quat.z();
+    float zz2 = 2.0f * quat.z() * quat.z();
+    float wz2 = 2.0f * quat.scalar() * quat.z();
+    float wy2 = 2.0f * quat.scalar() * quat.y();
+    float wx2 = 2.0f * quat.scalar() * quat.x();
+    float xx2 = 2.0f * quat.x() * quat.x();
     m[0][0] = - yy2 - zz2 + 1.0f;
     m[0][1] = xy2 + wz2;
     m[0][2] = xz2 - wy2;
@@ -116,9 +96,9 @@ void Matrix4f::InitRotateTransform1(const Quaternion& quat)
     m[3][3] = 1.0f;
 }
 //using aiQuat
-void Matrix4f::InitRotateTransform2(const Quaternion& quat)
+void Matrix4f::InitRotateTransform2(const QQuaternion& quat)
 {
-	*this = aiQuaternion(quat.w, quat.x, quat.y, quat.z).GetMatrix();
+	*this = aiQuaternion(quat.scalar(), quat.x(), quat.y(), quat.z()).GetMatrix();
 }
 void Matrix4f::InitTranslateTransform(float x, float y, float z)
 {
@@ -265,60 +245,46 @@ Matrix4f Matrix4f::GetInverse() const
 	return res;
 }
 // http://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/
-Quaternion Matrix4f::ExtractQuaternion1() const {
+QQuaternion Matrix4f::ExtractQuaternion1() const {
 	float trace = m[0][0] + m[1][1] + m[2][2]; 
-	Quaternion q;
+	QQuaternion q;
 	if (trace > 0) {
 		float s = 0.5f / sqrtf(trace + 1.0f);
-		q.w = 0.25f / s;
-		q.x = (m[2][1] - m[1][2]) * s;
-		q.y = (m[0][2] - m[2][0]) * s;
-		q.z = (m[1][0] - m[0][1]) * s;
+		q.setScalar(0.25f / s);
+		q.setX((m[2][1] - m[1][2]) * s);
+		q.setY((m[0][2] - m[2][0]) * s);
+		q.setZ((m[1][0] - m[0][1]) * s);
+	}
+	else if (m[0][0] > m[1][1] && m[0][0] > m[2][2]) {
+		float s = 2.0f * sqrtf(1.0f + m[0][0] - m[1][1] - m[2][2]);
+		q.setScalar((m[2][1] - m[1][2]) / s);
+		q.setX(0.25f * s);
+		q.setY((m[0][1] + m[1][0]) / s);
+		q.setZ((m[0][2] + m[2][0]) / s);
+	}
+	else if (m[1][1] > m[2][2]) {
+		float s = 2.0f * sqrtf(1.0f + m[1][1] - m[0][0] - m[2][2]);
+		q.setScalar((m[0][2] - m[2][0]) / s);
+		q.setX((m[0][1] + m[1][0]) / s);
+		q.setY(0.25f * s);
+		q.setZ((m[1][2] + m[2][1]) / s);
 	}
 	else {
-		if (m[0][0] > m[1][1] && m[0][0] > m[2][2]) {
-			float s = 2.0f * sqrtf(1.0f + m[0][0] - m[1][1] - m[2][2]);
-			q.w = (m[2][1] - m[1][2]) / s;
-			q.x = 0.25f * s;
-			q.y = (m[0][1] + m[1][0]) / s;
-			q.z = (m[0][2] + m[2][0]) / s;
-		}
-		else if (m[1][1] > m[2][2]) {
-			float s = 2.0f * sqrtf(1.0f + m[1][1] - m[0][0] - m[2][2]);
-			q.w = (m[0][2] - m[2][0]) / s;
-			q.x = (m[0][1] + m[1][0]) / s;
-			q.y = 0.25f * s;
-			q.z = (m[1][2] + m[2][1]) / s;
-		}
-		else {
-			float s = 2.0f * sqrtf(1.0f + m[2][2] - m[0][0] - m[1][1]);
-			q.w = (m[1][0] - m[0][1]) / s;
-			q.x = (m[0][2] + m[2][0]) / s;
-			q.y = (m[1][2] + m[2][1]) / s;
-			q.z = 0.25f * s;
-		}
+		float s = 2.0f * sqrtf(1.0f + m[2][2] - m[0][0] - m[1][1]);
+		q.setScalar((m[1][0] - m[0][1]) / s);
+		q.setX((m[0][2] + m[2][0]) / s);
+		q.setY((m[1][2] + m[2][1]) / s);
+		q.setZ(0.25f * s);
 	}
 	return q;
 }
 //using aiQuat
-Quaternion Matrix4f::ExtractQuaternion2() const
+QQuaternion Matrix4f::ExtractQuaternion2() const
 {
 	aiMatrix3x3 M(m[0][0], m[0][1], m[0][2], m[1][0], m[1][1], m[1][2], m[2][0], m[2][1], m[2][2]);
 	aiQuaternion aiq(M);
-	return Quaternion(aiq.x, aiq.y, aiq.z, aiq.w);
+	return QQuaternion(aiq.w, aiq.x, aiq.y, aiq.z);
 }
-
-/*
-Quaternion Matrix4f::ExtractQuaternion() const
-{
-float w = sqrt(1 + m[0][0] + m[1][1] + m[2][2]) / 2.0f;
-float x = (m[2][1] - m[1][2]) / (4 * w);
-float y = (m[0][2] - m[2][0]) / (4 * w);
-float z = (m[1][0] - m[0][1]) / (4 * w);
-Quaternion ret(x, y, z, w);
-return ret;
-}
-//*/
 
 Matrix4f Matrix4f::GetRotationPart() const 
 {
@@ -352,165 +318,4 @@ ostream &operator<<(ostream &out, const Matrix4f &m)
 	}
 	out << noshowpos;
 	return out;
-}
-Quaternion::Quaternion()
-{
-}
-Quaternion::Quaternion(float _x, float _y, float _z, float _w)
-{
-    x = _x;
-    y = _y;
-    z = _z;
-    w = _w;
-}
-void Quaternion::Normalize()
-{
-    float Length = sqrtf(x * x + y * y + z * z + w * w);
-
-    x /= Length;
-    y /= Length;
-    z /= Length;
-    w /= Length;
-}
-Quaternion Quaternion::Inverted() const
-{
-	float length = 1.0f / (x * x + y * y + z * z + w * w);
-	return Quaternion(-x * length, -y * length, -z * length, w * length);
-}
-Quaternion Quaternion::Conjugate() const
-{
-	return Quaternion(-x, -y, -z, w);
-  
-}
-// https://gamedev.stackexchange.com/questions/28395/rotating-vector3-by-a-quaternion // care computationally expensive!
-Vector3f Quaternion::RotateVector(const Vector3f &v) const	
-{
-	Quaternion p(v.x, v.y, v.z, 0);
-	Quaternion pNew = *this * p * this->Conjugate();
-	Vector3f ret(pNew.x, pNew.y, pNew.z);
-	return ret;
-}
-
-Quaternion operator*(const Quaternion& l, const Quaternion& r)
-{
-    const float w = (l.w * r.w) - (l.x * r.x) - (l.y * r.y) - (l.z * r.z);
-    const float x = (l.x * r.w) + (l.w * r.x) + (l.y * r.z) - (l.z * r.y);
-    const float y = (l.y * r.w) + (l.w * r.y) + (l.z * r.x) - (l.x * r.z);
-    const float z = (l.z * r.w) + (l.w * r.z) + (l.x * r.y) - (l.y * r.x);
-
-    Quaternion ret(x, y, z, w);
-
-    return ret;
-}
-
-Quaternion operator*(const Quaternion& q, const Vector3f& v)
-{
-    const float w = - (q.x * v.x) - (q.y * v.y) - (q.z * v.z);
-    const float x =   (q.w * v.x) + (q.y * v.z) - (q.z * v.y);
-    const float y =   (q.w * v.y) + (q.z * v.x) - (q.x * v.z);
-    const float z =   (q.w * v.z) + (q.x * v.y) - (q.y * v.x);
-
-    Quaternion ret(x, y, z, w);
-
-    return ret;
-}
-
-/*
-Vector3f Quaternion::ToDegrees()
-{ 
-    float t1 = atan2(x * z + y * w, x * w - y * z);
-	float t2 = acos(-x * x - y * y - z * z - w * w);
-    float t3 = atan2(x * z - y * w, x * w + y * z);
-       
-    t1 = ToDegree(t1);
-    t2 = ToDegree(t2);
-    t3 = ToDegree(t3);
-
-	return Vector3f(t1, t2, t3);
-}
-//*/
-
-Vector3f Quaternion::ToEulerAngles() const
-{
-	// roll (x-axis rotation)
-	float ysqr = y*y;	
-	float t1 = atan2(+2.0 * (w * x + y * z), +1.0 - 2.0 * (x * x + ysqr)); 
-
-	// pitch (y-axis rotation)
-	float t2 = +2.0 * (w * y - z * x);
-	t2 = t2 > 1.0 ? 1.0 : t2;
-	t2 = t2 < -1.0 ? -1.0 : t2;
-	t2 = asin(t2);
-
-	// yaw (z-axis rotation)
-	float t3 = atan2(+2.0 * (w * z + x * y), +1.0 - 2.0 * (ysqr + z * z));
-
-	t1 = ToDegree(t1);
-	t2 = ToDegree(t2);
-	t3 = ToDegree(t3);
-	return Vector3f(t1, t2, t3);
-}
-
-// v.w = angle in degrees
-void Quaternion::FromAxisAngle(const Vector4f &v)
-{
-	Vector3f axis(v.x, v.y, v.z);
-	axis.Normalize();
-	float angle = ToRadian(v.w);
-	this->x = axis.x * sin(angle / 2);
-	this->y = axis.y * sin(angle / 2);
-	this->z = axis.z * sin(angle / 2);
-	this->w = cos(angle / 2);
-}
-
-Vector4f Quaternion::ToAxisAngle() const
-{
-	float t1, t2, t3, t4;
-	t1 = x / sqrt(1 - w*w); // x
-	t2 = y / sqrt(1 - w*w); // y
-	t3 = z / sqrt(1 - w*w); // z
-	t4 = 2 * acos(w); // angle
-	t4 = ToDegree(t4);
-	return Vector4f(t1, t2, t3, t4);
-}
-
-/*
-Quaternion FromDegrees(Vector3f degrees) {
-	double t0 = std::cos(yaw * 0.5);
-	double t1 = std::sin(yaw * 0.5);
-	double t2 = std::cos(roll * 0.5);
-	double t3 = std::sin(roll * 0.5);
-	double t4 = std::cos(pitch * 0.5);
-	double t5 = std::sin(pitch * 0.5);
-
-	q.w() = t0 * t2 * t4 + t1 * t3 * t5;
-	q.x() = t0 * t3 * t4 - t1 * t2 * t5;
-	q.y() = t0 * t2 * t5 + t1 * t3 * t4;
-	q.z() = t1 * t2 * t4 - t0 * t3 * t5;
-	return q;
-}
-*/
-
-string Quaternion::ToString() const
-{
-	char buf[64];
-	sprintf(buf, "(%+.2f, %+.2f, %+.2f, %+.2f) ", x, y, z, w);
-	//printf("1: %s\n", buf);
-	return string(buf);
-}
-string Quaternion::ToEulerAnglesString() const
-{
-	char buf[64];
-	const Vector3f &v = ToEulerAngles();
-	sprintf(buf, "(%+6.1f, %+6.1f, %+6.1f) ", v.x, v.y, v.z);
-	//printf("2: %s\n", buf);
-	return string(buf);
-}
-string Quaternion::ToAxisAngleString() const
-{
-	char buf[64];
-	const Vector4f &v = ToAxisAngle();
-	sprintf(buf, "([%+.2f, %+.2f, %+.2f], %+6.1f) ", v.x, v.y, v.z, v.w);
-	//printf("3: %s\n", buf);
-	return string(buf);
 }

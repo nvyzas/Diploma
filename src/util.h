@@ -1,7 +1,11 @@
 #ifndef UTIL_H
 #define	UTIL_H
 
+// Qt
 #include <QtGui\QOpenGLFunctions_3_3_Compatibility>
+
+// Standard C/C++
+using namespace std;
 
 #define OPENGL_FUNCTIONS QOpenGLFunctions_3_3_Compatibility
 #define ZERO_MEM(a) memset(a, 0, sizeof(a))
@@ -43,5 +47,8 @@ inline bool GetBit(int number, int position)
 {
 	return (number >> position) & 1;
 }
+string printQuaternion1(const QQuaternion &q);
+string printQuaternion2(const QQuaternion &q);
+string printQuaternion3(const QQuaternion &q);
 
 #endif	/* UTIL_H */

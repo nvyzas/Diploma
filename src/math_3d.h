@@ -2,9 +2,12 @@
 #define	MATH_3D_H
 
 // Assimp
-#include <assimp/vector3.h>
-#include <assimp/matrix3x3.h>
-#include <assimp/matrix4x4.h>
+#include <assimp\vector3.h>
+#include <assimp\matrix3x3.h>
+#include <assimp\matrix4x4.h>
+
+// Qt
+#include <QtGui\QQuaternion>
 
 // Standard C/C++
 #include <iostream>
@@ -78,8 +81,6 @@ struct Vector3f
     Vector3f Cross(const Vector3f& v) const;
 
     Vector3f& Normalize();
-
-    void Rotate(float Angle, const Vector3f& Axis);
 
     void Print() const
     {
@@ -207,35 +208,6 @@ struct OrthoProjInfo
     float f;        // z far
 };
 
-struct Quaternion
-{
-    float x, y, z, w;
-	
-	Quaternion();
-    Quaternion(float _x, float _y, float _z, float _w);
-	
-    void Normalize();
-	Quaternion Inverted() const;
-    Quaternion Conjugate() const;  
-	void FromAxisAngle(const Vector4f &v);
-	Vector4f ToAxisAngle() const; 
-    Vector3f ToEulerAngles() const;
-	string ToString() const;
-	string ToEulerAnglesString() const;
-	string ToAxisAngleString() const;
-	Vector3f RotateVector(const Vector3f &v) const;
-
-	void Print(bool endl = false) const
-	{
-		printf("(%+.3f, %+.3f, %+.3f, %+.3f)", x, y, z, w);
-
-		if (endl) {
-			printf("\n");
-		}
-	}
- };
-
-
 class Matrix4f
 {
 public:
@@ -272,7 +244,7 @@ public:
 		m[3][0] = a30; m[3][1] = a31; m[3][2] = a32; m[3][3] = a33;
 	}
 	// Rotation matrix (different result than InitRotateTransform function!)
-	Matrix4f(const Quaternion &q, bool rotateFunction = true )
+	Matrix4f(const QQuaternion &q, bool rotateFunction = true)
 	{	
 		if (rotateFunction) InitRotateTransform1(q); else InitRotateTransform2(q);
 	}
@@ -352,10 +324,10 @@ public:
     
     Matrix4f& Invert();
 	Matrix4f GetInverse() const;
-	Quaternion ExtractQuaternion1() const;
-	Quaternion ExtractQuaternion2() const; //using aiQuat
-	void InitRotateTransform1(const Quaternion& quat);
-	void InitRotateTransform2(const Quaternion& quat); //using aiQuat
+	QQuaternion ExtractQuaternion1() const;
+	QQuaternion ExtractQuaternion2() const; //using aiQuat
+	void InitRotateTransform1(const QQuaternion& quat);
+	void InitRotateTransform2(const QQuaternion& quat); //using aiQuat
 	void InitScaleTransform(float ScaleX, float ScaleY, float ScaleZ);
 	void InitRotateTransform(float RotateX, float RotateY, float RotateZ);
 	void InitTranslateTransform(float x, float y, float z);
@@ -369,10 +341,6 @@ public:
 	static Matrix4f Identity();
 	static Matrix4f Zero();
 };
-
-Quaternion operator*(const Quaternion& l, const Quaternion& r);
-
-Quaternion operator*(const Quaternion& q, const Vector3f& v);
 
 #endif	/* MATH_3D_H */
 

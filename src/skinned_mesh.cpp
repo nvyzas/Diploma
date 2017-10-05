@@ -475,7 +475,7 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 	if (NodeName == "Hips") counter = 0;
 	Matrix4f L(pNode->mTransformation);
 	Matrix4f G;
-	Quaternion q;
+	QQuaternion q;
 	stringstream sso;
 	sso << endl << "Node name " << counter << ": " << NodeName << endl;
 	auto it = m_boneMap.find(NodeName);
@@ -483,7 +483,7 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 		// bind pose on
 		if (m_Parameters[1]) {
 			q = (m_Parameters[2]) ? L.ExtractQuaternion1() : L.ExtractQuaternion2();
-			sso << "q rel from model " << ": " << q.ToString() << q.ToEulerAnglesString() << q.ToAxisAngleString() << endl;
+			sso << "q rel from model " << ": " << printQuaternion1(q) << printQuaternion2(q) << printQuaternion3(q) << endl;
 			Matrix4f R = m_Parameters[3] ? Matrix4f(q, true) : Matrix4f(q, false);
 			sso << "Rotation matrix (local) from q:" << endl << R;
 			Matrix4f T = L.GetTranslationPart();
@@ -508,22 +508,22 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 		uint c;
 		if (kit != m_kboneMap.end() && (c = kit->second) != INVALID_JOINT_ID) {			
 			q = m_pKBones[c].Orientation;
-			sso << "q abs from kinect (" << m_pKBones[c].name << "): " << q.ToString() << q.ToEulerAnglesString() << q.ToAxisAngleString() << endl;
+			sso << "q abs from kinect (" << m_pKBones[c].name << "): " << printQuaternion1(q) << printQuaternion2(q) << printQuaternion3(q) << endl;
 			m_absQuats[i] = q;
 			if (NodeName == "Hips") {
 				m_relQuats[i] = m_absQuats[i];				
 			}
 			else {
 				uint p = m_boneMap[pNode->mParent->mName.data];
-				m_relQuats[i] = m_Parameters[4] ? m_absQuats[i]*m_absQuats[p].Inverted(): m_absQuats[p].Inverted()*m_absQuats[i];
+				m_relQuats[i] = m_Parameters[4] ? m_absQuats[i]*m_absQuats[p].inverted(): m_absQuats[p].inverted()*m_absQuats[i];
 				q = m_absQuats[p];
-				sso << "q abs parent: " << q.ToString() << q.ToEulerAnglesString() << q.ToAxisAngleString() << endl;
-				q = m_absQuats[p].Inverted();
-				sso << "q abs parent inverted: " << q.ToString() << q.ToEulerAnglesString() << q.ToAxisAngleString() << endl;
+				sso << "q abs parent: " << printQuaternion1(q) << printQuaternion2(q) << printQuaternion3(q) << endl;
+				q = m_absQuats[p].inverted();
+				sso << "q abs parent inverted: " << printQuaternion1(q) << printQuaternion2(q) << printQuaternion3(q) << endl;
 			}
 			
-			sso << "q relative: " << m_relQuats[i].ToString() << m_relQuats[i].ToEulerAnglesString() << m_relQuats[i].ToAxisAngleString() << endl;
-			sso << "q absolute: " << m_absQuats[i].ToString() << m_absQuats[i].ToEulerAnglesString() << m_absQuats[i].ToAxisAngleString() << endl;
+			sso << "q relative: " << printQuaternion1(m_relQuats[i]) << printQuaternion2(m_relQuats[i]) << printQuaternion3(m_relQuats[i]) << endl;
+			sso << "q absolute: " << printQuaternion1(m_absQuats[i]) << printQuaternion2(m_absQuats[i]) << printQuaternion3(m_absQuats[i]) << endl;
 			Matrix4f R = m_Parameters[3] ? Matrix4f(m_relQuats[i], true) : Matrix4f(m_relQuats[i], false);
 			Matrix4f T = L.GetTranslationPart();
 			L = T*R;
@@ -539,7 +539,7 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 			counter++;
 		}else{ // bones or kbones with invalid id
 			q = (m_Parameters[2]) ? L.ExtractQuaternion1() : L.ExtractQuaternion2();
-			sso << "q rel from model " << ": " << q.ToString() << q.ToEulerAnglesString() << q.ToAxisAngleString() << endl;
+			sso << "q rel from model " << ": " << printQuaternion1(q) << printQuaternion2(q) << printQuaternion3(q) << endl;
 			m_relQuats[i] = q;
 			if (NodeName == "Hips") {
 				m_absQuats[i] = m_relQuats[i];
@@ -548,12 +548,12 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 				uint p = m_boneMap[pNode->mParent->mName.data];
 				m_absQuats[i] = m_Parameters[5] ? m_absQuats[p] * m_relQuats[i] : m_relQuats[i] * m_absQuats[p];
 				q = m_absQuats[p];
-				sso << "q rel parent: " << q.ToString() << q.ToEulerAnglesString() << q.ToAxisAngleString() << endl;
-				q = m_absQuats[p].Inverted();
-				sso << "q rel parent inverted: " << q.ToString() << q.ToEulerAnglesString() << q.ToAxisAngleString() << endl;
+				sso << "q rel parent: " << printQuaternion1(q) << printQuaternion2(q) << printQuaternion3(q) << endl;
+				q = m_absQuats[p].inverted();
+				sso << "q rel parent inverted: " << printQuaternion1(q) << printQuaternion2(q) << printQuaternion3(q) << endl;
 			}
-			sso << "q relative: " << m_relQuats[i].ToString() << m_relQuats[i].ToEulerAnglesString() << m_relQuats[i].ToAxisAngleString() << endl;
-			sso << "q absolute: " << m_absQuats[i].ToString() << m_absQuats[i].ToEulerAnglesString() << m_absQuats[i].ToAxisAngleString() << endl;
+			sso << "q relative: " << printQuaternion1(m_relQuats[i]) << printQuaternion2(m_relQuats[i]) << printQuaternion3(m_relQuats[i]) << endl;
+			sso << "q absolute: " << printQuaternion1(m_absQuats[i]) << printQuaternion2(m_absQuats[i]) << printQuaternion3(m_absQuats[i]) << endl;
 			Matrix4f R = m_Parameters[3] ? Matrix4f(m_relQuats[i], true) : Matrix4f(m_relQuats[i], false);
 			Matrix4f T = L.GetTranslationPart();
 			L = m_Parameters[1] ? Matrix4f(pNode->mTransformation) : T*R;

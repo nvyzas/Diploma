@@ -159,16 +159,16 @@ private:
 	const KJoint *m_pKBones;
 
 	vector<Vector3f> m_relVecs; // relative vectors (for hierarchical translation)
-	vector<Quaternion> m_relQuats; // relative quaternions (for hierarchical rotation)
+	vector<QQuaternion> m_relQuats; // relative quaternions (for hierarchical rotation)
 	vector<Matrix4f> m_relMats; // relative matrices (for hierarchical transforms)
 	vector<Vector3f> m_absVecs; 
-	vector<Quaternion> m_absQuats; 
+	vector<QQuaternion> m_absQuats; 
 	vector<Matrix4f> m_absMats; 	
 	vector<Vector3f> m_conVecs; // control vectors (for controlled translation)
-	vector<Quaternion> m_conQuats; // control quaternions (for controlled rotation)
+	vector<QQuaternion> m_conQuats; // control quaternions (for controlled rotation)
 	vector<Matrix4f> m_conMats;
 	vector<Vector3f> m_corVecs; // correction vectors
-	vector<Quaternion> m_corQuats; // correction quaternions 
+	vector<QQuaternion> m_corQuats; // correction quaternions 
 	vector<Matrix4f> m_corMats;
 	uint m_numBones;
 	uint m_numKBones;
