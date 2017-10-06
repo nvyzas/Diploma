@@ -102,7 +102,7 @@ bool SkinnedMesh::InitFromScene(const aiScene* pScene, const string& Filename)
 	m_conVecs.resize(m_numBones);
 	m_conMats.resize(m_numBones);
 	m_boneInfo.resize(m_numBones);
-	m_BoneTransformInfo.resize(m_numBones);
+	m_bonesTransformInfo.resize(m_numBones);
 	SetConQuats();
 	return true;
 }
@@ -534,7 +534,7 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 			sso << "Global transformation:" << endl << G;
 			m_boneInfo[i].FinalTransformation = m_Parameters[7] ? m_boneInfo[i].BoneOffset: G * m_boneInfo[i].BoneOffset;
 			sso << "Final Transformation:" << endl << m_boneInfo[i].FinalTransformation;
-			m_BoneTransformInfo[counter] = sso.str();
+			m_bonesTransformInfo[findBoneId(QString::fromLocal8Bit(NodeName.c_str()))] = sso.str();
 			sso.clear();
 			counter++;
 		}else{ // bones or kbones with invalid id
@@ -564,7 +564,7 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 			sso << "Global transformation:" << endl << G;
 			m_boneInfo[i].FinalTransformation = m_Parameters[7] ? m_boneInfo[i].BoneOffset : G * m_boneInfo[i].BoneOffset;
 			sso << "Final Transformation:" << endl << m_boneInfo[i].FinalTransformation;
-			m_BoneTransformInfo[counter] = sso.str();
+			m_bonesTransformInfo[findBoneId(QString::fromLocal8Bit(NodeName.c_str()))] = sso.str();
 			sso.clear();
 			counter++;
 		}
@@ -681,24 +681,6 @@ const aiNodeAnim* SkinnedMesh::FindNodeAnim(const aiAnimation* pAnimation, const
 	}
 	return NULL;
 }
-//void SkinnedMesh::NextJoint(int step)
-//{
-//	if (step < 0) {
-//		if (m_activeBone == m_boneMap.begin()) m_activeBone = m_boneMap.end();
-//		m_activeBone--;
-//	}
-//	if (step > 0) {
-//		m_activeBone++;
-//		if (m_activeBone == m_boneMap.end()) m_activeBone = m_boneMap.begin();
-//	}
-//	uint i = m_activeBone->second;// m_BoneMapIterator->second;
-//	cout << "Active joint " << setw(2) << m_activeBone->second << ": " << setw(15) << m_activeBone->first;
-//	cout << " Visible:" << m_boneInfo[i].Visible;
-//	cout << " Offset:" << m_boneInfo[i].Offset;
-//	cout << " BindPose:" << m_boneInfo[i].BindPose;
-//	cout << endl;
-//	cout << m_boneMap.size() << endl;
-//}
 void SkinnedMesh::FlipParameter(uint i)
 {
 	m_Parameters[i].flip();
@@ -736,7 +718,8 @@ void SkinnedMesh::setBoneVisibility(const QString &boneName, bool state)
 }
 QString SkinnedMesh::boneTransformInfo(const QString& boneName) const
 {
-	return QString::fromLocal8Bit(m_BoneTransformInfo[findBoneId(boneName)].c_str());
+	cout << m_bonesTransformInfo[findBoneId(boneName)] << endl;
+	return QString::fromLocal8Bit(m_bonesTransformInfo[findBoneId(boneName)].c_str());
 }
 void SkinnedMesh::flipBonesVisibility()
 {

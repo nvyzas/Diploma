@@ -17,7 +17,6 @@ struct BaseLight
         DiffuseIntensity = 0.0f;
     }
 };
-
 struct DirectionalLight : public BaseLight
 {        
     Vector3f Direction;
@@ -27,7 +26,6 @@ struct DirectionalLight : public BaseLight
         Direction = Vector3f(0.0f, 0.0f, 0.0f);
     }
 };
-
 struct PointLight : public BaseLight
 {
     Vector3f Position;
@@ -47,7 +45,6 @@ struct PointLight : public BaseLight
         Attenuation.Exp = 0.0f;
     }
 };
-
 struct SpotLight : public PointLight
 {
     Vector3f Direction;
@@ -59,7 +56,6 @@ struct SpotLight : public PointLight
         Cutoff = 0.0f;
     }
 };
-
 class SkinningTechnique : public Technique {
 public:
 

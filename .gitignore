@@ -263,3 +263,6 @@ __pycache__/
 
 # qt
 GeneratedFiles/
+
+# cmake
+build/

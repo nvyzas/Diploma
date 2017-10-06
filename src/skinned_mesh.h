@@ -182,8 +182,7 @@ private:
 	bitset<NUM_PARAMETERS> m_Parameters;
 	const string m_ParametersStringTrue[NUM_PARAMETERS] = { "",  "My local", "My quaternion", "My matrix", "qRel=qAbs*qAbsParInv","qAbs=qAbsPar*qRel", "Bind pose", "Offset pose" };
 	const string m_ParametersStringFalse[NUM_PARAMETERS] = { "", "AI local", "AI quaternion", "AI matrix", "qRel=qAbsParInv*qAbs","qAbs=qRel*qAbsPar", "Kinect pose", "Kinect pose" };
-	uint m_ActiveBoneTransformInfo;
-	vector<string> m_BoneTransformInfo;
+	vector<string> m_bonesTransformInfo;
 };
 
 #endif	/* SKINNED_MESH_H */
