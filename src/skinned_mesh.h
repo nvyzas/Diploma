@@ -117,12 +117,13 @@ public:
 	void flipBonesVisibility();
 	
 	// Get vertex attribute functions
+	vector<MeshEntry>& entries();
 	vector<Vector3f>& positions();
 	vector<Vector3f>& normals();
 	QVector<QVector2D>& texCoords();
 	vector<VertexBoneData>& vertexBoneData();
-	vector<uint>& indices();
-	vector<MeshEntry>& entries();
+	vector<uint>& indices();	
+	vector<QImage>& images();
 
 private:
 	void Clear();

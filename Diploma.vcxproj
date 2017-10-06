@@ -30,7 +30,6 @@
     <ClCompile Include="src\skinned_mesh.cpp" />
     <ClCompile Include="src\skinning_technique.cpp" />
     <ClCompile Include="src\technique.cpp" />
-    <ClCompile Include="src\texture.cpp" />
     <ClCompile Include="src\util.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -62,7 +61,6 @@
     <ClInclude Include="src\skinned_mesh.h" />
     <ClInclude Include="src\skinning_technique.h" />
     <ClInclude Include="src\technique.h" />
-    <ClInclude Include="src\texture.h" />
     <ClInclude Include="src\util.h" />
   </ItemGroup>
   <ItemGroup>

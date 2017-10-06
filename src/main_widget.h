@@ -2,7 +2,6 @@
 #define MAIN_WIDGET_H
 
 // Project
-class Texture;
 class Camera;
 class KSensor;
 class SkinnedMesh;
@@ -93,8 +92,7 @@ private:
 	};
 	GLuint m_VAO;
 	GLuint m_Buffers[NUM_VBs];
-	bool InitMaterials(const aiScene* pScene, const string& Filename);
-	vector<Texture*> m_Textures;
+	vector<QOpenGLTexture*> m_textures;
 	void drawSkinnedMesh();
 	bool m_successfullyLoaded = false;
 };

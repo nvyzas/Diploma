@@ -199,13 +199,10 @@ bool SkinnedMesh::initImages(const aiScene* pScene, const string& Filename)
 		ret = false;
 		const aiMaterial* pMaterial = pScene->mMaterials[i];
 		if (pMaterial->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
-			cout << "hup" << endl;
 			aiString Path;
 			if (pMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS) {
-				cout << "two" << endl;
 				string p(Path.data);
 				if (p.substr(0, 2) == ".\\") {
-					cout << "three" << endl;
 					p = p.substr(2, p.size() - 2);
 				}
 				string foolPath(Dir + "/" + p);
@@ -796,6 +793,10 @@ vector<VertexBoneData>& SkinnedMesh::vertexBoneData()
 vector<uint>& SkinnedMesh::indices()
 {
 	return m_indices;
+}
+vector<QImage>& SkinnedMesh::images()
+{
+	return m_images;
 }
 vector<MeshEntry>& SkinnedMesh::entries()
 {
