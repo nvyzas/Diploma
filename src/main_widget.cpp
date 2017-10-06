@@ -1,5 +1,7 @@
-// Project
+// Own
 #include "main_widget.h"
+
+// Project
 #include "skinned_mesh.h"
 #include "skinning_technique.h"
 #include "pipeline.h"
@@ -7,14 +9,15 @@
 #include "sensor.h"
 
 // Assimp
-#include <assimp/Importer.hpp>      // C++ importer interface
-#include <assimp/scene.h>			 // Output data structure
-#include <assimp/postprocess.h>     // Post processing flags
+#include <assimp\Importer.hpp>      
+#include <assimp\scene.h>			 
+#include <assimp\postprocess.h>     
 
 // Qt
 #include <QtCore\QDebug>
 #include <QtGui\QKeyEvent>
 
+// Standard C/C++
 #include <cassert>
 
 MainWidget::MainWidget(QWidget *parent) : QOpenGLWidget(parent)
@@ -25,7 +28,10 @@ MainWidget::MainWidget(QWidget *parent) : QOpenGLWidget(parent)
 }
 MainWidget::~MainWidget()
 {
+	makeCurrent();
 	unloadFromGPU();
+	doneCurrent();
+
 	delete m_Mesh;
 	delete m_Cam;
 	delete m_Sensor;

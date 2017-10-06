@@ -3,24 +3,27 @@
 
 // Project
 class Texture;
-
-// Assimp
-struct aiScene;
-
-#include "math_3d.h"
-#include "util.h"
-#include <QtWidgets\QOpenGLWidget>
-
-// Standard C/C++
-//#include <vector>
-
-// Forward declarations
 class Camera;
 class KSensor;
 class SkinnedMesh;
 class Technique;
 class SkinningTechnique;
 class Pipeline;
+#include "math_3d.h"
+#include "util.h"
+
+// Assimp
+struct aiScene;
+
+// Qt
+#include <QtWidgets\QOpenGLWidget>
+QT_FORWARD_DECLARE_CLASS(QOpenGLTexture);
+
+// Standard C/C++
+//#include <vector>
+
+// Forward declarations
+
 
 class MainWidget : public QOpenGLWidget, protected OPENGL_FUNCTIONS
 {

@@ -8,9 +8,9 @@
 #include "math_3d.h"
 
 // Assimp
-#include <assimp/Importer.hpp>      // C++ importer interface
-#include <assimp/scene.h>			 // Output data structure
-#include <assimp/postprocess.h>     // Post processing flags
+#include <assimp\Importer.hpp>      // C++ importer interface
+#include <assimp\scene.h>			 // Output data structure
+#include <assimp\postprocess.h>     // Post processing flags
 
 // Qt
 #include <QtCore\QVector>
@@ -86,7 +86,7 @@ class SkinnedMesh : protected OPENGL_FUNCTIONS
 {
 public:
 	SkinnedMesh();
-	~SkinnedMesh();
+	~SkinnedMesh();	
 	bool LoadMesh(const string& Filename);
 	void BoneTransform(float TimeInSeconds, vector<Matrix4f>& Transforms);
 	void GetBoneTransforms(vector<Matrix4f>& Transforms);
@@ -125,7 +125,10 @@ public:
 	vector<MeshEntry>& entries();
 
 private:
-
+	void Clear();
+	void InitMesh(uint MeshIndex, const aiMesh* paiMesh);
+	void LoadBones(uint MeshIndex, const aiMesh* paiMesh, vector<VertexBoneData>& Bones);
+	bool initImages(const aiScene* pScene, const string& Filename);
 	void CalcInterpolatedScaling(aiVector3D& Out, float AnimationTime, const aiNodeAnim* pNodeAnim);
 	void CalcInterpolatedRotation(aiQuaternion& Out, float AnimationTime, const aiNodeAnim* pNodeAnim);
 	void CalcInterpolatedPosition(aiVector3D& Out, float AnimationTime, const aiNodeAnim* pNodeAnim);
@@ -135,24 +138,19 @@ private:
 	const aiNodeAnim* FindNodeAnim(const aiAnimation* pAnimation, const string NodeName);
 	void ReadNodeHierarchy(float AnimationTime, const aiNode* pNode, const Matrix4f& ParentTransform);
 	bool InitFromScene(const aiScene* pScene, const string& Filename);
-	void InitMesh(uint MeshIndex, const aiMesh* paiMesh);
-	void LoadBones(uint MeshIndex, const aiMesh* paiMesh, vector<VertexBoneData>& Bones);
-	void Clear();
-
 
 	// Data loaded in CPU by LoadMesh		
 	vector<MeshEntry> m_entries;
-
 	// Vertex Attributes
 	vector<Vector3f> m_positions;
 	vector<Vector3f> m_normals;
 	QVector<QVector2D> m_texCoords;
 	vector<VertexBoneData> m_vertexBoneData;
 	vector<uint> m_indices;
-	
 	// Bones
 	vector<BoneInfo> m_boneInfo;
-
+	// Textures
+	vector<QImage> m_images;
 
 	map<string, uint> m_boneMap; // maps a model bone name to its index (key = bone name, value = index)
 	map<string, uint> m_kboneMap; // maps a model bone name to its kinect JointType index

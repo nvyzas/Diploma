@@ -3,6 +3,7 @@
 
 // Qt
 #include <QtGui\QVector2D>
+#include <QtGui\QImage>
 
 // Standard C/C++
 #include <cassert>
@@ -35,6 +36,7 @@ void SkinnedMesh::Clear()
 	m_texCoords.clear();
 	m_vertexBoneData.clear();
 	m_indices.clear();
+	m_images.clear();
 	m_boneInfo.clear();
 }
 bool SkinnedMesh::LoadMesh(const string& basename)
@@ -54,6 +56,7 @@ bool SkinnedMesh::LoadMesh(const string& basename)
     else {
         printf("Error parsing '%s': '%s'\n", Filename.c_str(), m_Importer.GetErrorString());
     }
+	
 	m_SuccessfullyLoaded = Ret;
 
     return Ret;
@@ -104,6 +107,9 @@ bool SkinnedMesh::InitFromScene(const aiScene* pScene, const string& Filename)
 	m_boneInfo.resize(m_numBones);
 	m_bonesTransformInfo.resize(m_numBones);
 	SetConQuats();
+
+	initImages(m_pScene, Filename);
+
 	return true;
 }
 void SkinnedMesh::InitMesh(uint MeshIndex, const aiMesh* paiMesh)
@@ -166,6 +172,52 @@ void SkinnedMesh::LoadBones(uint MeshIndex, const aiMesh* pMesh, vector<VertexBo
 			Bones[VertexID].AddBoneData(BoneIndex, Weight);
 		}
 	}
+}
+bool SkinnedMesh::initImages(const aiScene* pScene, const string& Filename)
+{
+	// Extract the directory part from the file name
+	string::size_type SlashIndex = Filename.find_last_of("/");
+	string Dir;
+
+	if (SlashIndex == string::npos) {
+		cout << "boom" << endl;
+		Dir = ".";
+	}
+	else if (SlashIndex == 0) {
+		cout << "baam" << endl;
+		Dir = "/";
+	}
+	else {
+		cout << "beem" << endl;
+		Dir = Filename.substr(0, SlashIndex);
+	}
+
+	bool ret;
+
+	// Initialize the materials
+	for (uint i = 0; i < pScene->mNumMaterials; i++) {
+		ret = false;
+		const aiMaterial* pMaterial = pScene->mMaterials[i];
+		if (pMaterial->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
+			cout << "hup" << endl;
+			aiString Path;
+			if (pMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS) {
+				cout << "two" << endl;
+				string p(Path.data);
+				if (p.substr(0, 2) == ".\\") {
+					cout << "three" << endl;
+					p = p.substr(2, p.size() - 2);
+				}
+				string foolPath(Dir + "/" + p);
+				QString fullPath = QString::fromLocal8Bit(foolPath.c_str());
+				cout << "Loading image from: " << foolPath;
+				m_images.push_back(QImage(QString(fullPath)));
+				ret = true;
+			}
+		}
+	}
+
+	return ret;
 }
 void VertexBoneData::AddBoneData(uint BoneID, float Weight)
 {
