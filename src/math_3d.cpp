@@ -7,6 +7,11 @@
 // Standard C/C++
 #include <cassert>
 
+
+const Vector3f Vector3f::Zero = Vector3f(0.0f, 0.0f, 0.0f);
+const Vector3f Vector3f::UnitX = Vector3f(1.0f, 0.0f, 0.0f);
+const Vector3f Vector3f::UnitY = Vector3f(1.0f, 0.0f, 0.0f);
+const Vector3f Vector3f::UnitZ = Vector3f(1.0f, 0.0f, 0.0f);
 Vector3f Vector3f::Cross(const Vector3f& v) const
 {
     const float _x = y * v.z - z * v.y;
@@ -15,7 +20,6 @@ Vector3f Vector3f::Cross(const Vector3f& v) const
 
     return Vector3f(_x, _y, _z);
 }
-
 Vector3f& Vector3f::Normalize()
 {
     const float Length = sqrtf(x * x + y * y + z * z);
@@ -26,17 +30,10 @@ Vector3f& Vector3f::Normalize()
 
     return *this;
 }
-
 float Vector3f::DistanceFrom(const Vector3f& v) const
 {
 	return sqrt(pow((double(this->x - v.x)), 2) + pow((double(this->y - v.y)), 2) + pow((double(this->z - v.z)), 2));
 }
-
-const Vector3f Vector3f::Zero = Vector3f(0.0f, 0.0f, 0.0f);
-const Vector3f Vector3f::UnitX = Vector3f(1.0f, 0.0f, 0.0f);
-const Vector3f Vector3f::UnitY = Vector3f(1.0f, 0.0f, 0.0f);
-const Vector3f Vector3f::UnitZ = Vector3f(1.0f, 0.0f, 0.0f);
-
 void Matrix4f::InitScaleTransform(float ScaleX, float ScaleY, float ScaleZ)
 {
     m[0][0] = ScaleX; m[0][1] = 0.0f;   m[0][2] = 0.0f;   m[0][3] = 0.0f;
@@ -121,7 +118,6 @@ void Matrix4f::InitCameraTransform(const Vector3f& Target, const Vector3f& Up)
     m[2][0] = N.x;   m[2][1] = N.y;   m[2][2] = N.z;   m[2][3] = 0.0f;
     m[3][0] = 0.0f;  m[3][1] = 0.0f;  m[3][2] = 0.0f;  m[3][3] = 1.0f;
 }
-
 void Matrix4f::InitPersProjTransform(const PersProjInfo& p)
 {
     const float ar         = p.Width / p.Height;

@@ -193,7 +193,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_7:
 	case Qt::Key_8:
 	case Qt::Key_9:
-		m_Mesh->FlipParameter(key - Qt::Key_0);
+		m_Mesh->flipParameter(key - Qt::Key_0);
 		Transform(true);
 		break;
 	default:
@@ -330,11 +330,18 @@ void MainWidget::flipBonesVisibility()
 	}
 	update();
 }
-void MainWidget::setBoneVisibility(const QString &boneName, bool state)
+void MainWidget::setBoneVisibility(const QString& boneName, bool state)
 {
 	m_Mesh->setBoneVisibility(boneName, state);
 	m_Skin->enable();
 	m_Skin->setBoneVisibility(m_Mesh->findBoneId(boneName), state);
+	update();
+}
+void MainWidget::setBoneRotation(const QString& boneName, float xRot, float yRot, float zRot)
+{
+	qDebug() << "widget" << boneName << " " << xRot << " " << yRot << " " << zRot;
+	m_Mesh->setBoneRotation(boneName, xRot, yRot, zRot);
+	Transform(false);
 	update();
 }
 void MainWidget::setModelSkinning(bool state)

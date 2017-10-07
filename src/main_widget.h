@@ -21,9 +21,6 @@ QT_FORWARD_DECLARE_CLASS(QOpenGLTexture);
 // Standard C/C++
 //#include <vector>
 
-// Forward declarations
-
-
 class MainWidget : public QOpenGLWidget, protected OPENGL_FUNCTIONS
 {
 	Q_OBJECT
@@ -43,6 +40,7 @@ public slots:
 	void setRenderModel(bool state);
 	void flipBonesVisibility();
 	void setBoneVisibility(const QString& boneName, bool state);
+	void setBoneRotation(const QString& boneName, float xRot, float yRot, float zRot);
 	void setModelSkinning(bool state);
 	void setModelName(const QString& model);
 	

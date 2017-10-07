@@ -19,6 +19,7 @@ private slots:
 	void printActiveBoneTransform();
 	void loadActiveBoneInfo();
 	void setActiveBoneVisibility(bool state);
+	void setActiveBoneRotation(int value);
 private:
 	void setupObjects();
 	void setupConnections();

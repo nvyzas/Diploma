@@ -106,7 +106,7 @@ bool SkinnedMesh::InitFromScene(const aiScene* pScene, const string& Filename)
 	m_conMats.resize(m_numBones);
 	m_boneInfo.resize(m_numBones);
 	m_bonesTransformInfo.resize(m_numBones);
-	SetConQuats();
+	setConMats();
 
 	initImages(m_pScene, Filename);
 
@@ -180,15 +180,12 @@ bool SkinnedMesh::initImages(const aiScene* pScene, const string& Filename)
 	string Dir;
 
 	if (SlashIndex == string::npos) {
-		cout << "boom" << endl;
 		Dir = ".";
 	}
 	else if (SlashIndex == 0) {
-		cout << "baam" << endl;
 		Dir = "/";
 	}
 	else {
-		cout << "beem" << endl;
 		Dir = Filename.substr(0, SlashIndex);
 	}
 
@@ -524,12 +521,12 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 	if (NodeName == "Hips") counter = 0;
 	Matrix4f L(pNode->mTransformation);
 	Matrix4f G;
+	Matrix4f C = Matrix4f::Identity();
 	QQuaternion q;
 	stringstream sso;
 	sso << endl << "Node name " << counter << ": " << NodeName << endl;
 	auto it = m_boneMap.find(NodeName);
-	if (m_Parameters[6] || (it == m_boneMap.end())){
-		// bind pose on
+	if (m_Parameters[6] || (it == m_boneMap.end())){ // bind pose on		
 		if (m_Parameters[1]) {
 			q = (m_Parameters[2]) ? L.ExtractQuaternion1() : L.ExtractQuaternion2();
 			sso << "q rel from model " << ": " << printQuaternion1(q) << printQuaternion2(q) << printQuaternion3(q) << endl;
@@ -548,14 +545,16 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 		sso << "Global transformation:" << endl << G;
 		if (it != m_boneMap.end()) {
 			uint i = it->second;
-			m_boneInfo[i].FinalTransformation = (m_Parameters[7] ? m_boneInfo[i].BoneOffset : G * m_boneInfo[i].BoneOffset);
+			if (!m_Parameters[8]) C = m_conMats[i];
+			sso << "Control transformation:" << endl << C;
+			m_boneInfo[i].FinalTransformation = m_Parameters[7] ? C * m_boneInfo[i].BoneOffset : G * C * m_boneInfo[i].BoneOffset;
 		}
 	}
-	else {
+	else { 
 		uint i = it->second;
 		auto kit = m_kboneMap.find(NodeName);
 		uint c;
-		if (kit != m_kboneMap.end() && (c = kit->second) != INVALID_JOINT_ID) {			
+		if (kit != m_kboneMap.end() && (c = kit->second) != INVALID_JOINT_ID) { // model node	
 			q = m_pKBones[c].Orientation;
 			sso << "q abs from kinect (" << m_pKBones[c].name << "): " << printQuaternion1(q) << printQuaternion2(q) << printQuaternion3(q) << endl;
 			m_absQuats[i] = q;
@@ -569,24 +568,25 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 				sso << "q abs parent: " << printQuaternion1(q) << printQuaternion2(q) << printQuaternion3(q) << endl;
 				q = m_absQuats[p].inverted();
 				sso << "q abs parent inverted: " << printQuaternion1(q) << printQuaternion2(q) << printQuaternion3(q) << endl;
-			}
-			
+			}			
 			sso << "q relative: " << printQuaternion1(m_relQuats[i]) << printQuaternion2(m_relQuats[i]) << printQuaternion3(m_relQuats[i]) << endl;
 			sso << "q absolute: " << printQuaternion1(m_absQuats[i]) << printQuaternion2(m_absQuats[i]) << printQuaternion3(m_absQuats[i]) << endl;
 			Matrix4f R = m_Parameters[3] ? Matrix4f(m_relQuats[i], true) : Matrix4f(m_relQuats[i], false);
 			Matrix4f T = L.GetTranslationPart();
-			L = T*R;
+			L = T * R;
 			G = P * L;
 			sso << "Rotation matrix (local) from q:" << endl << R;
 			sso << "Translation matrix (local) from model:" << endl << T;
 			sso << "Local transformation:" << endl << L;
 			sso << "Global transformation:" << endl << G;
-			m_boneInfo[i].FinalTransformation = m_Parameters[7] ? m_boneInfo[i].BoneOffset: G * m_boneInfo[i].BoneOffset;
+			if (!m_Parameters[8]) C = m_conMats[i];
+			sso << "Control transformation:" << endl << C;
+			m_boneInfo[i].FinalTransformation = m_Parameters[7] ? C * m_boneInfo[i].BoneOffset : G * C * m_boneInfo[i].BoneOffset;		
 			sso << "Final Transformation:" << endl << m_boneInfo[i].FinalTransformation;
 			m_bonesTransformInfo[findBoneId(QString::fromLocal8Bit(NodeName.c_str()))] = sso.str();
 			sso.clear();
 			counter++;
-		}else{ // bones or kbones with invalid id
+		}else{ // kinect node
 			q = (m_Parameters[2]) ? L.ExtractQuaternion1() : L.ExtractQuaternion2();
 			sso << "q rel from model " << ": " << printQuaternion1(q) << printQuaternion2(q) << printQuaternion3(q) << endl;
 			m_relQuats[i] = q;
@@ -611,32 +611,34 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 			sso << "Translation matrix (local) from model:" << endl << T;
 			sso << "Local transformation:" << endl << L;			
 			sso << "Global transformation:" << endl << G;
-			m_boneInfo[i].FinalTransformation = m_Parameters[7] ? m_boneInfo[i].BoneOffset : G * m_boneInfo[i].BoneOffset;
+			if (!m_Parameters[8]) C = m_conMats[i];
+			sso << "Control transformation:" << endl << C;
+			m_boneInfo[i].FinalTransformation = m_Parameters[7] ? C * m_boneInfo[i].BoneOffset : G * C * m_boneInfo[i].BoneOffset;
 			sso << "Final Transformation:" << endl << m_boneInfo[i].FinalTransformation;
 			m_bonesTransformInfo[findBoneId(QString::fromLocal8Bit(NodeName.c_str()))] = sso.str();
 			sso.clear();
 			counter++;
 		}
-	}
-		
+	}		
 	for (uint i = 0; i < pNode->mNumChildren; i++) {
 		TraverseNodeHierarchy(pNode->mChildren[i], G);
 	}
 }
-void SkinnedMesh::SetConQuats()
+void SkinnedMesh::setConMats() 
 {
-	/*
-	m_Corrections.resize(m_NumBones);
-	Vector3f zeroAngle(0.0f, 0.0f, 0.0f);
-	for (uint i = 0; i < m_Corrections.size(); i++) m_Corrections[i]=Quaternion(0,0,0,1);
-
-	Quaternion q;
-	q.FromAxisAngle(Vector4f(0, 1, 0, 180));
-	m_Corrections[JointType_SpineMid] = q;
-	q.FromAxisAngle(Vector4f(0, 1, 0, 180));
-	m_Corrections[JointType_SpineShoulder] = q;
-	q.FromAxisAngle(Vector4f(0, 1, 0, 90));
-	//*/
+	for (int i = 0; i < m_conMats.size(); i++) {
+		m_conMats[i] = Matrix4f::Identity();
+	}
+}
+void SkinnedMesh::setBoneRotation(const QString& boneName, float xRot, float yRot, float zRot)
+{
+	uint id = findBoneId(boneName);
+	m_boneInfo[id].xRot = xRot;
+	m_boneInfo[id].yRot = yRot;
+	m_boneInfo[id].zRot = zRot;
+	m_conMats[id].InitRotateTransform(xRot, yRot, zRot);
+	cout << "mesh " << boneName.toUtf8().constData() << " " << id << " " << xRot << " " << yRot << " " << zRot << endl;
+	m_conMats[id].Print();
 }
 void SkinnedMesh::initBoneMapping()
 {
@@ -730,7 +732,7 @@ const aiNodeAnim* SkinnedMesh::FindNodeAnim(const aiAnimation* pAnimation, const
 	}
 	return NULL;
 }
-void SkinnedMesh::FlipParameter(uint i)
+void SkinnedMesh::flipParameter(uint i)
 {
 	m_Parameters[i].flip();
 	cout << "Parameter " << i << (m_Parameters[i] ? " ON: " : " OFF: ");

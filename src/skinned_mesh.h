@@ -3,7 +3,6 @@
 
 // Project
 #include "sensor.h"
-#include "texture.h"
 #include "util.h"
 #include "math_3d.h"
 
@@ -73,12 +72,15 @@ struct BoneInfo
 	Matrix4f FinalTransformation;
 	bool Visible;
 	RenderPose Pose;
+	float xRot, yRot, zRot;
+	
 	BoneInfo()
 	{
 		BoneOffset.SetZero();
 		FinalTransformation.SetZero();
 		Visible = true;
 		Pose = Bind;
+		xRot = yRot = zRot = 0;
 	}
 };
 
@@ -91,18 +93,19 @@ public:
 	void BoneTransform(float TimeInSeconds, vector<Matrix4f>& Transforms);
 	void GetBoneTransforms(vector<Matrix4f>& Transforms);
 	void TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P);
-	void SetConQuats();
+	void setBoneRotation(const QString& boneName, float xRot, float yRot, float zRot);
+	void setConMats();
+	void flipParameter(uint i);
 	void PrintInfo() const;
 	void PrintNodeHierarchy(const aiNode* pNode) const;
 	void PrintNodeMatching(const aiNode* pNode) const;
 	void PrintParameters() const;
 	void PrintSceneInfo() const;
+
 	// TODO: implement skinning on/off
 	void AdjustBones(); 
 	void ToggleSkinning();
-	void FlipParameter(uint i);	
-	void NextJoint(int step);
-
+	
 	bool m_SuccessfullyLoaded;
 	uint numBones() const;
 	const map<string, uint>& Bones() const;
@@ -179,8 +182,8 @@ private:
 	Assimp::Importer m_Importer;
 
 	bitset<NUM_PARAMETERS> m_Parameters;
-	const string m_ParametersStringTrue[NUM_PARAMETERS] = { "",  "My local", "My quaternion", "My matrix", "qRel=qAbs*qAbsParInv","qAbs=qAbsPar*qRel", "Bind pose", "Offset pose" };
-	const string m_ParametersStringFalse[NUM_PARAMETERS] = { "", "AI local", "AI quaternion", "AI matrix", "qRel=qAbsParInv*qAbs","qAbs=qRel*qAbsPar", "Kinect pose", "Kinect pose" };
+	const string m_ParametersStringTrue[NUM_PARAMETERS] = { "",  "My local", "My quaternion", "My matrix", "qRel=qAbs*qAbsParInv","qAbs=qAbsPar*qRel", "Bind pose", "Offset pose", "No control" };
+	const string m_ParametersStringFalse[NUM_PARAMETERS] = { "", "AI local", "AI quaternion", "AI matrix", "qRel=qAbsParInv*qAbs","qAbs=qRel*qAbsPar", "Kinect pose", "Kinect pose", "Control" };
 	vector<string> m_bonesTransformInfo;
 };
 
