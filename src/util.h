@@ -47,6 +47,7 @@ inline bool GetBit(int number, int position)
 {
 	return (number >> position) & 1;
 }
+float wrapAngle(float angle, float limit);
 string printQuaternion1(const QQuaternion &q);
 string printQuaternion2(const QQuaternion &q);
 string printQuaternion3(const QQuaternion &q);

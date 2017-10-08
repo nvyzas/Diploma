@@ -204,7 +204,7 @@ bool SkinnedMesh::initImages(const aiScene* pScene, const string& Filename)
 				}
 				string foolPath(Dir + "/" + p);
 				QString fullPath = QString::fromLocal8Bit(foolPath.c_str());
-				cout << "Loading image from: " << foolPath;
+				cout << "Loading image from: " << foolPath << endl;
 				m_images.push_back(QImage(QString(fullPath)));
 				ret = true;
 			}

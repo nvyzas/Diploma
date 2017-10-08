@@ -3,9 +3,8 @@
 
 using namespace std;
 
-const static float STEP_SCALE = 1.0f;
-const static float EDGE_STEP = 0.5f;
-const static int MARGIN = 10;
+static const float zoomStep = 0.25f;
+static const float rotateStep = 15.f;
 
 Camera::Camera()
 {
@@ -20,8 +19,6 @@ Camera::Camera()
 	m_center       = Vector3f(0.0f, 0.0f, 2.0f); // focus point of camera
     m_up           = Vector3f(0.0f, 1.0f, 0.0f); // direction of up vector
 	UpdateCamera();
-	m_step = 0.25;
-	m_angleStep = 15;
 }
 // use it after setting XYZ, offset, center and up
 void Camera::UpdateCamera() {
@@ -40,6 +37,21 @@ void Camera::UpdateSpherical()
 	//m_Theta = atan2(-m_Z / m_X);
 	//m_Phi;
 }
+void Camera::rotateRight(float angles)
+{
+	m_theta += angles;
+	m_theta = wrapAngle(m_theta, 360.f);
+	UpdateCartesian();
+	UpdateCamera();
+}
+void Camera::rotateUp(float angles)
+{
+	float newPhi = m_phi + angles;
+	if (newPhi >= 180.f || newPhi <= 0.f) return;
+	m_phi = newPhi;
+	UpdateCartesian();
+	UpdateCamera();
+}
 void Camera::UpdateCartesian()
 {
 	float rho = m_rho;
@@ -49,84 +61,72 @@ void Camera::UpdateCartesian()
 	m_y = rho*cos(phi);
 	m_z = -rho*sin(phi)*sin(theta);
 }
-bool Camera::OnKeyboardNum(unsigned char key, bool print)
-{
-	bool Ret = false;
-	switch (key) {
-	case '-':
-		m_rho -= m_step;
-		UpdateCartesian();
-		UpdateCamera();
-		PrintInfo();
-		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
-		Ret = true;
-		break;
-	case '+':
-		m_rho += m_step;
-		UpdateCartesian();
-		UpdateCamera();
-		PrintInfo();
-		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
-		Ret = true;
-		break;
-	case '[':
-		m_angleStep = (m_angleStep > 5 ? m_angleStep-5 : m_angleStep);
-		if (print) cout << "Camera: AngleStep(degrees)=" << m_angleStep << endl;
-		Ret = true;
-		break;
-	case ']':
-		m_angleStep = (m_angleStep < 355 ? m_angleStep + 5 : m_angleStep);
-		if (print) cout << "Camera: AngleStep(degrees)=" << m_angleStep << endl;
-		Ret = true;
-		break;
-	case ',':
-		m_step = (m_step > 0.1 ? m_step - 0.1 : m_step);
-		if (print) cout << "Camera: Step=" << m_step << endl;
-		Ret = true;
-		break;
-	case '.':
-		m_step += 0.1;
-		if (print) cout << "Camera: Step=" << m_step << endl;
-		Ret = true;
-		break;
-	default:
-		break;
-	}
-	return Ret;
-}
+//bool Camera::OnKeyboardNum(unsigned char key, bool print)
+//{
+//	bool Ret = false;
+//	switch (key) {
+//	case '-':
+//		m_rho -= m_step;
+//		UpdateCartesian();
+//		UpdateCamera();
+//		PrintInfo();
+//		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
+//		Ret = true;
+//		break;
+//	case '+':
+//		m_rho += m_step;
+//		UpdateCartesian();
+//		UpdateCamera();
+//		PrintInfo();
+//		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
+//		Ret = true;
+//		break;
+//	case '[':
+//		m_angleStep = (m_angleStep > 5 ? m_angleStep-5 : m_angleStep);
+//		if (print) cout << "Camera: AngleStep(degrees)=" << m_angleStep << endl;
+//		Ret = true;
+//		break;
+//	case ']':
+//		m_angleStep = (m_angleStep < 355 ? m_angleStep + 5 : m_angleStep);
+//		if (print) cout << "Camera: AngleStep(degrees)=" << m_angleStep << endl;
+//		Ret = true;
+//		break;
+//	case ',':
+//		m_step = (m_step > 0.1 ? m_step - 0.1 : m_step);
+//		if (print) cout << "Camera: Step=" << m_step << endl;
+//		Ret = true;
+//		break;
+//	case '.':
+//		m_step += 0.1;
+//		if (print) cout << "Camera: Step=" << m_step << endl;
+//		Ret = true;
+//		break;
+//	default:
+//		break;
+//	}
+//	return Ret;
+//}
 bool Camera::onKeyboardArrow(int Key, bool print)
 {	
 	switch (Key) {
 	case Qt::Key_Up:
-		m_phi -= m_angleStep;
-		m_phi = (m_phi <= 0.0f) ? m_phi + 360.0f : m_phi;
-		UpdateCartesian();
-		UpdateCamera();
-		PrintInfo();
+		rotateUp(-rotateStep);
+		if (print) PrintInfo();
 		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " RTF=" << GetRTF().GetString() << " XYZ=" << GetXYZ().GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
 		return true;
 	case Qt::Key_Down:
-		m_phi += m_angleStep;
-		m_phi = (m_phi > 360.0f) ? m_phi - 360.0f : m_phi;
-		UpdateCartesian();
-		UpdateCamera();
-		PrintInfo();
+		rotateUp(+rotateStep);
+		if (print) PrintInfo();
 		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " RTF=" << GetRTF().GetString() << " XYZ=" << GetXYZ().GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
 		return true;
 	case Qt::Key_Left:
-		m_theta += m_angleStep;
-		m_theta = ((m_theta <= 360.0f) ? m_theta : m_theta - 360.0f);
-		UpdateCartesian();
-		UpdateCamera();
-		PrintInfo();
+		rotateRight(+rotateStep);
+		if (print) PrintInfo();
 		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " RTF=" << GetRTF().GetString() << " XYZ=" << GetXYZ().GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
 		return true;
 	case Qt::Key_Right:
-		m_theta -= m_angleStep;
-		m_theta = (m_theta >= 0.0f) ? m_theta : m_theta + 360.0f;
-		UpdateCartesian();
-		UpdateCamera();
-		PrintInfo();
+		rotateRight(-rotateStep);
+		if (print) PrintInfo();
 		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " RTF=" << GetRTF().GetString() << " XYZ=" << GetXYZ().GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
 		return true;
 	default:
@@ -142,11 +142,6 @@ void Camera::Setup(const Vector3f& Pos, const Vector3f& Center, const Vector3f& 
 	m_up.Normalize();
 	m_target = m_center - m_pos;
 	m_target.Normalize();
-}
-void Camera::SetSteps(float Step, float angleStep)
-{
-	m_step = Step;
-	m_angleStep = angleStep;
 }
 void Camera::PrintInfo()
 {

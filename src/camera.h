@@ -12,7 +12,9 @@ public:
 	bool onKeyboardArrow(int Key, bool printInfo);
 	void PrintInfo();
 	void Setup(const Vector3f& Pos, const Vector3f& Center, const Vector3f& Up);
-	void SetSteps(float Step, float angleStep);
+
+	void rotateRight(float mult);
+	void rotateUp(float mult);
 
     const Vector3f& GetPos() const
     {
@@ -80,8 +82,6 @@ private:
     int m_windowWidth;
     int m_windowHeight;
 
-	float m_step;
-	float m_angleStep;
 	Vector3f m_center;
 	void UpdateCartesian();
 	void UpdateSpherical();	// not used atm

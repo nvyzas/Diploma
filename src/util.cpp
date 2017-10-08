@@ -62,3 +62,8 @@ string printQuaternion3(const QQuaternion &q)
 	sprintf(buf, "([%+.2f, %+.2f, %+.2f], %+6.1f) ", x, y, z, angle);
 	return string(buf);
 }
+// clamps angle between 0 and 360
+float wrapAngle(float angle, float limit)
+{
+	return angle - limit * floor(angle / limit);
+}

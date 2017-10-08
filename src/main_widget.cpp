@@ -202,6 +202,37 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 	}
 	update();
 }
+void MainWidget::mousePressEvent(QMouseEvent *event)
+{
+	m_lastPos = event->pos();
+}
+void MainWidget::mouseMoveEvent(QMouseEvent *event)
+{
+	int dx = event->x() - m_lastPos.x();
+	int dy = event->y() - m_lastPos.y();
+
+	if (event->buttons() & Qt::LeftButton) {
+		m_Cam->rotateRight(dx);
+	}
+	else if (event->buttons() & Qt::RightButton) {
+		m_Cam->rotateUp(dy);
+	}
+	m_lastPos = event->pos();
+
+	m_Pipe->SetCamera(m_Cam->GetPos(), m_Cam->GetTarget(), m_Cam->GetUp());
+	m_Skin->enable();
+	m_Skin->SetEyeWorldPos(m_Cam->GetPos());
+	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
+	m_Tech->enable();
+	m_Tech->SetDefault(m_Pipe->GetVPTrans());
+	update();
+}
+
+void MainWidget::mouseReleaseEvent(QMouseEvent * event)
+{
+	//emit clicked();
+}
+
 void MainWidget::DrawAxes()
 {
 	//*

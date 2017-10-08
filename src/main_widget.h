@@ -33,7 +33,6 @@ public:
 	QString boneTransformInfo(const QString& boneName) const;
 	bool boneVisibility(const QString& boneName) const;
 	bool modelSkinning() const;
-	void keyPressEvent(QKeyEvent *event);
 	
 public slots:
 	void setRenderAxes(bool state);
@@ -47,6 +46,10 @@ public slots:
 protected:
 	void initializeGL();
 	void paintGL();
+	void keyPressEvent(QKeyEvent *event) override;
+	void mousePressEvent(QMouseEvent *event) override;
+	void mouseMoveEvent(QMouseEvent *event) override;
+	void mouseReleaseEvent(QMouseEvent *event) override;
 
 private:
 	Camera* m_Cam; 
@@ -55,7 +58,8 @@ private:
 	Technique* m_Tech;
 	SkinningTechnique* m_Skin;
 	Pipeline* m_Pipe;
-
+	
+	QPoint m_lastPos;
 
 	bool m_renderAxes = true;
 	bool m_renderModel = true;
