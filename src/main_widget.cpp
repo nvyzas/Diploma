@@ -332,48 +332,19 @@ bool MainWidget::renderModel() const
 {
 	return m_renderModel;
 }
-QStringList MainWidget::ModelBoneList() const
-{
-	QStringList qsl;
-	for (const auto& it : m_Mesh->Bones()) {
-		qsl << QString::fromLocal8Bit(it.first.c_str());
-	}
-	return qsl;
-}
-QString MainWidget::boneTransformInfo(const QString& boneName) const
-{
-	return m_Mesh->boneTransformInfo(boneName);
-}
-bool MainWidget::boneVisibility(const QString &boneName) const
-{
-	return m_Mesh->boneVisibility(boneName);
-}
 bool MainWidget::modelSkinning() const
 {
 	return m_modelSkinning;
 }
-void MainWidget::flipBonesVisibility()
+QStringList MainWidget::modelBoneList() const
 {
-	m_Mesh->flipBonesVisibility();
-	m_Skin->enable();
-	for (uint i = 0; i < m_Mesh->numBones(); i++) {
-		m_Skin->setBoneVisibility(i, m_Mesh->boneVisibility(i));
-	}
-	update();
+	QStringList qsl;
+	for (const auto& it : m_Mesh->Bones()) qsl << QString::fromLocal8Bit(it.first.c_str());
+	return qsl;
 }
-void MainWidget::setBoneVisibility(const QString& boneName, bool state)
+void MainWidget::setModelName(const QString &modelName)
 {
-	m_Mesh->setBoneVisibility(boneName, state);
-	m_Skin->enable();
-	m_Skin->setBoneVisibility(m_Mesh->findBoneId(boneName), state);
-	update();
-}
-void MainWidget::setBoneRotation(const QString& boneName, float xRot, float yRot, float zRot)
-{
-	qDebug() << "widget" << boneName << " " << xRot << " " << yRot << " " << zRot;
-	m_Mesh->setBoneRotation(boneName, xRot, yRot, zRot);
-	Transform(false);
-	update();
+	m_modelName = modelName;
 }
 void MainWidget::setModelSkinning(bool state)
 {
@@ -381,11 +352,16 @@ void MainWidget::setModelSkinning(bool state)
 	m_Skin->setSkinning(state);
 	update();
 }
-void MainWidget::setModelName(const QString& modelName)
+SkinnedMesh *MainWidget::skinnedMesh()
 {
-	m_modelName = modelName;
-	update();
+	return m_Mesh;
 }
+
+SkinningTechnique *MainWidget::skinningTechnique()
+{
+	return m_Skin;
+}
+
 bool MainWidget::loadToGPU(const string& basename)
 {
 	// Release the previously loaded mesh (if it exists)

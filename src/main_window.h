@@ -15,15 +15,23 @@ class MainWindow : public QMainWindow
 public:
 	MainWindow(QWidget *parent = Q_NULLPTR);
 	~MainWindow();
+
 private slots:
-	void printActiveBoneTransform();
 	void loadActiveBoneInfo();
-	void setActiveBoneVisibility(bool state);
-	void setActiveBoneRotation(int value);
+	void setActiveBoneVisible(bool state);
+	void setActiveBoneFocused(bool state);
+	void setActiveBoneRotationX(int value);
+	void setActiveBoneRotationY(int value);
+	void setActiveBoneRotationZ(int value);
+	void printActiveBoneTransforms() const;
+	void printActiveBoneRotations() const;
+
 private:
+	void loadActiveBoneRotationX();
+	void loadActiveBoneRotationY();
+	void loadActiveBoneRotationZ();
 	void setupObjects();
 	void setupConnections();
-
 	Ui::MainWindow *ui;
 };
 

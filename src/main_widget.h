@@ -27,21 +27,21 @@ class MainWidget : public QOpenGLWidget, protected OPENGL_FUNCTIONS
 public:
 	MainWidget(QWidget *parent = Q_NULLPTR);
 	~MainWidget();
-	bool renderAxes() const;
+
+	// skinned mesh related
 	bool renderModel() const;
-	QStringList ModelBoneList() const;
-	QString boneTransformInfo(const QString& boneName) const;
-	bool boneVisibility(const QString& boneName) const;
 	bool modelSkinning() const;
-	
+	QStringList modelBoneList() const;	
+	void Transform(bool print);
+	SkinnedMesh *skinnedMesh();
+	SkinningTechnique *skinningTechnique();
+
+	bool renderAxes() const;
 public slots:
 	void setRenderAxes(bool state);
 	void setRenderModel(bool state);
-	void flipBonesVisibility();
-	void setBoneVisibility(const QString& boneName, bool state);
-	void setBoneRotation(const QString& boneName, float xRot, float yRot, float zRot);
+	void setModelName(const QString &modelName);
 	void setModelSkinning(bool state);
-	void setModelName(const QString& model);
 	
 protected:
 	void initializeGL();
@@ -62,26 +62,28 @@ private:
 	QPoint m_lastPos;
 
 	bool m_renderAxes = true;
-	bool m_renderModel = true;
 	bool m_renderSkeleton = false;
 	bool m_renderActiveJoint = false;
 	bool m_renderCloud = false;
 	bool m_renderCameraVectors = false;	
-	
 	bool m_play = false;
-	bool m_modelSkinning = true;
-	QString m_modelName;
+
+	
 
 	#define NUM_INFO_BLOCKS 3
 	uint activeJoint = 0;
 	
 	uint activeInfo = 0;
 	void NextInfoBlock(int step);
-	void Transform(bool print);
 	void DrawAxes();
 	void DrawAxes(Vector3f center, Vector3f vx, Vector3f vy, Vector3f vz, float length);
 	void DrawTestAxes();
 	void MySetup();
+
+	// Skinned mesh variables
+	bool m_renderModel = true;
+	bool m_modelSkinning = true;
+	QString m_modelName;
 	bool loadToGPU(const string& basename);
 	void unloadFromGPU();
 	enum VB_TYPES {

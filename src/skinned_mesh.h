@@ -84,7 +84,7 @@ struct BoneInfo
 	}
 };
 
-class SkinnedMesh : protected OPENGL_FUNCTIONS
+class SkinnedMesh
 {
 public:
 	SkinnedMesh();
@@ -93,9 +93,7 @@ public:
 	void BoneTransform(float TimeInSeconds, vector<Matrix4f>& Transforms);
 	void GetBoneTransforms(vector<Matrix4f>& Transforms);
 	void TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P);
-	void setBoneRotation(const QString& boneName, float xRot, float yRot, float zRot);
 	void setConMats();
-	void flipParameter(uint i);
 	void PrintInfo() const;
 	void PrintNodeHierarchy(const aiNode* pNode) const;
 	void PrintNodeMatching(const aiNode* pNode) const;
@@ -107,18 +105,27 @@ public:
 	void ToggleSkinning();
 	
 	bool m_SuccessfullyLoaded;
-	uint numBones() const;
-	const map<string, uint>& Bones() const;
+
 	void setKSensor(const KSensor &ks);
 	void initBoneMapping();
 	void initKBoneMapping();
-	bool boneVisibility(uint boneIndex) const;
+	float boneRotationX(const QString &boneName) const;
+	float boneRotationY(const QString &boneName) const;
+	float boneRotationZ(const QString &boneName) const;
+	void setBoneRotationX(const QString &boneName, float value);
+	void setBoneRotationY(const QString &boneName, float value);
+	void setBoneRotationZ(const QString &boneName, float value);
+
+	uint numBones() const;
+	const map<string, uint>& Bones() const;
 	uint findBoneId(const QString &boneName) const;
+	bool boneVisibility(uint boneIndex) const;
 	bool boneVisibility(const QString &boneName) const;
+	void setBoneVisibility(uint boneIndex, bool state);
 	void setBoneVisibility(const QString &boneName, bool state);
 	QString boneTransformInfo(const QString& boneName) const;
-	void flipBonesVisibility();
-	
+	void flipParameter(uint i);
+
 	// Get vertex attribute functions
 	vector<MeshEntry>& entries();
 	vector<Vector3f>& positions();
@@ -127,7 +134,6 @@ public:
 	vector<VertexBoneData>& vertexBoneData();
 	vector<uint>& indices();	
 	vector<QImage>& images();
-
 private:
 	void Clear();
 	void InitMesh(uint MeshIndex, const aiMesh* paiMesh);
@@ -182,8 +188,8 @@ private:
 	Assimp::Importer m_Importer;
 
 	bitset<NUM_PARAMETERS> m_Parameters;
-	const string m_ParametersStringTrue[NUM_PARAMETERS] = { "",  "My local", "My quaternion", "My matrix", "qRel=qAbs*qAbsParInv","qAbs=qAbsPar*qRel", "Bind pose", "Offset pose", "No control" };
-	const string m_ParametersStringFalse[NUM_PARAMETERS] = { "", "AI local", "AI quaternion", "AI matrix", "qRel=qAbsParInv*qAbs","qAbs=qRel*qAbsPar", "Kinect pose", "Kinect pose", "Control" };
+	const string m_ParametersStringTrue[NUM_PARAMETERS] = { "",  "My local", "My quaternion", "My matrix", "qRel=qAbs*qAbsParInv","qAbs=qAbsPar*qRel", "Bind pose", "Offset pose", "No control", "Isolated control" };
+	const string m_ParametersStringFalse[NUM_PARAMETERS] = { "", "AI local", "AI quaternion", "AI matrix", "qRel=qAbsParInv*qAbs","qAbs=qRel*qAbsPar", "Kinect pose", "Kinect pose", "Control", "Hierarchical control" };
 	vector<string> m_bonesTransformInfo;
 };
 

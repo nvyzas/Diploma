@@ -2,16 +2,19 @@
 #include "main_window.h"
 
 // Project
+#include "skinned_mesh.h"
+#include "skinning_technique.h"
 #include "ui_main_window.h"
 
 // Qt
-#include "QtCore\QDir"
+#include <QtCore\QDir>
+#include <QtWidgets\QAction>
+#include <QtWidgets\QMenu>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
 	ui = new Ui::MainWindow;
 	ui->setupUi(this);
-
 	setupObjects();
 	setupConnections();
 }
@@ -20,27 +23,109 @@ MainWindow::~MainWindow()
 	delete ui;
 }
 
-void MainWindow::printActiveBoneTransform()
-{
-	ui->plainTextEdit->appendPlainText(ui->openGLWidget->boneTransformInfo(ui->comboBox_activeBone->currentText()));
-}
 void MainWindow::loadActiveBoneInfo()
 {
-	ui->checkBox_boneVisible->setChecked(ui->openGLWidget->boneVisibility(ui->comboBox_activeBone->currentText()));
-	//ui->horizontalSlider_xRot->setValue(ui->openGLWidget->boneRotation(ui->comboBox_activeBone->currentText())))
+	const QString &boneName = ui->comboBox_activeBone->currentText();
+	ui->checkBox_boneVisible->setChecked(ui->openGLWidget->skinnedMesh()->boneVisibility(boneName));
+	loadActiveBoneRotationX();
+	loadActiveBoneRotationY();
+	loadActiveBoneRotationZ();
 }
-void MainWindow::setActiveBoneVisibility(bool state)
+void MainWindow::setActiveBoneVisible(bool state)
 {
-	ui->openGLWidget->setBoneVisibility(ui->comboBox_activeBone->currentText(), state);
+	const QString &boneName = ui->comboBox_activeBone->currentText();
+	uint boneId = ui->openGLWidget->skinnedMesh()->findBoneId(boneName);
+	ui->openGLWidget->skinnedMesh()->setBoneVisibility(boneName, state);
+	ui->openGLWidget->skinningTechnique()->enable();
+	ui->openGLWidget->skinningTechnique()->setBoneVisibility(boneId, state);
+	ui->openGLWidget->update();
 }
-void MainWindow::setActiveBoneRotation(int value)
+void MainWindow::setActiveBoneFocused(bool state)
 {
-	const QString& boneName = ui->comboBox_activeBone->currentText();
-	float xRot = ui->horizontalSlider_xRot->value();
-	float yRot = ui->horizontalSlider_yRot->value();
-	float zRot = ui->horizontalSlider_zRot->value();
-	qDebug() << "window" << boneName << " " << xRot << " " << yRot << " " << zRot;
-	ui->openGLWidget->setBoneRotation(boneName, xRot, yRot, zRot);
+	const QString &boneName = ui->comboBox_activeBone->currentText();
+	uint boneId = ui->openGLWidget->skinnedMesh()->findBoneId(boneName);
+	ui->openGLWidget->skinningTechnique()->enable();
+	for (uint i = 0; i < ui->openGLWidget->skinnedMesh()->numBones(); i++) {
+		if (i != boneId) {
+			ui->openGLWidget->skinnedMesh()->setBoneVisibility(i, !state);
+			ui->openGLWidget->skinningTechnique()->setBoneVisibility(i, !state);
+		}
+	}
+	ui->openGLWidget->update();
+}
+void MainWindow::setActiveBoneRotationX(int value)
+{
+	const QString &boneName = ui->comboBox_activeBone->currentText();
+	ui->openGLWidget->skinnedMesh()->setBoneRotationX(boneName, value);
+	ui->openGLWidget->Transform(false);
+	ui->openGLWidget->update();
+	loadActiveBoneRotationX();
+}
+void MainWindow::setActiveBoneRotationY(int value)
+{
+	const QString &boneName = ui->comboBox_activeBone->currentText();
+	ui->openGLWidget->skinnedMesh()->setBoneRotationY(boneName, value);
+	ui->openGLWidget->Transform(false);
+	ui->openGLWidget->update();
+	loadActiveBoneRotationY();
+}
+void MainWindow::setActiveBoneRotationZ(int value)
+{
+	const QString &boneName = ui->comboBox_activeBone->currentText();
+	ui->openGLWidget->skinnedMesh()->setBoneRotationZ(boneName, value);
+	ui->openGLWidget->Transform(false);
+	ui->openGLWidget->update();
+	loadActiveBoneRotationZ();
+}
+void MainWindow::printActiveBoneTransforms() const
+{
+	const QString &boneName = ui->comboBox_activeBone->currentText();
+	cout << string(ui->openGLWidget->skinnedMesh()->boneTransformInfo(boneName).toUtf8());
+}
+void MainWindow::printActiveBoneRotations() const
+{
+	const QString &boneName = ui->comboBox_activeBone->currentText();
+	float xRot = ui->openGLWidget->skinnedMesh()->boneRotationX(boneName);
+	float yRot = ui->openGLWidget->skinnedMesh()->boneRotationY(boneName);
+	float zRot = ui->openGLWidget->skinnedMesh()->boneRotationZ(boneName);
+	cout << setw(20) << string(boneName.toUtf8()) << " " 
+							   << setw(5) << xRot << " " 
+							   << setw(5) << yRot << " " 
+		                       << setw(5) << zRot << endl;
+}
+
+void MainWindow::loadActiveBoneRotationX()
+{
+	const QString &boneName = ui->comboBox_activeBone->currentText();
+	float rotX = ui->openGLWidget->skinnedMesh()->boneRotationX(boneName);
+	ui->horizontalSlider_xRot->blockSignals(true);
+	ui->spinBox_xRot->blockSignals(true);
+	ui->horizontalSlider_xRot->setValue(rotX);
+	ui->spinBox_xRot->setValue(rotX);
+	ui->horizontalSlider_xRot->blockSignals(false);
+	ui->spinBox_xRot->blockSignals(false);
+}
+void MainWindow::loadActiveBoneRotationY()
+{
+	const QString &boneName = ui->comboBox_activeBone->currentText();
+	float rotY = ui->openGLWidget->skinnedMesh()->boneRotationY(boneName);
+	ui->horizontalSlider_yRot->blockSignals(true);
+	ui->spinBox_yRot->blockSignals(true);
+	ui->horizontalSlider_yRot->setValue(rotY);
+	ui->spinBox_yRot->setValue(rotY);
+	ui->horizontalSlider_yRot->blockSignals(false);
+	ui->spinBox_yRot->blockSignals(false);
+}
+void MainWindow::loadActiveBoneRotationZ()
+{
+	const QString &boneName = ui->comboBox_activeBone->currentText();
+	float rotZ = ui->openGLWidget->skinnedMesh()->boneRotationZ(boneName);
+	ui->horizontalSlider_zRot->blockSignals(true);
+	ui->spinBox_zRot->blockSignals(true);
+	ui->horizontalSlider_zRot->setValue(rotZ);
+	ui->spinBox_zRot->setValue(rotZ);
+	ui->horizontalSlider_zRot->blockSignals(false);
+	ui->spinBox_zRot->blockSignals(false);
 }
 void MainWindow::setupObjects()
 {
@@ -50,11 +135,16 @@ void MainWindow::setupObjects()
 	ui->openGLWidget->setModelName(ui->comboBox_activeModel->currentText());
 	ui->checkBox_modelSkinning->setChecked(ui->openGLWidget->modelSkinning());
 
-	ui->comboBox_activeBone->addItems(ui->openGLWidget->ModelBoneList());
+	ui->comboBox_activeBone->addItems(ui->openGLWidget->modelBoneList());
 	loadActiveBoneInfo();
 
 	ui->checkBox_axes->setChecked(ui->openGLWidget->renderModel());
 	ui->checkBox_model->setChecked(ui->openGLWidget->renderAxes());
+
+	QMenu *menuInfo = new QMenu(ui->pushButton_info);
+	menuInfo->addAction("Bone Transforms", this, SLOT(printActiveBoneTransforms()));
+	menuInfo->addAction("Bone Rotations", this, SLOT(printActiveBoneRotations()));
+	ui->pushButton_info->setMenu(menuInfo);
 }
 void MainWindow::setupConnections()
 {
@@ -62,28 +152,20 @@ void MainWindow::setupConnections()
 	connect(ui->comboBox_activeModel, SIGNAL(currentIndexChanged(QString)), ui->openGLWidget, SLOT(setModelName(QString)));
 	// skinning on
 	connect(ui->checkBox_modelSkinning, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setModelSkinning(bool)));
-	// flip bones visibility
-	connect(ui->pushButton_flipBonesVisibility, SIGNAL(clicked()), ui->openGLWidget, SLOT(flipBonesVisibility()));
-	connect(ui->pushButton_flipBonesVisibility, SIGNAL(clicked()), SLOT(loadActiveBoneInfo()));
-	// active bone
+	// Active bone related
+	// combo box
 	connect(ui->comboBox_activeBone, SIGNAL(currentIndexChanged(QString)), SLOT(loadActiveBoneInfo()));
-	connect(ui->pushButton_printBoneTransform, SIGNAL(clicked()), SLOT(printActiveBoneTransform()));
-	// bone visible
-	connect(ui->checkBox_boneVisible, SIGNAL(toggled(bool)), SLOT(setActiveBoneVisibility(bool)));
+	// check box
+	connect(ui->checkBox_boneVisible, SIGNAL(clicked(bool)), SLOT(setActiveBoneVisible(bool)));
+	connect(ui->checkBox_boneFocused, SIGNAL(clicked(bool)), SLOT(setActiveBoneFocused(bool)));
 	// sliders
-	connect(ui->horizontalSlider_xRot, SIGNAL(valueChanged(int)), ui->spinBox_xRot, SLOT(setValue(int)));
-	connect(ui->horizontalSlider_yRot, SIGNAL(valueChanged(int)), ui->spinBox_yRot, SLOT(setValue(int)));
-	connect(ui->horizontalSlider_zRot, SIGNAL(valueChanged(int)), ui->spinBox_zRot, SLOT(setValue(int)));
-	connect(ui->horizontalSlider_xRot, SIGNAL(valueChanged(int)), SLOT(setActiveBoneRotation(int)));
-	connect(ui->horizontalSlider_yRot, SIGNAL(valueChanged(int)), SLOT(setActiveBoneRotation(int)));
-	connect(ui->horizontalSlider_zRot, SIGNAL(valueChanged(int)), SLOT(setActiveBoneRotation(int)));
+	connect(ui->horizontalSlider_xRot, SIGNAL(valueChanged(int)), SLOT(setActiveBoneRotationX(int)));
+	connect(ui->horizontalSlider_yRot, SIGNAL(valueChanged(int)), SLOT(setActiveBoneRotationY(int)));
+	connect(ui->horizontalSlider_zRot, SIGNAL(valueChanged(int)), SLOT(setActiveBoneRotationZ(int)));
 	// spin boxes
-	connect(ui->spinBox_xRot, SIGNAL(valueChanged(int)), ui->horizontalSlider_xRot, SLOT(setValue(int)));
-	connect(ui->spinBox_yRot, SIGNAL(valueChanged(int)), ui->horizontalSlider_yRot, SLOT(setValue(int)));
-	connect(ui->spinBox_zRot, SIGNAL(valueChanged(int)), ui->horizontalSlider_zRot, SLOT(setValue(int)));
-	connect(ui->spinBox_xRot, SIGNAL(valueChanged(int)), SLOT(setActiveBoneRotation(int)));
-	connect(ui->spinBox_yRot, SIGNAL(valueChanged(int)), SLOT(setActiveBoneRotation(int)));
-	connect(ui->spinBox_zRot, SIGNAL(valueChanged(int)), SLOT(setActiveBoneRotation(int)));
+	connect(ui->spinBox_xRot, SIGNAL(valueChanged(int)), SLOT(setActiveBoneRotationX(int)));
+	connect(ui->spinBox_yRot, SIGNAL(valueChanged(int)), SLOT(setActiveBoneRotationY(int)));
+	connect(ui->spinBox_zRot, SIGNAL(valueChanged(int)), SLOT(setActiveBoneRotationZ(int)));
 	// render axes
 	connect(ui->checkBox_axes, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setRenderAxes(bool)));
 	// render model

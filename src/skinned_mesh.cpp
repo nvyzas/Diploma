@@ -210,7 +210,6 @@ bool SkinnedMesh::initImages(const aiScene* pScene, const string& Filename)
 			}
 		}
 	}
-
 	return ret;
 }
 void VertexBoneData::AddBoneData(uint BoneID, float Weight)
@@ -477,7 +476,7 @@ void SkinnedMesh::PrintNodeHierarchy(const aiNode* pNode) const
 	if (!pNode->mParent) counter = 0;
 	string NodeName(pNode->mName.data);
 	string ParentName(pNode->mParent ? pNode->mParent->mName.data : "Root");
-	cout << "Node " << setw(2) << counter << ": " << setw(20) << left << NodeName << setw(10) << left;
+	cout << "Node " << setw(2) << left << counter << ": " << setw(25) << left << NodeName << setw(10) << left;
 	if (m_kboneMap.find(NodeName) != m_kboneMap.end()) cout << "(KBone)";
 	else if (m_boneMap.find(NodeName) != m_boneMap.end()) cout << " (Bone)";
 	else cout << "";
@@ -630,15 +629,38 @@ void SkinnedMesh::setConMats()
 		m_conMats[i] = Matrix4f::Identity();
 	}
 }
-void SkinnedMesh::setBoneRotation(const QString& boneName, float xRot, float yRot, float zRot)
+float SkinnedMesh::boneRotationX(const QString &boneName) const
 {
-	uint id = findBoneId(boneName);
-	m_boneInfo[id].xRot = xRot;
-	m_boneInfo[id].yRot = yRot;
-	m_boneInfo[id].zRot = zRot;
-	m_conMats[id].InitRotateTransform(xRot, yRot, zRot);
-	cout << "mesh " << boneName.toUtf8().constData() << " " << id << " " << xRot << " " << yRot << " " << zRot << endl;
-	m_conMats[id].Print();
+	return m_boneInfo[findBoneId(boneName)].xRot;
+}
+float SkinnedMesh::boneRotationY(const QString &boneName) const
+{
+	return m_boneInfo[findBoneId(boneName)].yRot;
+}
+float SkinnedMesh::boneRotationZ(const QString &boneName) const
+{
+	return m_boneInfo[findBoneId(boneName)].zRot;
+}
+void SkinnedMesh::setBoneRotationX(const QString &boneName, float value)
+{
+	uint boneId = findBoneId(boneName);
+	assert(boneId < m_boneInfo.size());
+	BoneInfo &bi = m_boneInfo[boneId];
+	m_conMats[boneId].InitRotateTransform(bi.xRot = value, bi.yRot, bi.zRot);
+}
+void SkinnedMesh::setBoneRotationY(const QString &boneName, float value)
+{
+	uint boneId = findBoneId(boneName);
+	assert(boneId < m_boneInfo.size());
+	BoneInfo &bi = m_boneInfo[boneId];
+	m_conMats[boneId].InitRotateTransform(bi.xRot, bi.yRot = value, bi.zRot);
+}
+void SkinnedMesh::setBoneRotationZ(const QString &boneName, float value)
+{
+	uint boneId = findBoneId(boneName);
+	assert(boneId < m_boneInfo.size());
+	BoneInfo &bi = m_boneInfo[boneId];
+	m_conMats[boneId].InitRotateTransform(bi.xRot, bi.yRot, bi.zRot = value);
 }
 void SkinnedMesh::initBoneMapping()
 {
@@ -745,10 +767,6 @@ void SkinnedMesh::PrintParameters() const
 		cout <<(m_Parameters[i] ? m_ParametersStringTrue[i] : m_ParametersStringFalse[i]) << endl;
 	}
 }
-bool SkinnedMesh::boneVisibility(uint boneIndex) const
-{
-	return m_boneInfo[boneIndex].Visible;
-}
 uint SkinnedMesh::findBoneId(const QString &boneName) const
 {
 	string name(boneName.toLocal8Bit());
@@ -759,9 +777,17 @@ uint SkinnedMesh::findBoneId(const QString &boneName) const
 	}
 	return it->second;
 }
+bool SkinnedMesh::boneVisibility(uint boneIndex) const
+{
+	return m_boneInfo[boneIndex].Visible;
+}
 bool SkinnedMesh::boneVisibility(const QString &boneName) const
 {
 	return m_boneInfo[findBoneId(boneName)].Visible;
+}
+void SkinnedMesh::setBoneVisibility(uint boneIndex, bool state)
+{
+	m_boneInfo[boneIndex].Visible = state;
 }
 void SkinnedMesh::setBoneVisibility(const QString &boneName, bool state)
 {
@@ -769,12 +795,7 @@ void SkinnedMesh::setBoneVisibility(const QString &boneName, bool state)
 }
 QString SkinnedMesh::boneTransformInfo(const QString& boneName) const
 {
-	cout << m_bonesTransformInfo[findBoneId(boneName)] << endl;
 	return QString::fromLocal8Bit(m_bonesTransformInfo[findBoneId(boneName)].c_str());
-}
-void SkinnedMesh::flipBonesVisibility()
-{
-	for (uint i = 0; i < m_boneInfo.size(); i++) m_boneInfo[i].Visible = !m_boneInfo[i].Visible;
 }
 vector<Vector3f>& SkinnedMesh::positions()
 {
