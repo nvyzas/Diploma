@@ -515,20 +515,23 @@ void SkinnedMesh::GetBoneTransforms(vector<Matrix4f>& Transforms)
 }
 void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 {
-	static int counter;
 	string NodeName(pNode->mName.data);
+	static int counter;
 	if (NodeName == "Hips") counter = 0;
+	counter++;
 	Matrix4f L(pNode->mTransformation);
 	Matrix4f G;
 	Matrix4f C = Matrix4f::Identity();
 	QQuaternion q;
 	stringstream sso;
-	sso << endl << "Node name " << counter << ": " << NodeName << endl;
+	sso << endl << "Node " << counter << ": " << NodeName << endl;
 	auto it = m_boneMap.find(NodeName);
-	if (m_Parameters[6] || (it == m_boneMap.end())){ // bind pose on		
+	if (m_Parameters[6] || (it == m_boneMap.end())){ // bind pose on	
+		sso << "Bind pose on" << endl;
 		if (m_Parameters[1]) {
+			sso << "Decomposing node local transformation:" << endl;
 			q = (m_Parameters[2]) ? L.ExtractQuaternion1() : L.ExtractQuaternion2();
-			sso << "q rel from model " << ": " << printQuaternion1(q) << printQuaternion2(q) << printQuaternion3(q) << endl;
+			sso << "q rel from model: " << printQuaternion1(q) << printQuaternion2(q) << printQuaternion3(q) << endl;
 			Matrix4f R = m_Parameters[3] ? Matrix4f(q, true) : Matrix4f(q, false);
 			sso << "Rotation matrix (local) from q:" << endl << R;
 			Matrix4f T = L.GetTranslationPart();
@@ -538,16 +541,26 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 		else {
 			L = Matrix4f(pNode->mTransformation);
 		}
-		G = P * L;
+		
 		sso << "Local transformation:" << endl << L;
 		sso << "Parent transformation (global):" << endl << P;		
-		sso << "Global transformation:" << endl << G;
+		G = P * L;
 		if (it != m_boneMap.end()) {
 			uint i = it->second;
-			if (!m_Parameters[8]) C = m_conMats[i];
-			sso << "Control transformation:" << endl << C;
-			m_boneInfo[i].FinalTransformation = m_Parameters[7] ? C * m_boneInfo[i].BoneOffset : G * C * m_boneInfo[i].BoneOffset;
+			if (!m_Parameters[8]) {
+				C = m_conMats[i];
+				sso << "Control transformation:" << endl << C;
+				if (!m_Parameters[9]) G = P * L * C;
+			}
+			if (!m_Parameters[9]) {
+				m_boneInfo[i].FinalTransformation = m_Parameters[7] ? C * m_boneInfo[i].BoneOffset : G * m_boneInfo[i].BoneOffset;
+			}
+			else {
+				m_boneInfo[i].FinalTransformation = m_Parameters[7] ? C * m_boneInfo[i].BoneOffset : G * C * m_boneInfo[i].BoneOffset;
+			}
+			sso << "Final Transformation:" << endl << m_boneInfo[i].FinalTransformation;
 		}
+		sso << "Global transformation:" << endl << G;
 	}
 	else { 
 		uint i = it->second;
@@ -582,9 +595,6 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 			sso << "Control transformation:" << endl << C;
 			m_boneInfo[i].FinalTransformation = m_Parameters[7] ? C * m_boneInfo[i].BoneOffset : G * C * m_boneInfo[i].BoneOffset;		
 			sso << "Final Transformation:" << endl << m_boneInfo[i].FinalTransformation;
-			m_bonesTransformInfo[findBoneId(QString::fromLocal8Bit(NodeName.c_str()))] = sso.str();
-			sso.clear();
-			counter++;
 		}else{ // kinect node
 			q = (m_Parameters[2]) ? L.ExtractQuaternion1() : L.ExtractQuaternion2();
 			sso << "q rel from model " << ": " << printQuaternion1(q) << printQuaternion2(q) << printQuaternion3(q) << endl;
@@ -614,11 +624,12 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 			sso << "Control transformation:" << endl << C;
 			m_boneInfo[i].FinalTransformation = m_Parameters[7] ? C * m_boneInfo[i].BoneOffset : G * C * m_boneInfo[i].BoneOffset;
 			sso << "Final Transformation:" << endl << m_boneInfo[i].FinalTransformation;
-			m_bonesTransformInfo[findBoneId(QString::fromLocal8Bit(NodeName.c_str()))] = sso.str();
-			sso.clear();
-			counter++;
 		}
-	}		
+	}
+	if (it != m_boneMap.end()) {
+		m_bonesTransformInfo[findBoneId(QString::fromLocal8Bit(NodeName.c_str()))] = sso.str();
+	}
+	sso.clear();
 	for (uint i = 0; i < pNode->mNumChildren; i++) {
 		TraverseNodeHierarchy(pNode->mChildren[i], G);
 	}
