@@ -590,11 +590,22 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 			sso << "Rotation matrix (local) from q:" << endl << R;
 			sso << "Translation matrix (local) from model:" << endl << T;
 			sso << "Local transformation:" << endl << L;
+			if (it != m_boneMap.end()) {
+				uint i = it->second;
+				if (!m_Parameters[8]) {
+					C = m_conMats[i];
+					sso << "Control transformation:" << endl << C;
+					if (!m_Parameters[9]) G = P * L * C;
+				}
+				if (!m_Parameters[9]) {
+					m_boneInfo[i].FinalTransformation = m_Parameters[7] ? C * m_boneInfo[i].BoneOffset : G * m_boneInfo[i].BoneOffset;
+				}
+				else {
+					m_boneInfo[i].FinalTransformation = m_Parameters[7] ? C * m_boneInfo[i].BoneOffset : G * C * m_boneInfo[i].BoneOffset;
+				}
+				sso << "Final Transformation:" << endl << m_boneInfo[i].FinalTransformation;
+			}
 			sso << "Global transformation:" << endl << G;
-			if (!m_Parameters[8]) C = m_conMats[i];
-			sso << "Control transformation:" << endl << C;
-			m_boneInfo[i].FinalTransformation = m_Parameters[7] ? C * m_boneInfo[i].BoneOffset : G * C * m_boneInfo[i].BoneOffset;		
-			sso << "Final Transformation:" << endl << m_boneInfo[i].FinalTransformation;
 		}else{ // kinect node
 			q = (m_Parameters[2]) ? L.ExtractQuaternion1() : L.ExtractQuaternion2();
 			sso << "q rel from model " << ": " << printQuaternion1(q) << printQuaternion2(q) << printQuaternion3(q) << endl;
@@ -620,10 +631,22 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 			sso << "Translation matrix (local) from model:" << endl << T;
 			sso << "Local transformation:" << endl << L;			
 			sso << "Global transformation:" << endl << G;
-			if (!m_Parameters[8]) C = m_conMats[i];
-			sso << "Control transformation:" << endl << C;
-			m_boneInfo[i].FinalTransformation = m_Parameters[7] ? C * m_boneInfo[i].BoneOffset : G * C * m_boneInfo[i].BoneOffset;
-			sso << "Final Transformation:" << endl << m_boneInfo[i].FinalTransformation;
+			if (it != m_boneMap.end()) {
+				uint i = it->second;
+				if (!m_Parameters[8]) {
+					C = m_conMats[i];
+					sso << "Control transformation:" << endl << C;
+					if (!m_Parameters[9]) G = P * L * C;
+				}
+				if (!m_Parameters[9]) {
+					m_boneInfo[i].FinalTransformation = m_Parameters[7] ? C * m_boneInfo[i].BoneOffset : G * m_boneInfo[i].BoneOffset;
+				}
+				else {
+					m_boneInfo[i].FinalTransformation = m_Parameters[7] ? C * m_boneInfo[i].BoneOffset : G * C * m_boneInfo[i].BoneOffset;
+				}
+				sso << "Final Transformation:" << endl << m_boneInfo[i].FinalTransformation;
+			}
+			sso << "Global transformation:" << endl << G;
 		}
 	}
 	if (it != m_boneMap.end()) {
