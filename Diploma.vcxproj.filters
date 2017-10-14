@@ -67,6 +67,9 @@
     <ClCompile Include="GeneratedFiles\Release\moc_main_window.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\opensim_model.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\camera.h">
@@ -95,6 +98,9 @@
     </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_main_window.h">
       <Filter>Generated Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\opensim_model.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

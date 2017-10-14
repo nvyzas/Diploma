@@ -85,7 +85,7 @@ void MainWidget::MySetup()
 
 	// 2) Init Mesh
 	m_Mesh->setKSensor(*m_Sensor);
-	m_successfullyLoaded = loadToGPU("cmu_test");
+	//m_successfullyLoaded = loadToGPU("cmu_test");
 	m_Sensor->GetKinectData(); // to successfully acquire frame init sensor before mesh and load mesh before getting data
 
 	// 3) Init Camera
@@ -154,7 +154,7 @@ void MainWidget::paintGL()
 		m_Mesh->LoadMesh(string(m_modelName.toLocal8Bit()));
 		m_modelName.clear();
 	}*/
-	if (m_renderModel) {
+	if (m_renderModel && m_successfullyLoaded) {
 		drawSkinnedMesh();
 	}
 
@@ -227,12 +227,6 @@ void MainWidget::mouseMoveEvent(QMouseEvent *event)
 	m_Tech->SetDefault(m_Pipe->GetVPTrans());
 	update();
 }
-
-void MainWidget::mouseReleaseEvent(QMouseEvent * event)
-{
-	//emit clicked();
-}
-
 void MainWidget::DrawAxes()
 {
 	//*

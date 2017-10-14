@@ -14,10 +14,9 @@ SkinnedMesh::SkinnedMesh()
 	Clear();
 	m_SuccessfullyLoaded = false;
 	m_pScene = NULL;
-	LoadMesh("cmu_test");
+	//LoadMesh("cmu_test");
 	//initBoneMapping();
 	initKBoneMapping();
-	PrintInfo();
 }
 void SkinnedMesh::setKSensor(const KSensor &ks)
 {
@@ -58,6 +57,7 @@ bool SkinnedMesh::LoadMesh(const string& basename)
     }
 	
 	m_SuccessfullyLoaded = Ret;
+	if (m_SuccessfullyLoaded) PrintInfo();
 
     return Ret;
 }
@@ -441,15 +441,22 @@ void SkinnedMesh::BoneTransform(float TimeInSeconds, vector<Matrix4f>& Transform
 }
 void SkinnedMesh::PrintInfo() const
 {
-	cout << endl;
-	PrintSceneInfo();
-	cout << "Model nodes:" << endl;
-	PrintNodeHierarchy(m_pScene->mRootNode);	
-	cout << "Bone matching:" << endl;
-	PrintNodeMatching(m_pScene->mRootNode);	
+	if (m_pScene) {
+		cout << endl;
+		PrintSceneInfo();
+		if (m_pScene->mRootNode) {
+			cout << endl;
+			cout << "Model node hierarchy:" << endl;
+			PrintNodeHierarchy(m_pScene->mRootNode);
+			cout << endl;
+			cout << "Model bone -> Kinect joint id matching:" << endl;
+			PrintNodeMatching(m_pScene->mRootNode);
+		}
+	}
 }
 void SkinnedMesh::PrintSceneInfo() const
 {
+	cout << "Scene info:" << endl;
 	cout << "Mesh:";
 	cout << " Entries:" << m_pScene->mNumMeshes;
 	cout << " Materials:" << m_pScene->mNumMaterials;

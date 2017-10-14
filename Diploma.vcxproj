@@ -25,6 +25,7 @@
     <ClCompile Include="src\main_widget.cpp" />
     <ClCompile Include="src\main_window.cpp" />
     <ClCompile Include="src\math_3d.cpp" />
+    <ClCompile Include="src\opensim_model.cpp" />
     <ClCompile Include="src\pipeline.cpp" />
     <ClCompile Include="src\sensor.cpp" />
     <ClCompile Include="src\skinned_mesh.cpp" />
@@ -39,7 +40,7 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc%27ing main_window.h...</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"   "-I.\GeneratedFiles" "-I$(SolutionDir)res\qt\include" "-I$(SolutionDir)res\kinect\include" "-I$(SolutionDir)res\assimp\include" "-I$(SolutionDir)res\ImageMagick\include"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"   "-I.\GeneratedFiles" "-I$(SolutionDir)res\qt\include" "-I$(SolutionDir)res\kinect\include" "-I$(SolutionDir)res\opensim\include\SimTK\include" "-I$(SolutionDir)res\opensim\include\Vendors\lepton\include" "-I$(SolutionDir)res\opensim\include" "-I$(SolutionDir)res\assimp\include"</Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Moc%27ing main_window.h...</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
@@ -49,13 +50,14 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Moc%27ing main_window.h...</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"  "-I.\GeneratedFiles" "-I$(SolutionDir)res\qt\include" "-I$(SolutionDir)res\kinect\include" "-I$(SolutionDir)res\assimp\include" "-I$(SolutionDir)res\ImageMagick\include"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"   "-I.\GeneratedFiles" "-I$(SolutionDir)res\qt\include" "-I$(SolutionDir)res\kinect\include" "-I$(SolutionDir)res\opensim\include\SimTK\include" "-I$(SolutionDir)res\opensim\include\Vendors\lepton\include" "-I$(SolutionDir)res\opensim\include" "-I$(SolutionDir)res\assimp\include"</Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Moc%27ing main_window.h...</Message>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">"$(QTDIR)\bin\moc.exe"  "%(FullPath)" -o ".\GeneratedFiles\$(ConfigurationName)\moc_%(Filename).cpp"  "-I.\GeneratedFiles"</Command>
     </CustomBuild>
     <ClInclude Include="src\math_3d.h" />
+    <ClInclude Include="src\opensim_model.h" />
     <ClInclude Include="src\pipeline.h" />
     <ClInclude Include="src\sensor.h" />
     <ClInclude Include="src\skinned_mesh.h" />
@@ -93,7 +95,6 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <Import Project="res\ImageMagick\ImageMagick.props" />
     <Import Project="res\assimp\Assimp.props" />
     <Import Project="res\kinect\Kinect.props" />
     <Import Project="res\qt\qt.props" />

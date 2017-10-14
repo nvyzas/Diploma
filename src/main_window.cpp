@@ -26,6 +26,7 @@ MainWindow::~MainWindow()
 void MainWindow::loadActiveBoneInfo()
 {
 	const QString &boneName = ui->comboBox_activeBone->currentText();
+	if (boneName.isEmpty()) return;
 	ui->checkBox_boneVisible->setChecked(ui->openGLWidget->skinnedMesh()->boneVisibility(boneName));
 	loadActiveBoneRotationX();
 	loadActiveBoneRotationY();
@@ -34,6 +35,7 @@ void MainWindow::loadActiveBoneInfo()
 void MainWindow::setActiveBoneVisible(bool state)
 {
 	const QString &boneName = ui->comboBox_activeBone->currentText();
+	if (boneName.isEmpty()) return;
 	uint boneId = ui->openGLWidget->skinnedMesh()->findBoneId(boneName);
 	ui->openGLWidget->skinnedMesh()->setBoneVisibility(boneName, state);
 	ui->openGLWidget->skinningTechnique()->enable();
@@ -43,6 +45,7 @@ void MainWindow::setActiveBoneVisible(bool state)
 void MainWindow::setActiveBoneFocused(bool state)
 {
 	const QString &boneName = ui->comboBox_activeBone->currentText();
+	if (boneName.isEmpty()) return;
 	uint boneId = ui->openGLWidget->skinnedMesh()->findBoneId(boneName);
 	ui->openGLWidget->skinningTechnique()->enable();
 	for (uint i = 0; i < ui->openGLWidget->skinnedMesh()->numBones(); i++) {
@@ -56,6 +59,7 @@ void MainWindow::setActiveBoneFocused(bool state)
 void MainWindow::setActiveBoneRotationX(int value)
 {
 	const QString &boneName = ui->comboBox_activeBone->currentText();
+	if (boneName.isEmpty()) return;
 	ui->openGLWidget->skinnedMesh()->setBoneRotationX(boneName, value);
 	ui->openGLWidget->Transform(false);
 	ui->openGLWidget->update();
@@ -64,6 +68,7 @@ void MainWindow::setActiveBoneRotationX(int value)
 void MainWindow::setActiveBoneRotationY(int value)
 {
 	const QString &boneName = ui->comboBox_activeBone->currentText();
+	if (boneName.isEmpty()) return;
 	ui->openGLWidget->skinnedMesh()->setBoneRotationY(boneName, value);
 	ui->openGLWidget->Transform(false);
 	ui->openGLWidget->update();
@@ -72,6 +77,7 @@ void MainWindow::setActiveBoneRotationY(int value)
 void MainWindow::setActiveBoneRotationZ(int value)
 {
 	const QString &boneName = ui->comboBox_activeBone->currentText();
+	if (boneName.isEmpty()) return;
 	ui->openGLWidget->skinnedMesh()->setBoneRotationZ(boneName, value);
 	ui->openGLWidget->Transform(false);
 	ui->openGLWidget->update();
@@ -80,11 +86,13 @@ void MainWindow::setActiveBoneRotationZ(int value)
 void MainWindow::printActiveBoneTransforms() const
 {
 	const QString &boneName = ui->comboBox_activeBone->currentText();
+	if (boneName.isEmpty()) return;
 	cout << string(ui->openGLWidget->skinnedMesh()->boneTransformInfo(boneName).toUtf8());
 }
 void MainWindow::printActiveBoneRotations() const
 {
 	const QString &boneName = ui->comboBox_activeBone->currentText();
+	if (boneName.isEmpty()) return;
 	float xRot = ui->openGLWidget->skinnedMesh()->boneRotationX(boneName);
 	float yRot = ui->openGLWidget->skinnedMesh()->boneRotationY(boneName);
 	float zRot = ui->openGLWidget->skinnedMesh()->boneRotationZ(boneName);
@@ -94,9 +102,22 @@ void MainWindow::printActiveBoneRotations() const
 		                       << setw(5) << zRot << endl;
 }
 
+//const QString &MainWindow::activeBone() const
+//{
+//	const QString &boneName = ui->comboBox_activeBone->currentText();
+//	if (boneName.isEmpty()) {
+//		cout << "Active bone is empty" << endl;
+//		return;
+//	}
+//	else {
+//		return boneName;
+//	}
+//}
+
 void MainWindow::loadActiveBoneRotationX()
 {
 	const QString &boneName = ui->comboBox_activeBone->currentText();
+	if (boneName.isEmpty()) return;
 	float rotX = ui->openGLWidget->skinnedMesh()->boneRotationX(boneName);
 	ui->horizontalSlider_xRot->blockSignals(true);
 	ui->spinBox_xRot->blockSignals(true);
@@ -108,6 +129,7 @@ void MainWindow::loadActiveBoneRotationX()
 void MainWindow::loadActiveBoneRotationY()
 {
 	const QString &boneName = ui->comboBox_activeBone->currentText();
+	if (boneName.isEmpty()) return;
 	float rotY = ui->openGLWidget->skinnedMesh()->boneRotationY(boneName);
 	ui->horizontalSlider_yRot->blockSignals(true);
 	ui->spinBox_yRot->blockSignals(true);
@@ -119,6 +141,7 @@ void MainWindow::loadActiveBoneRotationY()
 void MainWindow::loadActiveBoneRotationZ()
 {
 	const QString &boneName = ui->comboBox_activeBone->currentText();
+	if (boneName.isEmpty()) return;
 	float rotZ = ui->openGLWidget->skinnedMesh()->boneRotationZ(boneName);
 	ui->horizontalSlider_zRot->blockSignals(true);
 	ui->spinBox_zRot->blockSignals(true);

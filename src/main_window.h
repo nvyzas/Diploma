@@ -27,6 +27,7 @@ private slots:
 	void printActiveBoneRotations() const;
 
 private:
+	const QString &activeBone() const;
 	void loadActiveBoneRotationX();
 	void loadActiveBoneRotationY();
 	void loadActiveBoneRotationZ();
