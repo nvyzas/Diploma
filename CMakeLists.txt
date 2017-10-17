@@ -3,34 +3,44 @@ project(Diploma)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
 
 # Set Include Directories
 set(Diploma_INCLUDE_DIRS
-	res/assimp/include/
-	res/imagemagick/include/
-	res/kinect/include/
+	${PROJECT_SOURCE_DIR}/res/assimp/include/
+	${PROJECT_SOURCE_DIR}/res/kinect/include/
+	${PROJECT_SOURCE_DIR}/res/opensim/include/
+	${PROJECT_SOURCE_DIR}/res/opensim/include/SimTK/include/
+	${PROJECT_SOURCE_DIR}/res/opensim/include/Vendors/lepton/include/
 )
 
 # Set Link Directories
 set(Diploma_LINK_DIRS
-	../res/assimp/lib/
-	../res/imagemagick/lib/
-	../res/kinect/lib/
+	${PROJECT_SOURCE_DIR}/res/assimp/lib/
+	${PROJECT_SOURCE_DIR}/res/kinect/lib/
+	${PROJECT_SOURCE_DIR}/res/opensim/lib/
 )
 
 # Set Link Libraries
 set(Diploma_LINK_LIBS
 	assimp-vc140-mt
-	CORE_RL_Magick++_
-	CORE_RL_MagickCore_
-	CORE_RL_MagickWand_
 	Kinect20
 	Qt5::Core
 	Qt5::Gui
 	Qt5::Widgets
+	libblas
+	liblapack
+	SimTKcommon
+	SimTKmath
+	SimTKsimbody
+	osimActuators
+	osimAnalyses
+	osimCommon
+	osimLepton
+	osimSimulation
+	osimTools
+	pthreadVC2_x64
 )
 
 # Set Sources
@@ -40,12 +50,12 @@ set(Diploma_SRCS
 	src/main_widget.cpp
 	src/main_window.cpp
 	src/math_3d.cpp
+	src/opensim_model.cpp
 	src/pipeline.cpp
 	src/sensor.cpp
 	src/skinned_mesh.cpp
 	src/skinning_technique.cpp
 	src/technique.cpp
-	src/texture.cpp
 	src/util.cpp
 )
 
@@ -56,3 +66,7 @@ include_directories(${Diploma_INCLUDE_DIRS})
 link_directories(${Diploma_LINK_DIRS})
 add_executable(Diploma ${Diploma_SRCS})
 target_link_libraries(Diploma ${Diploma_LINK_LIBS})
+
+add_custom_command(TARGET Diploma POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/assimp-vc140-mt.dll" $<TARGET_FILE_DIR:Diploma>)
+add_custom_command(TARGET Diploma POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/models" $<TARGET_FILE_DIR:Diploma>/models)
+add_custom_command(TARGET Diploma POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/shaders" $<TARGET_FILE_DIR:Diploma>/shaders)

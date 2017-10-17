@@ -8,6 +8,7 @@ class SkinnedMesh;
 class Technique;
 class SkinningTechnique;
 class Pipeline;
+
 #include "math_3d.h"
 #include "util.h"
 
