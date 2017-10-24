@@ -196,6 +196,11 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		m_Mesh->flipParameter(key - Qt::Key_0);
 		Transform(true);
 		break;
+	case Qt::Key_G:
+		m_Sensor->GetKinectData();
+	case Qt::Key_Space:
+		m_play = !m_play;
+		cout << "Play " << (m_play ? "ON" : "OFF") << endl;
 	default:
 		cout << "This key does not do anything." << endl;
 		break;

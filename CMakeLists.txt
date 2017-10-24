@@ -5,21 +5,27 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
+SET(OPENSIM_INSTALL_DIR $ENV{OPENSIM_HOME})
 
 # Set Include Directories
 set(Diploma_INCLUDE_DIRS
 	${PROJECT_SOURCE_DIR}/res/assimp/include/
 	${PROJECT_SOURCE_DIR}/res/kinect/include/
-	${PROJECT_SOURCE_DIR}/res/opensim/include/
-	${PROJECT_SOURCE_DIR}/res/opensim/include/SimTK/include/
-	${PROJECT_SOURCE_DIR}/res/opensim/include/Vendors/lepton/include/
+	${OPENSIM_INSTALL_DIR}/sdk/include//
+	${OPENSIM_INSTALL_DIR}/sdk/include/SimTK/include/
+	#${PROJECT_SOURCE_DIR}/res/opensim/include/
+	#${PROJECT_SOURCE_DIR}/res/opensim/include/SimTK/include/
+	#${PROJECT_SOURCE_DIR}/res/opensim/include/Vendors/lepton/include/
 )
 
 # Set Link Directories
 set(Diploma_LINK_DIRS
 	${PROJECT_SOURCE_DIR}/res/assimp/lib/
 	${PROJECT_SOURCE_DIR}/res/kinect/lib/
-	${PROJECT_SOURCE_DIR}/res/opensim/lib/
+	${OPENSIM_INSTALL_DIR}/sdk/lib/
+	${OPENSIM_INSTALL_DIR}/lib/
+	${OPENSIM_INSTALL_DIR}/bin/
+	#${PROJECT_SOURCE_DIR}/res/opensim/lib/
 )
 
 # Set Link Libraries
@@ -31,12 +37,13 @@ set(Diploma_LINK_LIBS
 	Qt5::Widgets
 	libblas
 	liblapack
-	SimTKcommon
-	SimTKmath
-	SimTKsimbody
+	OpenSim_SimTKcommon
+	OpenSim_SimTKmath
+	OpenSim_SimTKsimbody
 	osimActuators
 	osimAnalyses
 	osimCommon
+	osimJavaJNI
 	osimLepton
 	osimSimulation
 	osimTools
@@ -70,3 +77,4 @@ target_link_libraries(Diploma ${Diploma_LINK_LIBS})
 add_custom_command(TARGET Diploma POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/assimp-vc140-mt.dll" $<TARGET_FILE_DIR:Diploma>)
 add_custom_command(TARGET Diploma POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/models" $<TARGET_FILE_DIR:Diploma>/models)
 add_custom_command(TARGET Diploma POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/shaders" $<TARGET_FILE_DIR:Diploma>/shaders)
+add_custom_command(TARGET Diploma POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/res/opensim/bin" $<TARGET_FILE_DIR:Diploma>)

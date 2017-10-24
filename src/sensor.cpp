@@ -1,16 +1,26 @@
+// Own
 #include "sensor.h"
-#include <iostream>
-#include <iomanip>
-#include <vector>
+
+// Qt
+#include <QtCore/QFile>
+
+// Windows
 #include <Windows.h>
-#include <Ole2.h>
-#include <algorithm>
+//#include <Ole2.h>
+//#include <algorithm>
+
+// Standard C/C++
+#include <iomanip>
+#include <iostream>
+#include <vector>
 
 KSensor::KSensor()
 {
 	//initializeOpenGLFunctions();
-	InitJoints();
-	m_GotFrame = false;	
+	initJoints();
+	m_GotFrame = false;
+	m_numFrames = 0;
+	if (!initTRC()) cout << "Could not init trc file" << endl;
 }
 KSensor::~KSensor()
 {
@@ -48,7 +58,7 @@ void KSensor::GetKinectData() {
 	IMultiSourceFrame* frame = NULL;
 	if (SUCCEEDED(m_Reader->AcquireLatestFrame(&frame))) {
 		m_GotFrame = true;
-		cout << "Got frame" << endl;
+		cout << "Got frame from reader" << endl;
 		GLubyte* ptr;
 		glBindBuffer(GL_ARRAY_BUFFER, m_VBOid);
 		ptr = (GLubyte*)glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
@@ -140,18 +150,23 @@ void KSensor::GetRGBData(IMultiSourceFrame* frame, GLubyte* dest) {
 }
 void KSensor::GetBodyData(IMultiSourceFrame* frame) {
 	
-	IBodyFrame* bodyframe;
+	
 	IBodyFrameReference* frameref = NULL;
 	frame->get_BodyFrameReference(&frameref);
+	IBodyFrame* bodyframe = NULL;
 	frameref->AcquireFrame(&bodyframe);
+	TIMESPAN *frameTime = NULL;
+	frameref->get_RelativeTime(frameTime);
 	if (frameref) frameref->Release();
 
+	if (!frameTime) cout << "Could not get frame time" << endl;
 	if (!bodyframe) {
 		cout << "Could not get body data" << endl;
 		return;
 	}
+
 	IBody* body[BODY_COUNT] = { 0 };
-	bodyframe->GetAndRefreshBodyData(BODY_COUNT, body);
+	if (!SUCCEEDED(bodyframe->GetAndRefreshBodyData(BODY_COUNT, body))) cout << "Could not get and refresh body data" << endl;;
 
 	// Body tracking variables
 	BOOLEAN tracked;							// Whether we see a body
@@ -178,97 +193,40 @@ void KSensor::GetBodyData(IMultiSourceFrame* frame) {
 			m_Joints[i].Position = Vector3f(jt.Position.X, jt.Position.Y, jt.Position.Z);
 			m_Joints[i].Orientation = QQuaternion(or.Orientation.w, or.Orientation.x, or.Orientation.y, or.Orientation.z);
 		}
-		const KJoint &j = m_Joints[i];
 		//cout << left << setw(2) << i << ": " << left << setw(15) << j.name << " p=" << left << setw(25) << j.Position.ToString() << " q=" << j.Orientation.ToString() << j.Orientation.ToEulerAnglesString() << j.Orientation.ToAxisAngleString() << endl;
 	}
-	//SetCorrectedQuaternions();
+	if (bodyframe) addFrameToTRC(frameTime);
 	if (bodyframe) bodyframe->Release();
-}
-void KSensor::DrawCloud() {
-	// Set up array buffers
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glEnableClientState(GL_COLOR_ARRAY);
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_VBOid);
-	glVertexPointer(3, GL_FLOAT, 0, NULL);
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_CBOid);
-	glColorPointer(3, GL_FLOAT, 0, NULL);
-
-	glPointSize(1.f);
-	glDrawArrays(GL_POINTS, 0, DEPTH_WIDTH*DEPTH_HEIGHT);
-
-	glDisableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_COLOR_ARRAY);
+	//SetCorrectedQuaternions();
 }
 const KJoint* KSensor::getKJoints() const
 {
 	return m_Joints;
 }
-void KSensor::InitJoints() 
-{
-	// Set parents
-	// core
-	m_Joints[JointType_SpineBase]		= KJoint("SpineBase"	, INVALID_JOINT_ID		 , JointType_SpineBase); // root
-	m_Joints[JointType_SpineMid]		= KJoint("SpineMid"		, JointType_SpineBase	 , JointType_SpineMid);
-	m_Joints[JointType_SpineShoulder]   = KJoint("SpineShoulder", JointType_SpineMid	 , JointType_SpineShoulder);
-	m_Joints[JointType_Neck]			= KJoint("Neck"			, JointType_SpineShoulder, JointType_Neck);
-	m_Joints[JointType_Head]			= KJoint("Head"			, JointType_Neck		 , JointType_Head);
-	// left side
-	m_Joints[JointType_HipLeft]		    = KJoint("HipLeft"	    , JointType_SpineBase	 , JointType_HipRight);
-	m_Joints[JointType_KneeLeft]		= KJoint("KneeLeft"		, JointType_HipLeft		 , JointType_KneeRight);
-	m_Joints[JointType_AnkleLeft]		= KJoint("AnkleLeft"	, JointType_KneeLeft	 , JointType_AnkleRight);
-	m_Joints[JointType_FootLeft]		= KJoint("FootLeft"		, JointType_AnkleLeft	 , JointType_FootRight);
-	m_Joints[JointType_ShoulderLeft]	= KJoint("ShoulderLeft" , JointType_SpineShoulder, JointType_ShoulderRight);
-	m_Joints[JointType_ElbowLeft]		= KJoint("ElbowLeft"	, JointType_ShoulderLeft , JointType_ElbowRight);
-	m_Joints[JointType_WristLeft]		= KJoint("WristLeft"	, JointType_ElbowLeft    , JointType_WristRight);
-	m_Joints[JointType_HandLeft]		= KJoint("HandLeft"		, JointType_WristLeft    , JointType_HandRight);
-	m_Joints[JointType_ThumbLeft]		= KJoint("ThumbLeft"	, JointType_HandLeft     , JointType_ThumbRight);
-	m_Joints[JointType_HandTipLeft]		= KJoint("HandTipLeft"	, JointType_HandLeft     , JointType_HandTipRight);
-	// right side
-	m_Joints[JointType_HipRight]		= KJoint("HipRight"		, JointType_SpineBase	 , JointType_HipLeft);
-	m_Joints[JointType_KneeRight]		= KJoint("KneeRight"	, JointType_HipRight	 , JointType_KneeLeft);
-	m_Joints[JointType_AnkleRight]		= KJoint("AnkleRight"	, JointType_KneeRight	 , JointType_AnkleLeft);
-	m_Joints[JointType_FootRight]		= KJoint("FootRight"	, JointType_AnkleRight	 , JointType_FootLeft);
-	m_Joints[JointType_ShoulderRight]	= KJoint("ShoulderRight", JointType_SpineShoulder, JointType_ShoulderLeft);
-	m_Joints[JointType_ElbowRight]		= KJoint("ElbowRight"	, JointType_ShoulderRight, JointType_ElbowLeft);
-	m_Joints[JointType_WristRight]		= KJoint("WristRight"	, JointType_ElbowRight	 , JointType_WristLeft);
-	m_Joints[JointType_HandRight]		= KJoint("HandRight"	, JointType_WristRight	 , JointType_HandLeft);
-	m_Joints[JointType_ThumbRight]		= KJoint("ThumbRight"	, JointType_HandRight	 , JointType_ThumbLeft);
-	m_Joints[JointType_HandTipRight]	= KJoint("HandTipRight"	, JointType_HandRight	 , JointType_HandTipLeft);
-
-	// Set children
-	for (uint i = 0; i < JointType_Count; i++) {
-		m_Joints[i].Position = Vector3f(0.f, 0.f, 0.f);
-		m_Joints[i].Orientation = QQuaternion(1.f, 0.f, 0.f, 0.f);
-		uint p = m_Joints[i].parent;
-		if (p != INVALID_JOINT_ID) (m_Joints[p].children).push_back(i);
-	}
-}
 void KSensor::SwapSides()
 {
 	// Positions: left side <-> right
-	swap(m_Joints[JointType_HipLeft].Position		 , m_Joints[JointType_HipRight].Position);
-	swap(m_Joints[JointType_KneeLeft].Position		 , m_Joints[JointType_KneeRight].Position);
-	swap(m_Joints[JointType_AnkleLeft].Position		 , m_Joints[JointType_AnkleRight].Position);
-	swap(m_Joints[JointType_FootLeft].Position		 , m_Joints[JointType_FootRight].Position);
-	swap(m_Joints[JointType_ShoulderLeft].Position 	 , m_Joints[JointType_ShoulderRight].Position);
-	swap(m_Joints[JointType_ElbowLeft].Position		 , m_Joints[JointType_ElbowRight].Position);
-	swap(m_Joints[JointType_WristLeft].Position		 , m_Joints[JointType_WristRight].Position);
-	swap(m_Joints[JointType_HandLeft].Position		 , m_Joints[JointType_HandRight].Position);
-	swap(m_Joints[JointType_ThumbLeft].Position		 , m_Joints[JointType_ThumbRight].Position);
-	swap(m_Joints[JointType_HandTipLeft].Position	 , m_Joints[JointType_HandTipRight].Position);
+	swap(m_Joints[JointType_HipLeft].Position, m_Joints[JointType_HipRight].Position);
+	swap(m_Joints[JointType_KneeLeft].Position, m_Joints[JointType_KneeRight].Position);
+	swap(m_Joints[JointType_AnkleLeft].Position, m_Joints[JointType_AnkleRight].Position);
+	swap(m_Joints[JointType_FootLeft].Position, m_Joints[JointType_FootRight].Position);
+	swap(m_Joints[JointType_ShoulderLeft].Position, m_Joints[JointType_ShoulderRight].Position);
+	swap(m_Joints[JointType_ElbowLeft].Position, m_Joints[JointType_ElbowRight].Position);
+	swap(m_Joints[JointType_WristLeft].Position, m_Joints[JointType_WristRight].Position);
+	swap(m_Joints[JointType_HandLeft].Position, m_Joints[JointType_HandRight].Position);
+	swap(m_Joints[JointType_ThumbLeft].Position, m_Joints[JointType_ThumbRight].Position);
+	swap(m_Joints[JointType_HandTipLeft].Position, m_Joints[JointType_HandTipRight].Position);
 	// Orientations: left side <-> right
-	swap(m_Joints[JointType_HipLeft].Orientation	 , m_Joints[JointType_HipRight].Orientation);
-	swap(m_Joints[JointType_KneeLeft].Orientation	 , m_Joints[JointType_KneeRight].Orientation);
-	swap(m_Joints[JointType_AnkleLeft].Orientation	 , m_Joints[JointType_AnkleRight].Orientation);
-	swap(m_Joints[JointType_FootLeft].Orientation	 , m_Joints[JointType_FootRight].Orientation);
+	swap(m_Joints[JointType_HipLeft].Orientation, m_Joints[JointType_HipRight].Orientation);
+	swap(m_Joints[JointType_KneeLeft].Orientation, m_Joints[JointType_KneeRight].Orientation);
+	swap(m_Joints[JointType_AnkleLeft].Orientation, m_Joints[JointType_AnkleRight].Orientation);
+	swap(m_Joints[JointType_FootLeft].Orientation, m_Joints[JointType_FootRight].Orientation);
 	swap(m_Joints[JointType_ShoulderLeft].Orientation, m_Joints[JointType_ShoulderRight].Orientation);
-	swap(m_Joints[JointType_ElbowLeft].Orientation	 , m_Joints[JointType_ElbowRight].Orientation);
-	swap(m_Joints[JointType_WristLeft].Orientation	 , m_Joints[JointType_WristRight].Orientation);
-	swap(m_Joints[JointType_HandLeft].Orientation	 , m_Joints[JointType_HandRight].Orientation);
-	swap(m_Joints[JointType_ThumbLeft].Orientation	 , m_Joints[JointType_ThumbRight].Orientation);
-	swap(m_Joints[JointType_HandTipLeft].Orientation , m_Joints[JointType_HandTipRight].Orientation);	
+	swap(m_Joints[JointType_ElbowLeft].Orientation, m_Joints[JointType_ElbowRight].Orientation);
+	swap(m_Joints[JointType_WristLeft].Orientation, m_Joints[JointType_WristRight].Orientation);
+	swap(m_Joints[JointType_HandLeft].Orientation, m_Joints[JointType_HandRight].Orientation);
+	swap(m_Joints[JointType_ThumbLeft].Orientation, m_Joints[JointType_ThumbRight].Orientation);
+	swap(m_Joints[JointType_HandTipLeft].Orientation, m_Joints[JointType_HandTipRight].Orientation);
 }
 
 void KSensor::PrintInfo() const
@@ -340,9 +298,93 @@ void KSensor::DrawActiveJoint()
 	glVertex3f(v.x(), v.y(), v.z());
 	glEnd();
 }
+void KSensor::DrawCloud() {
+	// Set up array buffers
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glEnableClientState(GL_COLOR_ARRAY);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_VBOid);
+	glVertexPointer(3, GL_FLOAT, 0, NULL);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_CBOid);
+	glColorPointer(3, GL_FLOAT, 0, NULL);
+
+	glPointSize(1.f);
+	glDrawArrays(GL_POINTS, 0, DEPTH_WIDTH*DEPTH_HEIGHT);
+
+	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_COLOR_ARRAY);
+}
+void KSensor::initJoints() 
+{
+	// Set parents
+	// core
+	m_Joints[JointType_SpineBase]		= KJoint("SpineBase"	, INVALID_JOINT_ID		 , JointType_SpineBase); // root
+	m_Joints[JointType_SpineMid]		= KJoint("SpineMid"		, JointType_SpineBase	 , JointType_SpineMid);
+	m_Joints[JointType_SpineShoulder]   = KJoint("SpineShoulder", JointType_SpineMid	 , JointType_SpineShoulder);
+	m_Joints[JointType_Neck]			= KJoint("Neck"			, JointType_SpineShoulder, JointType_Neck);
+	m_Joints[JointType_Head]			= KJoint("Head"			, JointType_Neck		 , JointType_Head);
+	// left side
+	m_Joints[JointType_HipLeft]		    = KJoint("HipLeft"	    , JointType_SpineBase	 , JointType_HipRight);
+	m_Joints[JointType_KneeLeft]		= KJoint("KneeLeft"		, JointType_HipLeft		 , JointType_KneeRight);
+	m_Joints[JointType_AnkleLeft]		= KJoint("AnkleLeft"	, JointType_KneeLeft	 , JointType_AnkleRight);
+	m_Joints[JointType_FootLeft]		= KJoint("FootLeft"		, JointType_AnkleLeft	 , JointType_FootRight);
+	m_Joints[JointType_ShoulderLeft]	= KJoint("ShoulderLeft" , JointType_SpineShoulder, JointType_ShoulderRight);
+	m_Joints[JointType_ElbowLeft]		= KJoint("ElbowLeft"	, JointType_ShoulderLeft , JointType_ElbowRight);
+	m_Joints[JointType_WristLeft]		= KJoint("WristLeft"	, JointType_ElbowLeft    , JointType_WristRight);
+	m_Joints[JointType_HandLeft]		= KJoint("HandLeft"		, JointType_WristLeft    , JointType_HandRight);
+	m_Joints[JointType_ThumbLeft]		= KJoint("ThumbLeft"	, JointType_HandLeft     , JointType_ThumbRight);
+	m_Joints[JointType_HandTipLeft]		= KJoint("HandTipLeft"	, JointType_HandLeft     , JointType_HandTipRight);
+	// right side
+	m_Joints[JointType_HipRight]		= KJoint("HipRight"		, JointType_SpineBase	 , JointType_HipLeft);
+	m_Joints[JointType_KneeRight]		= KJoint("KneeRight"	, JointType_HipRight	 , JointType_KneeLeft);
+	m_Joints[JointType_AnkleRight]		= KJoint("AnkleRight"	, JointType_KneeRight	 , JointType_AnkleLeft);
+	m_Joints[JointType_FootRight]		= KJoint("FootRight"	, JointType_AnkleRight	 , JointType_FootLeft);
+	m_Joints[JointType_ShoulderRight]	= KJoint("ShoulderRight", JointType_SpineShoulder, JointType_ShoulderLeft);
+	m_Joints[JointType_ElbowRight]		= KJoint("ElbowRight"	, JointType_ShoulderRight, JointType_ElbowLeft);
+	m_Joints[JointType_WristRight]		= KJoint("WristRight"	, JointType_ElbowRight	 , JointType_WristLeft);
+	m_Joints[JointType_HandRight]		= KJoint("HandRight"	, JointType_WristRight	 , JointType_HandLeft);
+	m_Joints[JointType_ThumbRight]		= KJoint("ThumbRight"	, JointType_HandRight	 , JointType_ThumbLeft);
+	m_Joints[JointType_HandTipRight]	= KJoint("HandTipRight"	, JointType_HandRight	 , JointType_HandTipLeft);
+
+	// Set children
+	for (uint i = 0; i < JointType_Count; i++) {
+		m_Joints[i].Position = Vector3f(0.f, 0.f, 0.f);
+		m_Joints[i].Orientation = QQuaternion(1.f, 0.f, 0.f, 0.f);
+		uint p = m_Joints[i].parent;
+		if (p != INVALID_JOINT_ID) (m_Joints[p].children).push_back(i);
+	}
+}
 void KSensor::NextJoint(int step)
 {
 	m_ActiveJoint = Mod(m_ActiveJoint, JointType_Count, step);
 	const KJoint &j = m_Joints[m_ActiveJoint];
 	cout << left << setw(2) << m_ActiveJoint << ": " << setw(15) << j.name << " p=" << left << setw(25) << j.Position.ToString() << " q=" << printQuaternion1(j.Orientation) << printQuaternion2(j.Orientation) << printQuaternion3(j.Orientation) << endl;
+}
+bool KSensor::initTRC()
+{
+	m_trcFile = new QFile("joint_positions.trc");
+	if (!m_trcFile->open(QIODevice::WriteOnly | QIODevice::Text)) return false;
+	QTextStream out(m_trcFile);
+	out << "PathFileType\t4\t(X / Y / Z)\tjoint_positions.trc\n";
+	out << "DataRate\tCameraRate\tNumFrames\tNumMarkers\tUnits\tOrigDataRate\tOrigDataStartFrame\tOrigNumFrames\n";
+	out << "Frame#\tTime";
+	for (int i = 0; i < ARRAY_SIZE_IN_ELEMENTS(m_Joints); i++) {
+		out << "\t" << QString::fromStdString(m_Joints[i].name) << "\t\t";
+	}
+	out << "\n";
+	return true;
+}
+bool KSensor::addFrameToTRC(TIMESPAN *time)
+{
+	cout << "Adding frame to trc file." << endl;
+	m_numFrames++;
+	QTextStream out(m_trcFile);
+	out << m_numFrames << "\t" << (time ? *time : 0);
+	for (int i = 0; i < ARRAY_SIZE_IN_ELEMENTS(m_Joints); i++) {
+		out << "\t" << m_Joints[i].Position.x;
+		out << "\t" << m_Joints[i].Position.y;
+		out << "\t" << m_Joints[i].Position.z;
+	}
+	return true;
 }

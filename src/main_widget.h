@@ -8,7 +8,6 @@ class SkinnedMesh;
 class Technique;
 class SkinningTechnique;
 class Pipeline;
-
 #include "math_3d.h"
 #include "util.h"
 
@@ -66,9 +65,7 @@ private:
 	bool m_renderActiveJoint = false;
 	bool m_renderCloud = false;
 	bool m_renderCameraVectors = false;	
-	bool m_play = false;
-
-	
+	bool m_play = true;	
 
 	#define NUM_INFO_BLOCKS 3
 	uint activeJoint = 0;
