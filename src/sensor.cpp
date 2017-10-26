@@ -20,10 +20,10 @@ KSensor::KSensor()
 	initJoints();
 	m_GotFrame = false;
 	m_numFrames = 0;
-	if (!initTRC()) cout << "Could not init trc file" << endl;
 }
 KSensor::~KSensor()
 {
+	m_Sensor->Close();
 }
 bool KSensor::Init() {
 	initializeOpenGLFunctions();
@@ -149,8 +149,6 @@ void KSensor::GetRGBData(IMultiSourceFrame* frame, GLubyte* dest) {
 	if (colorframe) colorframe->Release();
 }
 void KSensor::GetBodyData(IMultiSourceFrame* frame) {
-	
-	
 	IBodyFrameReference* frameref = NULL;
 	frame->get_BodyFrameReference(&frameref);
 	IBodyFrame* bodyframe = NULL;
@@ -166,7 +164,7 @@ void KSensor::GetBodyData(IMultiSourceFrame* frame) {
 	}
 
 	IBody* body[BODY_COUNT] = { 0 };
-	if (!SUCCEEDED(bodyframe->GetAndRefreshBodyData(BODY_COUNT, body))) cout << "Could not get and refresh body data" << endl;;
+	if (FAILED(bodyframe->GetAndRefreshBodyData(BODY_COUNT, body))) cout << "Could not get and refresh body data" << endl;;
 
 	// Body tracking variables
 	BOOLEAN tracked;							// Whether we see a body
@@ -195,8 +193,10 @@ void KSensor::GetBodyData(IMultiSourceFrame* frame) {
 		}
 		//cout << left << setw(2) << i << ": " << left << setw(15) << j.name << " p=" << left << setw(25) << j.Position.ToString() << " q=" << j.Orientation.ToString() << j.Orientation.ToEulerAnglesString() << j.Orientation.ToAxisAngleString() << endl;
 	}
-	if (bodyframe) addFrameToTRC(frameTime);
-	if (bodyframe) bodyframe->Release();
+	if (bodyframe) {
+		addMarkerData(frameTime);
+		bodyframe->Release();
+	}
 	//SetCorrectedQuaternions();
 }
 const KJoint* KSensor::getKJoints() const
@@ -361,7 +361,7 @@ void KSensor::NextJoint(int step)
 	const KJoint &j = m_Joints[m_ActiveJoint];
 	cout << left << setw(2) << m_ActiveJoint << ": " << setw(15) << j.name << " p=" << left << setw(25) << j.Position.ToString() << " q=" << printQuaternion1(j.Orientation) << printQuaternion2(j.Orientation) << printQuaternion3(j.Orientation) << endl;
 }
-bool KSensor::initTRC()
+bool KSensor::createTRC()
 {
 	m_trcFile = new QFile("joint_positions.trc");
 	if (!m_trcFile->open(QIODevice::WriteOnly | QIODevice::Text)) return false;
@@ -372,19 +372,34 @@ bool KSensor::initTRC()
 	for (int i = 0; i < ARRAY_SIZE_IN_ELEMENTS(m_Joints); i++) {
 		out << "\t" << QString::fromStdString(m_Joints[i].name) << "\t\t";
 	}
+	out << "\n\t";
+	for (int i = 0; i < ARRAY_SIZE_IN_ELEMENTS(m_Joints); i++) {
+		out << "\t" << "X" << (i + 1) << "\t" << "Y" << (i + 1) << "\t" << "Z" << (i + 1);
+	}
 	out << "\n";
+	out << m_markerData;
+	m_trcFile->close();
 	return true;
 }
-bool KSensor::addFrameToTRC(TIMESPAN *time)
+bool KSensor::addMarkerData(TIMESPAN *time)
 {
-	cout << "Adding frame to trc file." << endl;
+	cout << "Adding frame to marker data string." << endl;
 	m_numFrames++;
-	QTextStream out(m_trcFile);
-	out << m_numFrames << "\t" << (time ? *time : 0);
+	QTextStream qts(&m_markerData);
+	qts.setFieldWidth(12); // width for 4 important digits + 6 decimals + comma + minus sign
+	qts << QString("\n") << m_numFrames << QString("\t") << (time ? *time : 0);
 	for (int i = 0; i < ARRAY_SIZE_IN_ELEMENTS(m_Joints); i++) {
-		out << "\t" << m_Joints[i].Position.x;
-		out << "\t" << m_Joints[i].Position.y;
-		out << "\t" << m_Joints[i].Position.z;
+		qts << "\t" << m_Joints[i].Position.x;
+		qts << "\t" << m_Joints[i].Position.y;
+		qts << "\t" << m_Joints[i].Position.z;
 	}
+	//m_markerData = qts.readAll();
+	/*m_markerData.append(QString("\n") + m_numFrames + QString("\t") + (time ? *time : 0));
+	for (int i = 0; i < ARRAY_SIZE_IN_ELEMENTS(m_Joints); i++) {
+		m_markerData.append("\t" + QString(m_Joints[i].Position.x);
+		m_markerData.append("\t" + QString(m_Joints[i].Position.y);
+		m_markerData.append("\t" + QString(m_Joints[i].Position.z);
+	}*/
+	
 	return true;
 }

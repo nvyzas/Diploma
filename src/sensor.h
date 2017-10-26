@@ -65,16 +65,14 @@ public:
 	void DrawActiveJoint();
 	void DrawSkeleton(uint id);
 	void DrawCloud();
-
+	bool createTRC();
 
 	bool m_InvertedSides;
 	bool m_GotFrame;
-
 private:
 	void initJoints();
-	bool initTRC();
 	void NextJoint(int step);
-	bool addFrameToTRC(TIMESPAN *time);
+	bool addMarkerData(TIMESPAN *time);
 
 	KJoint m_Joints[JointType_Count];
 	IKinectSensor* m_Sensor;
@@ -92,6 +90,7 @@ private:
 
 	uint m_ActiveJoint = JointType_SpineBase;
 	QFile *m_trcFile;
+	QString m_markerData;
 	uint m_numFrames;
 	uint m_numMarkers;
 };

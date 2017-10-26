@@ -198,9 +198,15 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		break;
 	case Qt::Key_G:
 		m_Sensor->GetKinectData();
+		break;
+	case Qt::Key_C:
+		if (!m_Sensor->createTRC()) cout << "Could not create trc file" << endl;
+		else cout << "Created .trc file" << endl;
+		break;
 	case Qt::Key_Space:
 		m_play = !m_play;
 		cout << "Play " << (m_play ? "ON" : "OFF") << endl;
+		break;
 	default:
 		cout << "This key does not do anything." << endl;
 		break;
