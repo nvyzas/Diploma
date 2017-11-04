@@ -811,7 +811,7 @@ void SkinnedMesh::PrintParameters() const
 uint SkinnedMesh::findBoneId(const QString &boneName) const
 {
 	string name(boneName.toLocal8Bit());
-	const auto& it = m_boneMap.find(name);
+	const auto& it = m_boneMap.find(name);	
 	if (it == m_boneMap.cend()) {
 		cerr << "std::find could not locate bone " << name << endl;
 		return m_numBones;

@@ -101,7 +101,17 @@ void MainWindow::printActiveBoneRotations() const
 							   << setw(5) << yRot << " " 
 		                       << setw(5) << zRot << endl;
 }
-
+void MainWindow::keyPressEvent(QKeyEvent *event)
+{
+	cout << "MainWindow saw this keyboard event" << endl;
+	int key = event->key();
+	switch (key) {
+	case Qt::Key_Escape:
+		close(); // implicitly makes application to quit
+		break;
+	}
+	
+}
 //const QString &MainWindow::activeBone() const
 //{
 //	const QString &boneName = ui->comboBox_activeBone->currentText();

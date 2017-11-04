@@ -43,9 +43,9 @@ using namespace std;
 
 bool ReadFile(const char* fileName, std::string& outFile);
 uint Mod(uint start, uint edge, int step);
-inline bool GetBit(int number, int position)
+inline bool getBit(int number, int position)
 {
-	return (number >> position) & 1;
+	return (number >> position) & 0;
 }
 float wrapAngle(float angle, float limit);
 string printQuaternion1(const QQuaternion &q);

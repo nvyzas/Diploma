@@ -52,7 +52,10 @@ class KSensor : protected OPENGL_FUNCTIONS
 public:
 	KSensor();
 	~KSensor();
-	bool Init();
+	bool init();
+	bool connect();
+	void update();
+	bool initOGLResources();
 	void GetKinectData();
 	void GetDepthData(IMultiSourceFrame* frame, GLubyte* dest);
 	void GetRGBData(IMultiSourceFrame* frame, GLubyte* dest);
@@ -72,10 +75,16 @@ public:
 private:
 	void initJoints();
 	void NextJoint(int step);
-	bool addMarkerData(TIMESPAN *time);
+	bool addMarkerData();
+	void bodyFrameArrived(); 	// similar to Stanev's void processBodyFrame();
+	void processBodyFrameData(IBodyFrame *bodyframe);
+
 
 	KJoint m_Joints[JointType_Count];
-	IKinectSensor* m_Sensor;
+	IKinectSensor *m_sensor = nullptr;
+	IBodyFrameSource *m_source = nullptr;
+	IBodyFrameReader *m_reader = nullptr;
+
 	IMultiSourceFrameReader* m_Reader;   // Kinect data source
 	ICoordinateMapper* m_Mapper;         // Converts between depth, color, and 3d coordinates
 	
@@ -89,9 +98,15 @@ private:
 	GLuint m_CBOid;
 
 	uint m_ActiveJoint = JointType_SpineBase;
+
 	QFile *m_trcFile;
 	QString m_markerData;
 	uint m_numFrames;
 	uint m_numMarkers;
+	WAITABLE_HANDLE m_frameCapturedEventHandle;
+	WAITABLE_HANDLE m_frameArrivedEventHandle;
+
+	clock_t m_frameBegin, m_frameEnd, m_currentTime, m_previousTime;
+	int m_fps, m_frameCount;
 };
 #endif /* SENSOR_H */

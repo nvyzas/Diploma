@@ -26,6 +26,9 @@ private slots:
 	void printActiveBoneTransforms() const;
 	void printActiveBoneRotations() const;
 
+protected:
+	void keyPressEvent(QKeyEvent *event) override;
+
 private:
 	const QString &activeBone() const;
 	void loadActiveBoneRotationX();

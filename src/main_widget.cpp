@@ -80,13 +80,13 @@ void MainWidget::initializeGL()
 void MainWidget::MySetup()
 {
 	// 1) Init KSensor
-	m_Sensor->Init();
-	m_Sensor->PrintJointHierarchy();
+	//m_Sensor->init();
+	//m_Sensor->PrintJointHierarchy();
 
 	// 2) Init Mesh
 	m_Mesh->setKSensor(*m_Sensor);
 	//m_successfullyLoaded = loadToGPU("cmu_test");
-	m_Sensor->GetKinectData(); // to successfully acquire frame init sensor before mesh and load mesh before getting data
+	//m_Sensor->GetKinectData(); // to successfully acquire frame init sensor before mesh and load mesh before getting data
 
 	// 3) Init Camera
 	//m_Cam->SetCam(); Camera init in its constructor
@@ -147,7 +147,7 @@ void MainWidget::paintGL()
 	m_Skin->enable();
 	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
 	if (m_play) {
-		m_Sensor->GetKinectData();
+		//m_Sensor->GetKinectData();
 		Transform(false);
 	}
 	/*if (!m_modelName.isEmpty()) {
@@ -200,12 +200,26 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		m_Sensor->GetKinectData();
 		break;
 	case Qt::Key_C:
+		cout << "Connecting to sensor" << endl;
+		m_Sensor->connect();
+		break;
+	case Qt::Key_T:
 		if (!m_Sensor->createTRC()) cout << "Could not create trc file" << endl;
 		else cout << "Created .trc file" << endl;
 		break;
+	case Qt::Key_W:
+		cout << "Waiting for kinect event." << endl;
+		m_Sensor->update();
+		break;
+	case Qt::Key_R:
+		m_isRecording = !m_isRecording;
+		cout << "Record " << (m_isRecording ? "ON" : "OFF") << endl;
 	case Qt::Key_Space:
 		m_play = !m_play;
 		cout << "Play " << (m_play ? "ON" : "OFF") << endl;
+		break;
+	case Qt::Key_Escape:
+		event->ignore();
 		break;
 	default:
 		cout << "This key does not do anything." << endl;

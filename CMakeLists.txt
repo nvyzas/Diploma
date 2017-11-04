@@ -1,9 +1,11 @@
+cmake_minimum_required (VERSION 2.8.11)
 project(Diploma)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
+#set(CMAKE_MODULE_PATH "C:\Qt\5.9.2\msvc2017_64")
 find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
 SET(OPENSIM_INSTALL_DIR $ENV{OPENSIM_HOME})
 
@@ -11,7 +13,7 @@ SET(OPENSIM_INSTALL_DIR $ENV{OPENSIM_HOME})
 set(Diploma_INCLUDE_DIRS
 	${PROJECT_SOURCE_DIR}/res/assimp/include/
 	${PROJECT_SOURCE_DIR}/res/kinect/include/
-	${OPENSIM_INSTALL_DIR}/sdk/include//
+	${OPENSIM_INSTALL_DIR}/sdk/include/
 	${OPENSIM_INSTALL_DIR}/sdk/include/SimTK/include/
 	#${PROJECT_SOURCE_DIR}/res/opensim/include/
 	#${PROJECT_SOURCE_DIR}/res/opensim/include/SimTK/include/

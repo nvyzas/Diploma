@@ -11,9 +11,6 @@ class Pipeline;
 #include "math_3d.h"
 #include "util.h"
 
-// Assimp
-struct aiScene;
-
 // Qt
 #include <QtWidgets\QOpenGLWidget>
 QT_FORWARD_DECLARE_CLASS(QOpenGLTexture);
@@ -52,8 +49,6 @@ protected:
 
 private:
 	Camera* m_Cam; 
-	KSensor* m_Sensor;
-	SkinnedMesh* m_Mesh;
 	Technique* m_Tech;
 	SkinningTechnique* m_Skin;
 	Pipeline* m_Pipe;
@@ -61,8 +56,6 @@ private:
 	QPoint m_lastPos;
 
 	bool m_renderAxes = true;
-	bool m_renderSkeleton = false;
-	bool m_renderActiveJoint = false;
 	bool m_renderCloud = false;
 	bool m_renderCameraVectors = false;	
 	bool m_play = true;	
@@ -77,7 +70,14 @@ private:
 	void DrawTestAxes();
 	void MySetup();
 
+	// Kinect variables
+	KSensor* m_Sensor;
+	bool m_renderSkeleton = false;
+	bool m_renderActiveJoint = false;
+	bool m_isRecording = false;
+
 	// Skinned mesh variables
+	SkinnedMesh* m_Mesh;
 	bool m_renderModel = true;
 	bool m_modelSkinning = true;
 	QString m_modelName;
