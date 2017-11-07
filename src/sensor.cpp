@@ -29,8 +29,7 @@ template <class T> void safeRelease(T **ppT)
 KSensor::KSensor()
 {
 	init(); 
-	connect(); //#err source is not active on first connect even when kinect stream is running. 
-	connect(); // Needs a second connect
+	connect();
 	//initializeOpenGLFunctions();
 	initJoints();
 	PrintJointHierarchy();
@@ -48,26 +47,22 @@ bool KSensor::init() {
 		cout << "Could not get kinect sensor. hr = " <<  hr << endl;
 		return false;
 	}
-
 	if (!m_sensor) {
 		cout << "m_sensor = NULL" << endl;
 		return false;
 	}
-
 	hr = m_sensor->Open();
 	if (FAILED(hr)) {
 		cout << hr << "Could not open sensor. hr = " << hr << endl;
 		return false;
 	}
-
 	BOOLEAN isOpen = false;
 	hr = m_sensor->get_IsOpen(&isOpen);
 	if (SUCCEEDED(hr)) {
-		cout << "Sensor stream is open? " << (isOpen ? "yes" : "no") << endl;
+		if (!isOpen) cout << "Sensor is not open. " << endl;
 		return false;
-	}
-	else {
-		cout << "Could not specify if stream is open." << endl;
+	} else {
+		cout << "Could not specify if sensor is open. hr = " << hr << endl;
 	}
 
 	return true;	
@@ -79,15 +74,15 @@ bool KSensor::connect()
 		return false;
 	}
 
-	HRESULT hr = m_sensor->get_BodyFrameSource(&m_source);
+	HRESULT hr;
+	hr = m_sensor->get_BodyFrameSource(&m_source);
 	if (FAILED(hr)) {
-		cout << hr << "Could not get frame source" << endl;
+		cout << hr << "Could not get frame source. hr = " << hr << endl;
 		return false;
 	}
-
 	hr = m_source->OpenReader(&m_reader);
 	if (FAILED(hr)) {
-		cout << hr << " Could not open reader" << endl;
+		cout << hr << "Could not open reader.  hr = " << hr << endl;
 		return false;
 	}
 
@@ -95,57 +90,124 @@ bool KSensor::connect()
 	hr = m_source->get_IsActive(&isActive);
 	if (SUCCEEDED(hr)) {
 		cout << "Source is active? " << (isActive ? "yes" : "no") << endl;
-	}
-	else {
-		cout << "Could not specify if source is active" << endl;
-	}
-
-
-	//hr = m_source->SubscribeFrameCaptured(&m_frameCapturedEventHandle);
-	//if (SUCCEEDED(hr)) cout << hr << " Subscribed to frameCaptured event" << endl;
-
-	//m_frameArrivedEventHandle = (WAITABLE_HANDLE)CreateEvent(NULL, FALSE, FALSE, NULL); // #? 2nd argument true or not needed at all
-	hr = m_reader->SubscribeFrameArrived(&m_frameArrivedEventHandle);
-	if (FAILED(hr)) {
-		cout << "Could not subscribed to frameArrived event. hr = " << hr << endl;
-		return false;
+	}else {
+		cout << "Could not specify if source is active. hr = " << hr << endl;
 	}
 
-	//IBodyFrameArrivedEventArgs *args;
-	//hr = m_reader->GetFrameArrivedEventData(capturedFrameHandle, &args);
 	return true;
 }
 void KSensor::update()
 {
-	if (m_sensor == NULL) {
+	if (!m_sensor) {
 		cout << "m_sensor = NULL" << endl;
 		return;
 	}
-
-	if (m_source == NULL) {
+	if (!m_source) {
 		cout << "m_source = NULL" << endl;
 		return;
 	}
-
+	if (!m_reader) {
+		cout << "m_reader = NULL" << endl;
+		return;
+	}
+	HRESULT hr;
 	BOOLEAN isOpen = false;
-	if (SUCCEEDED(m_sensor->get_IsOpen(&isOpen))) {
-		cout << "Sensor stream is open? " << (isOpen ? "yes" : "no") << endl;
+	hr = m_sensor->get_IsOpen(&isOpen);
+	if (SUCCEEDED(hr)) {
+		cout << "Sensor is open? " << (isOpen ? "yes" : "no") << endl;
+	} else {
+		cout << "Could not specify if sensor is open. hr = " << hr << endl;
 	}
-
 	BOOLEAN isActive = false;
-	if (SUCCEEDED(m_source->get_IsActive(&isActive))) {
-		cout << "Source is open? " << (isActive ? "yes" : "no") << endl;
+	hr = m_source->get_IsActive(&isActive);
+	if (SUCCEEDED(hr)) {
+		cout << "Source is active? " << (isActive ? "yes" : "no") << endl;
+	} else {
+		cout << "Could not specify if source is active" << endl;
 	}
 
-	// Wait for 0ms, just quickly test if it is time to process a skeleton
-	// WAIT_OBJECT_0 == WaitForSingleObject(m_frameArrivedEventHandle, 0)
-	DWORD word = WaitForSingleObject(reinterpret_cast<HANDLE>(m_frameArrivedEventHandle), 1000);
-	if (WAIT_OBJECT_0 == word) {
-		cout << "Boom event! " << endl;
-		bodyFrameArrived();
+	IBodyFrame* frame = NULL;
+	hr = m_reader->AcquireLatestFrame(&frame);
+	if (FAILED(hr)) {
+		cout << "Failed to acquire latest frame. hr = " << hr << endl;
+	} else {
+		INT64 nTime = 0;
+		hr = frame->get_RelativeTime(&nTime);
+
+		IBody* ppBodies[BODY_COUNT] = { 0 };
+
+		if (FAILED(hr)) {
+			cout << "Could not get relative time. hr = " << hr << endl;
+		} else {
+			hr = frame->GetAndRefreshBodyData(_countof(ppBodies), ppBodies);
+		}
+
+		if (FAILED(hr)) {
+			cout << "Could not get and refresh body data. hr = " << hr << endl;
+		} else	{
+			processBodyFrameData(nTime, BODY_COUNT, ppBodies);
+		}
+
+		for (int i = 0; i < _countof(ppBodies); ++i) {
+			safeRelease(&ppBodies[i]);
+		}
 	}
-	cout << "DWORD = " << hex << word << endl;
+
+	safeRelease(&frame);
 	return;
+}
+void KSensor::processBodyFrameData(INT64 timestamp, int bodyCount, IBody** bodies)
+{
+	// Body tracking variables
+	BOOLEAN tracked;
+	Joint joints[JointType_Count];
+	JointOrientation orients[JointType_Count];
+	for (int i = 0; i < BODY_COUNT; i++) {
+		bodies[i]->get_IsTracked(&tracked);
+		if (tracked) {
+			bodies[i]->GetJoints(JointType_Count, joints);
+			bodies[i]->GetJointOrientations(JointType_Count, orients);
+			break;
+		}
+	}
+	for (uint i = 0; i < JointType_Count; i++) {
+		const Joint &jt = joints[i];
+		const JointOrientation & or = orients[i];
+		//cout << "JointType: " << setw(2) << jt.JointType << "\tJointOrientationType: " << setw(2) << or.JointType << endl;
+		if (m_InvertedSides) {
+			uint j = m_Joints[i].idOpposite;
+			m_Joints[j].Position = Vector3f(jt.Position.X, jt.Position.Y, jt.Position.Z);
+			m_Joints[j].Orientation = QQuaternion(or .Orientation.w, or .Orientation.x, or .Orientation.y, or .Orientation.z);
+		}
+		else {
+			m_Joints[i].Position = Vector3f(jt.Position.X, jt.Position.Y, jt.Position.Z);
+			m_Joints[i].Orientation = QQuaternion(or .Orientation.w, or .Orientation.x, or .Orientation.y, or .Orientation.z);
+		}
+		//cout << left << setw(2) << i << ": " << left << setw(15) << j.name << " p=" << left << setw(25) << j.Position.ToString() << " q=" << j.Orientation.ToString() << j.Orientation.ToEulerAnglesString() << j.Orientation.ToAxisAngleString() << endl;
+	}
+	addMarkerData();
+}
+bool KSensor::addMarkerData()
+{
+	cout << "Adding frame to marker data string." << endl;
+	m_numFrames++;
+	QTextStream qts(&m_markerData);
+	qts.setFieldWidth(12); // width for 4 important digits + 6 decimals + comma + minus sign
+	qts << QString("\n") << m_numFrames << QString("\t") << (time ? *time : 0);
+	for (int i = 0; i < ARRAY_SIZE_IN_ELEMENTS(m_Joints); i++) {
+		qts << "\t" << m_Joints[i].Position.x;
+		qts << "\t" << m_Joints[i].Position.y;
+		qts << "\t" << m_Joints[i].Position.z;
+	}
+	//m_markerData = qts.readAll();
+	/*m_markerData.append(QString("\n") + m_numFrames + QString("\t") + (time ? *time : 0));
+	for (int i = 0; i < ARRAY_SIZE_IN_ELEMENTS(m_Joints); i++) {
+	m_markerData.append("\t" + QString(m_Joints[i].Position.x);
+	m_markerData.append("\t" + QString(m_Joints[i].Position.y);
+	m_markerData.append("\t" + QString(m_Joints[i].Position.z);
+	}*/
+
+	return true;
 }
 bool KSensor::initOGLResources()
 {
@@ -579,102 +641,4 @@ bool KSensor::createTRC()
 	out << m_markerData;
 	m_trcFile->close();
 	return true;
-}
-bool KSensor::addMarkerData()
-{
-	cout << "Adding frame to marker data string." << endl;
-	m_numFrames++;
-	QTextStream qts(&m_markerData);
-	qts.setFieldWidth(12); // width for 4 important digits + 6 decimals + comma + minus sign
-	qts << QString("\n") << m_numFrames << QString("\t") << (time ? *time : 0);
-	for (int i = 0; i < ARRAY_SIZE_IN_ELEMENTS(m_Joints); i++) {
-		qts << "\t" << m_Joints[i].Position.x;
-		qts << "\t" << m_Joints[i].Position.y;
-		qts << "\t" << m_Joints[i].Position.z;
-	}
-	//m_markerData = qts.readAll();
-	/*m_markerData.append(QString("\n") + m_numFrames + QString("\t") + (time ? *time : 0));
-	for (int i = 0; i < ARRAY_SIZE_IN_ELEMENTS(m_Joints); i++) {
-		m_markerData.append("\t" + QString(m_Joints[i].Position.x);
-		m_markerData.append("\t" + QString(m_Joints[i].Position.y);
-		m_markerData.append("\t" + QString(m_Joints[i].Position.z);
-	}*/
-	
-	return true;
-}
-void KSensor::bodyFrameArrived()
-{
-	IBodyFrameArrivedEventArgs *args = nullptr;
-	HRESULT hr;
-	hr = m_reader->GetFrameArrivedEventData(m_frameArrivedEventHandle, &args);
-	if (FAILED(hr)) {
-		cout << "Could not get frameArrived event data. hr = " << hr << endl;
-	}
-	if (!args) {
-		cout << "args = NULL" << endl;
-	}
-
-	IBodyFrameReference *bodyFrameReference = nullptr;
-	hr = args->get_FrameReference(&bodyFrameReference);
-	if (FAILED(hr)) {
-		cout << "Could not get frame reference" << endl;
-	}
-
-	TIMESPAN relativeTime = 0;
-	hr = bodyFrameReference->get_RelativeTime(&relativeTime);
-	if (SUCCEEDED(hr)) {
-		cout << "Relative time = " << relativeTime << endl;
-	}
-
-	IBodyFrame* bodyFrame = nullptr;
-	hr = bodyFrameReference->AcquireFrame(&bodyFrame); //#? use AcquireLatestFrame instead
-	if (FAILED(hr)) {
-		cout << "Could not get frame" << endl;
-	}
-	else {
-		// processing body data
-		processBodyFrameData(bodyFrame);
-	}
-
-	safeRelease(&bodyFrame);
-	safeRelease(&bodyFrameReference);
-	safeRelease(&args);
-}
-void KSensor::processBodyFrameData(IBodyFrame *bodyframe)
-{
-	IBody* body[BODY_COUNT] = { 0 };
-	if (FAILED(bodyframe->GetAndRefreshBodyData(BODY_COUNT, body))) cout << "Could not get and refresh body data" << endl;;
-
-	// Body tracking variables
-	BOOLEAN tracked;							
-	Joint joints[JointType_Count];
-	JointOrientation orients[JointType_Count];
-	for (int i = 0; i < BODY_COUNT; i++) {
-		body[i]->get_IsTracked(&tracked);
-		if (tracked) {
-			body[i]->GetJoints(JointType_Count, joints);
-			body[i]->GetJointOrientations(JointType_Count, orients);
-			break;
-		}
-	}
-	for (uint i = 0; i < JointType_Count; i++) {
-		const Joint &jt = joints[i];
-		const JointOrientation & or = orients[i];
-		//cout << "JointType: " << setw(2) << jt.JointType << "\tJointOrientationType: " << setw(2) << or.JointType << endl;
-		if (m_InvertedSides) {
-			uint j = m_Joints[i].idOpposite;
-			m_Joints[j].Position = Vector3f(jt.Position.X, jt.Position.Y, jt.Position.Z);
-			m_Joints[j].Orientation = QQuaternion(or .Orientation.w, or .Orientation.x, or .Orientation.y, or .Orientation.z);
-		}
-		else {
-			m_Joints[i].Position = Vector3f(jt.Position.X, jt.Position.Y, jt.Position.Z);
-			m_Joints[i].Orientation = QQuaternion(or .Orientation.w, or .Orientation.x, or .Orientation.y, or .Orientation.z);
-		}
-		//cout << left << setw(2) << i << ": " << left << setw(15) << j.name << " p=" << left << setw(25) << j.Position.ToString() << " q=" << j.Orientation.ToString() << j.Orientation.ToEulerAnglesString() << j.Orientation.ToAxisAngleString() << endl;
-	}
-	if (bodyframe) {
-		addMarkerData();
-		bodyframe->Release();
-	}
-	//SetCorrectedQuaternions();
 }

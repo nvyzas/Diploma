@@ -55,6 +55,8 @@ public:
 	bool init();
 	bool connect();
 	void update();
+	void processBodyFrameData(INT64 timestamp, int bodyCount, IBody** bodies);
+	bool addMarkerData();
 	bool initOGLResources();
 	void GetKinectData();
 	void GetDepthData(IMultiSourceFrame* frame, GLubyte* dest);
@@ -75,9 +77,6 @@ public:
 private:
 	void initJoints();
 	void NextJoint(int step);
-	bool addMarkerData();
-	void bodyFrameArrived(); 	// similar to Stanev's void processBodyFrame();
-	void processBodyFrameData(IBodyFrame *bodyframe);
 
 
 	KJoint m_Joints[JointType_Count];
