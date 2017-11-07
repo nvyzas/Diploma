@@ -8,6 +8,7 @@
 
 // Qt
 #include <QtCore\QDir>
+#include <QtCore\QTimer>
 #include <QtWidgets\QAction>
 #include <QtWidgets\QMenu>
 
@@ -112,6 +113,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 	}
 	
 }
+
 //const QString &MainWindow::activeBone() const
 //{
 //	const QString &boneName = ui->comboBox_activeBone->currentText();
@@ -178,6 +180,9 @@ void MainWindow::setupObjects()
 	menuInfo->addAction("Bone Transforms", this, SLOT(printActiveBoneTransforms()));
 	menuInfo->addAction("Bone Rotations", this, SLOT(printActiveBoneRotations()));
 	ui->pushButton_info->setMenu(menuInfo);
+
+	timer = new QTimer(this);
+
 }
 void MainWindow::setupConnections()
 {
@@ -203,4 +208,6 @@ void MainWindow::setupConnections()
 	connect(ui->checkBox_axes, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setRenderAxes(bool)));
 	// render model
 	connect(ui->checkBox_model, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setRenderModel(bool)));
+	// timer
+	//connect(timer, SIGNAL(timeout()), this, SLOT(update()));
 }

@@ -56,14 +56,6 @@ bool KSensor::init() {
 		cout << hr << "Could not open sensor. hr = " << hr << endl;
 		return false;
 	}
-	BOOLEAN isOpen = false;
-	hr = m_sensor->get_IsOpen(&isOpen);
-	if (SUCCEEDED(hr)) {
-		if (!isOpen) cout << "Sensor is not open. " << endl;
-		return false;
-	} else {
-		cout << "Could not specify if sensor is open. hr = " << hr << endl;
-	}
 
 	return true;	
 }
@@ -73,8 +65,16 @@ bool KSensor::connect()
 		cout << "m_sensor = NULL" << endl;
 		return false;
 	}
-
 	HRESULT hr;
+	BOOLEAN isOpen = false;
+	hr = m_sensor->get_IsOpen(&isOpen);
+	if (SUCCEEDED(hr)) {
+		if (!isOpen) cout << "Sensor is not open. " << endl;
+	}
+	else {
+		cout << "Could not specify if sensor is open. hr = " << hr << endl;
+	}
+
 	hr = m_sensor->get_BodyFrameSource(&m_source);
 	if (FAILED(hr)) {
 		cout << hr << "Could not get frame source. hr = " << hr << endl;
@@ -86,10 +86,13 @@ bool KSensor::connect()
 		return false;
 	}
 
+	safeRelease(&m_source);
+
+	// Must open reader first for source to be active
 	BOOLEAN isActive = false;
 	hr = m_source->get_IsActive(&isActive);
 	if (SUCCEEDED(hr)) {
-		cout << "Source is active? " << (isActive ? "yes" : "no") << endl;
+		if (!isActive) cout << "Source is not active. " << endl;
 	}else {
 		cout << "Could not specify if source is active. hr = " << hr << endl;
 	}
@@ -114,22 +117,25 @@ void KSensor::update()
 	BOOLEAN isOpen = false;
 	hr = m_sensor->get_IsOpen(&isOpen);
 	if (SUCCEEDED(hr)) {
-		cout << "Sensor is open? " << (isOpen ? "yes" : "no") << endl;
-	} else {
+		if (!isOpen) cout << "Sensor is not open. " << endl;
+	}
+	else {
 		cout << "Could not specify if sensor is open. hr = " << hr << endl;
 	}
 	BOOLEAN isActive = false;
 	hr = m_source->get_IsActive(&isActive);
 	if (SUCCEEDED(hr)) {
-		cout << "Source is active? " << (isActive ? "yes" : "no") << endl;
-	} else {
-		cout << "Could not specify if source is active" << endl;
+		if (!isActive) cout << "Source is not active. " << endl;
+	}
+	else {
+		cout << "Could not specify if source is active. hr = " << hr << endl;
 	}
 
 	IBodyFrame* frame = NULL;
 	hr = m_reader->AcquireLatestFrame(&frame);
 	if (FAILED(hr)) {
 		cout << "Failed to acquire latest frame. hr = " << hr << endl;
+		return;
 	} else {
 		INT64 nTime = 0;
 		hr = frame->get_RelativeTime(&nTime);

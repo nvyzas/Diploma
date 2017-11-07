@@ -8,6 +8,7 @@ namespace Ui {
 
 // Qt
 #include <QtWidgets\QMainWindow>
+class QTimer;
 
 class MainWindow : public QMainWindow
 {
@@ -25,6 +26,7 @@ private slots:
 	void setActiveBoneRotationZ(int value);
 	void printActiveBoneTransforms() const;
 	void printActiveBoneRotations() const;
+	void recordKinectData();
 
 protected:
 	void keyPressEvent(QKeyEvent *event) override;
@@ -37,6 +39,8 @@ private:
 	void setupObjects();
 	void setupConnections();
 	Ui::MainWindow *ui;
+
+	//QTimer *m_timer;
 };
 
 #endif /* MAIN_WINDOW_H */
