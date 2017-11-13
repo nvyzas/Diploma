@@ -66,6 +66,7 @@ set(Diploma_SRCS
 	src/skinning_technique.cpp
 	src/technique.cpp
 	src/util.cpp
+	src/skeleton.cpp
 )
 
 set(CMAKE_AUTOUIC_SEARCH_PATHS forms/)

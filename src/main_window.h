@@ -5,6 +5,7 @@
 namespace Ui {
 	class MainWindow;
 }
+#include "sensor.h"
 
 // Qt
 #include <QtWidgets\QMainWindow>
@@ -26,6 +27,7 @@ private slots:
 	void setActiveBoneRotationZ(int value);
 	void printActiveBoneTransforms() const;
 	void printActiveBoneRotations() const;
+	void updateKinect();
 	void recordKinectData();
 
 protected:
@@ -40,7 +42,11 @@ private:
 	void setupConnections();
 	Ui::MainWindow *ui;
 
-	//QTimer *m_timer;
+	// Kinect variables
+	KSensor m_Sensor;	
+	QTimer *m_timer;
+	bool m_renderSkeleton = false;
+	bool m_renderActiveJoint = false;
 };
 
 #endif /* MAIN_WINDOW_H */

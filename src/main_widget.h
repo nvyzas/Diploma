@@ -3,7 +3,6 @@
 
 // Project
 class Camera;
-class KSensor;
 class SkinnedMesh;
 class Technique;
 class SkinningTechnique;
@@ -25,15 +24,16 @@ public:
 	MainWidget(QWidget *parent = Q_NULLPTR);
 	~MainWidget();
 
+	bool renderAxes() const;
+
 	// skinned mesh related
-	bool renderModel() const;
+	SkinnedMesh *skinnedMesh();
+	SkinningTechnique *skinningTechnique();
 	bool modelSkinning() const;
 	QStringList modelBoneList() const;	
 	void Transform(bool print);
-	SkinnedMesh *skinnedMesh();
-	SkinningTechnique *skinningTechnique();
+	bool renderModel() const;
 
-	bool renderAxes() const;
 public slots:
 	void setRenderAxes(bool state);
 	void setRenderModel(bool state);
@@ -69,12 +69,6 @@ private:
 	void DrawAxes(Vector3f center, Vector3f vx, Vector3f vy, Vector3f vz, float length);
 	void DrawTestAxes();
 	void MySetup();
-
-	// Kinect variables
-	KSensor* m_Sensor;
-	bool m_renderSkeleton = false;
-	bool m_renderActiveJoint = false;
-	bool m_isRecording = false;
 
 	// Skinned mesh variables
 	SkinnedMesh* m_Mesh;

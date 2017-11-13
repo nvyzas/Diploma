@@ -35,7 +35,6 @@ MainWidget::~MainWidget()
 
 	delete m_Mesh;
 	delete m_Cam;
-	delete m_Sensor;
 	delete m_Tech;
 	delete m_Skin;
 	delete m_Pipe;
@@ -44,7 +43,6 @@ MainWidget::~MainWidget()
 void MainWidget::initializeGL()
 {
 	m_Cam = new Camera();
-	m_Sensor = new KSensor();
 	m_Tech = new Technique();
 	m_Skin = new SkinningTechnique();
 	m_Pipe = new Pipeline();
@@ -84,7 +82,7 @@ void MainWidget::MySetup()
 	//m_Sensor->PrintJointHierarchy();
 
 	// 2) Init Mesh
-	m_Mesh->setKSensor(*m_Sensor);
+	//m_Mesh->setKSensor(*m_Sensor);
 	//m_successfullyLoaded = loadToGPU("cmu_test");
 	//m_Sensor->GetKinectData(); // to successfully acquire frame init sensor before mesh and load mesh before getting data
 
@@ -160,10 +158,7 @@ void MainWidget::paintGL()
 
 	m_Tech->enable();
 	m_Tech->SetDefault(m_Pipe->GetVPTrans());
-	if (m_renderAxes)				DrawAxes();		
-	if (m_renderSkeleton)			m_Sensor->DrawSkeleton(JointType_SpineBase);
-	if (m_renderActiveJoint)		m_Sensor->DrawActiveJoint();
-	if (m_renderCloud)				m_Sensor->DrawCloud();
+	if (m_renderAxes)				DrawAxes();
 	//if (m_renderCameraVectors)		m_Cam->DrawCameraVectors();
 	//*/
 }
@@ -196,33 +191,17 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		m_Mesh->flipParameter(key - Qt::Key_0);
 		Transform(true);
 		break;
-	case Qt::Key_G:
-		m_Sensor->GetKinectData();
-		break;
-	case Qt::Key_C:
-		cout << "Connecting to sensor" << endl;
-		m_Sensor->connect();
-		break;
-	case Qt::Key_T:
-		if (!m_Sensor->createTRC()) cout << "Could not create trc file" << endl;
-		else cout << "Created .trc file" << endl;
-		break;
-	case Qt::Key_W:
-		cout << "Waiting for kinect event." << endl;
-		m_Sensor->update();
-		break;
-	case Qt::Key_R:
-		m_isRecording = !m_isRecording;
-		cout << "Record " << (m_isRecording ? "ON" : "OFF") << endl;
 	case Qt::Key_Space:
 		m_play = !m_play;
 		cout << "Play " << (m_play ? "ON" : "OFF") << endl;
 		break;
+	case Qt::Key_G:
+	case Qt::Key_R:
 	case Qt::Key_Escape:
-		event->ignore();
+		event->ignore();	// event passed to MainWidget's parent (MainWindow)
 		break;
 	default:
-		cout << "This key does not do anything." << endl;
+		cout << "MainWidget: This key does not do anything." << endl;
 		break;
 	}
 	update();
@@ -306,8 +285,7 @@ void MainWidget::NextInfoBlock(int step)
 {
 	activeInfo = Mod(activeInfo, NUM_INFO_BLOCKS, step);
 	cout << "Printing info block " << activeInfo << endl;
-	if (activeInfo == 0) m_Sensor->PrintJointData();
-	else if (activeInfo == 1) m_Mesh->PrintInfo();
+	if (activeInfo == 0) m_Mesh->PrintInfo();
 	else m_Cam->PrintInfo();
 }
 void MainWidget::Transform(bool print)

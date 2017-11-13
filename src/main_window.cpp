@@ -107,13 +107,48 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 	cout << "MainWindow saw this keyboard event" << endl;
 	int key = event->key();
 	switch (key) {
-	case Qt::Key_Escape:
-		close(); // implicitly makes application to quit
+	case Qt::Key_C:		
+		if (!m_Sensor.connect()) cout << "Could not connect to kinect sensor." << endl;
 		break;
-	}
-	
-}
+	case Qt::Key_G:
+		if (!m_Sensor.update()) cout << "Could not update kinect data." << endl;
+		break;
+	case Qt::Key_S:
+		if (m_Sensor.m_isRecording) {
+			cout << "Marked as static position" << endl;
+			m_Sensor.setFootStance();
+		}
+		break;
 
+	case Qt::Key_R:
+		m_Sensor.m_isRecording = !m_Sensor.m_isRecording;
+		cout << "Record " << (m_Sensor.m_isRecording ? "ON" : "OFF") << endl;
+		if (m_Sensor.m_isRecording) {
+			m_Sensor.resetRecordVars();
+			m_timer->start(10);
+		}
+		else {
+			m_timer->stop();
+			if (!m_Sensor.createTRC()) cout << "Could not create trc file" << endl;
+			else cout << "Created .trc file" << endl;
+		}
+		break;
+	case Qt::Key_T:
+		if (!m_Sensor.createTRC()) cout << "Could not create trc file" << endl;
+		else cout << "Created .trc file" << endl;
+		break;
+	case Qt::Key_Escape:
+		close(); // implicitly makes the application quit by generating close event
+		break;
+	default:
+		cout << "MainWindow: This key does not do anything." << endl;
+		break;
+	}	
+}
+void MainWindow::recordKinectData()
+{
+
+}
 //const QString &MainWindow::activeBone() const
 //{
 //	const QString &boneName = ui->comboBox_activeBone->currentText();
@@ -181,8 +216,7 @@ void MainWindow::setupObjects()
 	menuInfo->addAction("Bone Rotations", this, SLOT(printActiveBoneRotations()));
 	ui->pushButton_info->setMenu(menuInfo);
 
-	timer = new QTimer(this);
-
+	m_timer = new QTimer(this);
 }
 void MainWindow::setupConnections()
 {
@@ -209,5 +243,9 @@ void MainWindow::setupConnections()
 	// render model
 	connect(ui->checkBox_model, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setRenderModel(bool)));
 	// timer
-	//connect(timer, SIGNAL(timeout()), this, SLOT(update()));
+	connect(m_timer, SIGNAL(timeout()), this, SLOT(updateKinect()));
+}
+void MainWindow::updateKinect()
+{
+	m_Sensor.update();
 }
