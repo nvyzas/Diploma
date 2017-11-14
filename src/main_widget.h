@@ -2,6 +2,7 @@
 #define MAIN_WIDGET_H
 
 // Project
+class Skeleton;
 class Camera;
 class SkinnedMesh;
 class Technique;
@@ -33,6 +34,7 @@ public:
 	QStringList modelBoneList() const;	
 	void Transform(bool print);
 	bool renderModel() const;
+	void setSensor();
 
 public slots:
 	void setRenderAxes(bool state);
@@ -48,15 +50,15 @@ protected:
 	void mouseMoveEvent(QMouseEvent *event) override;
 
 private:
-	Camera* m_Cam; 
-	Technique* m_Tech;
-	SkinningTechnique* m_Skin;
-	Pipeline* m_Pipe;
+	Camera *m_Cam;
+	Technique *m_Tech;
+	SkinningTechnique *m_Skin;
+	Pipeline *m_Pipe;
 	
 	QPoint m_lastPos;
 
 	bool m_renderAxes = true;
-	bool m_renderCloud = false;
+	bool m_renderSkeleton = true;
 	bool m_renderCameraVectors = false;	
 	bool m_play = true;	
 

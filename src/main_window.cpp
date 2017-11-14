@@ -108,33 +108,33 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 	int key = event->key();
 	switch (key) {
 	case Qt::Key_C:		
-		if (!m_Sensor.connect()) cout << "Could not connect to kinect sensor." << endl;
+		if (!m_ksensor.connect()) cout << "Could not connect to kinect sensor." << endl;
 		break;
 	case Qt::Key_G:
-		if (!m_Sensor.update()) cout << "Could not update kinect data." << endl;
+		if (!m_ksensor.getBodyData()) cout << "Could not update kinect data." << endl;
 		break;
 	case Qt::Key_S:
-		if (m_Sensor.m_isRecording) {
+		if (m_ksensor.m_isRecording) {
 			cout << "Marked as static position" << endl;
-			m_Sensor.setFootStance();
+			m_ksensor.setFootStance();
 		}
 		break;
 
 	case Qt::Key_R:
-		m_Sensor.m_isRecording = !m_Sensor.m_isRecording;
-		cout << "Record " << (m_Sensor.m_isRecording ? "ON" : "OFF") << endl;
-		if (m_Sensor.m_isRecording) {
-			m_Sensor.resetRecordVars();
+		m_ksensor.m_isRecording = !m_ksensor.m_isRecording;
+		cout << "Record " << (m_ksensor.m_isRecording ? "ON" : "OFF") << endl;
+		if (m_ksensor.m_isRecording) {
+			m_ksensor.resetRecordVars();
 			m_timer->start(10);
 		}
 		else {
 			m_timer->stop();
-			if (!m_Sensor.createTRC()) cout << "Could not create trc file" << endl;
+			if (!m_ksensor.createTRC()) cout << "Could not create trc file" << endl;
 			else cout << "Created .trc file" << endl;
 		}
 		break;
 	case Qt::Key_T:
-		if (!m_Sensor.createTRC()) cout << "Could not create trc file" << endl;
+		if (!m_ksensor.createTRC()) cout << "Could not create trc file" << endl;
 		else cout << "Created .trc file" << endl;
 		break;
 	case Qt::Key_Escape:
@@ -243,9 +243,9 @@ void MainWindow::setupConnections()
 	// render model
 	connect(ui->checkBox_model, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setRenderModel(bool)));
 	// timer
-	connect(m_timer, SIGNAL(timeout()), this, SLOT(updateKinect()));
+	connect(m_timer, SIGNAL(timeout()), this, SLOT(getKinectData()));
 }
-void MainWindow::updateKinect()
+void MainWindow::getKinectData()
 {
-	m_Sensor.update();
+	if (m_ksensor.getBodyData()) ui->openGLWidget->update();
 }

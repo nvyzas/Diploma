@@ -2,7 +2,7 @@
 #define	SKINNED_MESH_H
 
 // Project
-#include "sensor.h"
+#include "ksensor.h"
 #include "util.h"
 #include "math_3d.h"
 

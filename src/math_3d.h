@@ -12,11 +12,12 @@
 // Standard C/C++
 #include <iostream>
 #include <iomanip>
-using namespace std;
 
 #define PI 3.141592653589
 #define ToRadian(x) (float)(((x) * PI / 180.0f))
 #define ToDegree(x) (float)(((x) * 180.0f / PI))
+
+using namespace std;
 
 struct Vector3f
 {

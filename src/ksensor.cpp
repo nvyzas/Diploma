@@ -1,5 +1,5 @@
 // Own
-#include "sensor.h"
+#include "ksensor.h"
 
 // Project
 #include "util.h"
@@ -99,7 +99,7 @@ bool KSensor::connect()
 
 	return true;
 }
-bool KSensor::update()
+bool KSensor::getBodyData()
 {
 	if (!m_sensor) {
 		cout << "m_sensor = NULL" << endl;
@@ -137,25 +137,25 @@ bool KSensor::update()
 		cout << "Failed to acquire latest frame. hr = " << hr << endl;
 		return false;
 	} else {
-		INT64 nTime = 0;
-		hr = frame->get_RelativeTime(&nTime);
+		INT64 relTime = 0;
+		hr = frame->get_RelativeTime(&relTime);
 
-		IBody* ppBodies[BODY_COUNT] = { 0 };
-
+		IBody* bodies[BODY_COUNT] = { 0 };
 		if (FAILED(hr)) {
 			cout << "Could not get relative time. hr = " << hr << endl;
 		} else {
-			hr = frame->GetAndRefreshBodyData(_countof(ppBodies), ppBodies);
+			cout << "Relative time = " << relTime << endl;
+			hr = frame->GetAndRefreshBodyData(_countof(bodies), bodies);
 		}
 
 		if (FAILED(hr)) {
 			cout << "Could not get and refresh body data. hr = " << hr << endl;
 		} else	{
-			processBodyFrameData(nTime, BODY_COUNT, ppBodies);
+			processBodyFrameData(relTime, BODY_COUNT, bodies);
 		}
 
-		for (int i = 0; i < _countof(ppBodies); ++i) {
-			safeRelease(&ppBodies[i]);
+		for (int i = 0; i < _countof(bodies); ++i) {
+			safeRelease(&bodies[i]);
 		}
 		safeRelease(&frame);
 	}

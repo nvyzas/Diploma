@@ -6,7 +6,7 @@
 #include "skinning_technique.h"
 #include "pipeline.h"
 #include "camera.h"
-#include "sensor.h"
+#include "kskeleton.h"
 
 // Assimp
 #include <assimp\Importer.hpp>      
@@ -141,11 +141,11 @@ void MainWidget::paintGL()
 {
 	glClearColor(0.f, 0.f, 0.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	//*
+	/*
 	m_Skin->enable();
 	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
 	if (m_play) {
-		//m_Sensor->GetKinectData();
+		m_sensor->GetKinectData();
 		Transform(false);
 	}
 	/*if (!m_modelName.isEmpty()) {
@@ -158,6 +158,7 @@ void MainWidget::paintGL()
 
 	m_Tech->enable();
 	m_Tech->SetDefault(m_Pipe->GetVPTrans());
+	//if (m_renderSkeleton) m_skeleton->draw();
 	if (m_renderAxes)				DrawAxes();
 	//if (m_renderCameraVectors)		m_Cam->DrawCameraVectors();
 	//*/

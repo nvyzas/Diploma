@@ -1,10 +1,10 @@
-#ifndef SENSOR_H
-#define SENSOR_H
+#ifndef KSENSOR_H
+#define KSENSOR_H
 
 // Project
 #include "math_3d.h"
-#include "skeleton.h"
 #include "util.h"
+#include "kskeleton.h"
 
 // Kinect
 #include <Kinect.h>
@@ -16,38 +16,6 @@ class QFile;
 #include <string>
 #include <vector>
 
-#define DEPTH_WIDTH 512
-#define DEPTH_HEIGHT 424
-#define COLOR_WIDTH 1920
-#define COLOR_HEIGHT 1080
-#define INVALID_JOINT_ID 123
-
-using namespace std;
-
-struct KJoint
-{
-	string name;
-	Vector3f Position;
-	QQuaternion Orientation;
-	uint id;
-	uint idOpposite; // id of corresponding opposite side joint (eg. left->right)
-	uint parent;
-	vector<uint> children;
-	bool toBeTracked;
-	
-	KJoint()
-	{
-	}
-	KJoint(string _name, uint _parent, uint _idOpposite, bool _toBeTracked)
-	{
-		name = _name;
-		parent = _parent;
-		idOpposite = _idOpposite;
-		toBeTracked = _toBeTracked;
-	}
-
-};
-
 class KSensor : protected OPENGL_FUNCTIONS
 {
 public:
@@ -55,7 +23,7 @@ public:
 	~KSensor();
 	bool init();
 	bool connect();
-	bool update();
+	bool getBodyData();
 	void processBodyFrameData(INT64 timestamp, int bodyCount, IBody** bodies);
 	void calculateFPS();
 	void addMarkerData();
@@ -74,6 +42,7 @@ public:
 	bool m_InvertedSides;
 	bool m_GotFrame = false;
 private:
+	//KSkeleton m_skeleton;
 	void initJoints();
 	void NextJoint(int step);
 
@@ -97,7 +66,7 @@ private:
 	clock_t m_currentTime = 0, m_previousTime = 0; 
 	int m_fps, m_frameCount;
 
-	Skeleton m_skeleton;
+	KSkeleton m_skeleton;
 	KJoint m_leftFootStance;
 	KJoint m_rightFootStance;
 };

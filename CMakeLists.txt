@@ -61,12 +61,12 @@ set(Diploma_SRCS
 	src/math_3d.cpp
 	src/opensim_model.cpp
 	src/pipeline.cpp
-	src/sensor.cpp
+	src/ksensor.cpp
+	src/kskeleton.cpp
 	src/skinned_mesh.cpp
 	src/skinning_technique.cpp
 	src/technique.cpp
 	src/util.cpp
-	src/skeleton.cpp
 )
 
 set(CMAKE_AUTOUIC_SEARCH_PATHS forms/)
