@@ -16,42 +16,27 @@ class QFile;
 #include <string>
 #include <vector>
 
-class KSensor : protected OPENGL_FUNCTIONS
+class KSensor
 {
 public:
 	KSensor();
 	~KSensor();
 	bool init();
 	bool connect();
+	KSkeleton *kskeleton();
 	bool getBodyData();
 	void processBodyFrameData(INT64 timestamp, int bodyCount, IBody** bodies);
 	void calculateFPS();
 	void addMarkerData();
 	bool createTRC();
-	const KJoint* getKJoints() const;
-	void SwapSides();
-	void PrintInfo() const;
-	void PrintJointHierarchy() const;
-	void PrintJointData() const;
-	void DrawActiveJoint();
-	void DrawSkeleton(uint id);
 	void resetRecordVars();
-	void setFootStance();
-
 	bool m_isRecording = false;
-	bool m_InvertedSides;
-	bool m_GotFrame = false;
 private:
-	//KSkeleton m_skeleton;
-	void initJoints();
-	void NextJoint(int step);
 
 	KJoint m_Joints[JointType_Count];
 	IKinectSensor *m_sensor = nullptr;
 	IBodyFrameSource *m_source = nullptr;
 	IBodyFrameReader *m_reader = nullptr;
-
-	uint m_ActiveJoint = JointType_SpineBase;
 
 	QFile *m_trcFile;
 	QString m_markerData;
@@ -64,7 +49,7 @@ private:
 
 	// used to calculate calculate fps
 	clock_t m_currentTime = 0, m_previousTime = 0; 
-	int m_fps, m_frameCount;
+	int m_fps = 0, m_frameCount = 0;
 
 	KSkeleton m_skeleton;
 	KJoint m_leftFootStance;

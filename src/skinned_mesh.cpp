@@ -18,7 +18,7 @@ SkinnedMesh::SkinnedMesh()
 	//initBoneMapping();
 	initKBoneMapping();
 }
-void SkinnedMesh::setKSensor(const KSensor &ks)
+void SkinnedMesh::setKSkeleton(const KSkeleton &ks)
 {
 	m_pKBones = ks.getKJoints();
 }

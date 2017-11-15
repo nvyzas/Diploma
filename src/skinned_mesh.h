@@ -106,7 +106,7 @@ public:
 	
 	bool m_SuccessfullyLoaded;
 
-	void setKSensor(const KSensor &ks);
+	void setKSkeleton(const KSkeleton &kskeleton);
 	void initBoneMapping();
 	void initKBoneMapping();
 	float boneRotationX(const QString &boneName) const;

@@ -141,6 +141,8 @@ void MainWidget::paintGL()
 {
 	glClearColor(0.f, 0.f, 0.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	m_ksensor->getBodyData();
 	/*
 	m_Skin->enable();
 	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
@@ -158,8 +160,9 @@ void MainWidget::paintGL()
 
 	m_Tech->enable();
 	m_Tech->SetDefault(m_Pipe->GetVPTrans());
-	//if (m_renderSkeleton) m_skeleton->draw();
+	//if (m_renderSkeleton) m_kskeleton->drawSkeleton(0);
 	if (m_renderAxes)				DrawAxes();
+
 	//if (m_renderCameraVectors)		m_Cam->DrawCameraVectors();
 	//*/
 }
@@ -463,5 +466,8 @@ void MainWidget::drawSkinnedMesh()
 		glBindVertexArray(0);
 	}
 }
-
+void MainWidget::setKSensor(KSensor &ksensor)
+{
+	m_ksensor = &ksensor;
+}
 

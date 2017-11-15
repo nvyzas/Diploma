@@ -113,13 +113,6 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_G:
 		if (!m_ksensor.getBodyData()) cout << "Could not update kinect data." << endl;
 		break;
-	case Qt::Key_S:
-		if (m_ksensor.m_isRecording) {
-			cout << "Marked as static position" << endl;
-			m_ksensor.setFootStance();
-		}
-		break;
-
 	case Qt::Key_R:
 		m_ksensor.m_isRecording = !m_ksensor.m_isRecording;
 		cout << "Record " << (m_ksensor.m_isRecording ? "ON" : "OFF") << endl;
@@ -129,8 +122,6 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 		}
 		else {
 			m_timer->stop();
-			if (!m_ksensor.createTRC()) cout << "Could not create trc file" << endl;
-			else cout << "Created .trc file" << endl;
 		}
 		break;
 	case Qt::Key_T:
@@ -217,6 +208,7 @@ void MainWindow::setupObjects()
 	ui->pushButton_info->setMenu(menuInfo);
 
 	m_timer = new QTimer(this);
+	ui->openGLWidget->setKSensor(m_ksensor);
 }
 void MainWindow::setupConnections()
 {

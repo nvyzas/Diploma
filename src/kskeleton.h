@@ -3,7 +3,10 @@
 
 // Project
 #include "math_3d.h"
-//#include "util.h"
+#include "util.h"
+
+// Kinect
+#include <Kinect.h>
 
 // Standard C/C++
 #include <vector>
@@ -32,18 +35,30 @@ struct KJoint
 		idOpposite = _idOpposite;
 		toBeTracked = _toBeTracked;
 	}
-
 };
 
-class KSkeleton
+class KSkeleton: protected OPENGL_FUNCTIONS
 {
 public:
 	KSkeleton();
-	void addFrame(const KJoint &data, const double &timestamp);
-	void draw();
+	void addFrame(const Joint *joints, const JointOrientation *orientations, const double &timestamp);
+	void drawActiveJoint();
+	void drawSkeleton(uint id);
+	const KJoint* getKJoints() const;
+	void initJoints();
+	bool initOGL();
+	void nextJoint(int step);
+	void printInfo() const;
+	void printJointHierarchy() const;
+	void printJoints() const;
+	void swapSides();
 
 private:
-	vector<KJoint> sequence;
+	KJoint m_joints[JointType_Count];
+	vector<KJoint*> sequence;
+	bool m_invertedSides;
+	uint m_activeJoint = JointType_SpineBase;
+
 };
 
 #endif

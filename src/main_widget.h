@@ -2,7 +2,7 @@
 #define MAIN_WIDGET_H
 
 // Project
-class Skeleton;
+class KSensor;
 class Camera;
 class SkinnedMesh;
 class Technique;
@@ -34,7 +34,7 @@ public:
 	QStringList modelBoneList() const;	
 	void Transform(bool print);
 	bool renderModel() const;
-	void setSensor();
+	void setKSensor(KSensor &ksensor);
 
 public slots:
 	void setRenderAxes(bool state);
@@ -50,6 +50,7 @@ protected:
 	void mouseMoveEvent(QMouseEvent *event) override;
 
 private:
+	KSensor *m_ksensor;
 	Camera *m_Cam;
 	Technique *m_Tech;
 	SkinningTechnique *m_Skin;
