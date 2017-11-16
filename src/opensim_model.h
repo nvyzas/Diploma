@@ -5,6 +5,7 @@ class OpenSimModel
 {
 public:
 	OpenSimModel();
+	void init();
 private:
 
 };

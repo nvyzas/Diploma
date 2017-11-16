@@ -1,5 +1,7 @@
 cmake_minimum_required (VERSION 2.8.11)
 project(Diploma)
+set(CMAKE_CONFIGURATION_TYPES "RelWithDebInfo;Release"
+        CACHE STRING "List of supported configuration types." FORCE)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -7,27 +9,27 @@ set(CMAKE_AUTOUIC ON)
 
 #set(CMAKE_MODULE_PATH "C:\Qt\5.9.2\msvc2017_64")
 find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
-SET(OPENSIM_INSTALL_DIR $ENV{OPENSIM_HOME})
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+find_package(OpenSim REQUIRED)
+IF(OpenSim_FOUND) 
+MESSAGE( "Project ${PROJECT_NAME} found OpenSim." ) 
+ENDIF(OpenSim_FOUND) 
 
 # Set Include Directories
 set(Diploma_INCLUDE_DIRS
 	${PROJECT_SOURCE_DIR}/res/assimp/include/
 	${PROJECT_SOURCE_DIR}/res/kinect/include/
-	${OPENSIM_INSTALL_DIR}/sdk/include/
-	${OPENSIM_INSTALL_DIR}/sdk/include/SimTK/include/
-	#${PROJECT_SOURCE_DIR}/res/opensim/include/
-	#${PROJECT_SOURCE_DIR}/res/opensim/include/SimTK/include/
-	#${PROJECT_SOURCE_DIR}/res/opensim/include/Vendors/lepton/include/
+	#${OpenSim_INCLUDE_DIRS}
 )
 
 # Set Link Directories
 set(Diploma_LINK_DIRS
 	${PROJECT_SOURCE_DIR}/res/assimp/lib/
 	${PROJECT_SOURCE_DIR}/res/kinect/lib/
-	${OPENSIM_INSTALL_DIR}/sdk/lib/
-	${OPENSIM_INSTALL_DIR}/lib/
-	${OPENSIM_INSTALL_DIR}/bin/
-	#${PROJECT_SOURCE_DIR}/res/opensim/lib/
+	#${OpenSim_LIB_DIR}
 )
 
 # Set Link Libraries
@@ -37,19 +39,20 @@ set(Diploma_LINK_LIBS
 	Qt5::Core
 	Qt5::Gui
 	Qt5::Widgets
-	libblas
-	liblapack
-	OpenSim_SimTKcommon
-	OpenSim_SimTKmath
-	OpenSim_SimTKsimbody
-	osimActuators
-	osimAnalyses
-	osimCommon
-	osimJavaJNI
-	osimLepton
-	osimSimulation
-	osimTools
-	pthreadVC2_x64
+	${OpenSim_LIBRARIES}
+	#libblas
+	#liblapack
+	#OpenSim_SimTKcommon
+	#OpenSim_SimTKmath
+	#OpenSim_SimTKsimbody
+	#osimActuators
+	#osimAnalyses
+	#osimCommon
+	#osimJavaJNI
+	#osimLepton
+	#osimSimulation
+	#osimTools
+	#pthreadVC2_x64
 )
 
 # Set Sources
@@ -80,4 +83,4 @@ target_link_libraries(Diploma ${Diploma_LINK_LIBS})
 add_custom_command(TARGET Diploma POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/assimp-vc140-mt.dll" $<TARGET_FILE_DIR:Diploma>)
 add_custom_command(TARGET Diploma POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/models" $<TARGET_FILE_DIR:Diploma>/models)
 add_custom_command(TARGET Diploma POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/shaders" $<TARGET_FILE_DIR:Diploma>/shaders)
-add_custom_command(TARGET Diploma POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/res/opensim/bin" $<TARGET_FILE_DIR:Diploma>)
+#add_custom_command(TARGET Diploma POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory "${OpenSim_ROOT_DIR}/bin" $<TARGET_FILE_DIR:Diploma>)

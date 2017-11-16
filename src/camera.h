@@ -8,8 +8,9 @@ class Camera
 {
 public:
     Camera();
-	bool OnKeyboardNum(unsigned char Key, bool printInfo);
-	bool onKeyboardArrow(int Key, bool printInfo);
+	void OnKeyboardNum(unsigned char key, bool print);
+	void onKeyboardArrow(int key, bool print);
+	void onMouseWheel(int degrees, bool print);
 	void PrintInfo();
 	void Setup(const Vector3f& Pos, const Vector3f& Center, const Vector3f& Up);
 

@@ -9,6 +9,7 @@ class Technique;
 class SkinningTechnique;
 class Pipeline;
 #include "math_3d.h"
+#include "opensim_model.h"
 #include "util.h"
 
 // Qt
@@ -48,6 +49,7 @@ protected:
 	void keyPressEvent(QKeyEvent *event) override;
 	void mousePressEvent(QMouseEvent *event) override;
 	void mouseMoveEvent(QMouseEvent *event) override;
+	void wheelEvent(QWheelEvent *event) override;
 
 private:
 	KSensor *m_ksensor;
@@ -55,6 +57,7 @@ private:
 	Technique *m_Tech;
 	SkinningTechnique *m_Skin;
 	Pipeline *m_Pipe;
+	//OpenSimModel m_osm;
 	
 	QPoint m_lastPos;
 

@@ -49,10 +49,10 @@ void MainWidget::initializeGL()
 
 	qDebug() << "Obtained format:" << format();
 	initializeOpenGLFunctions();
+	m_ksensor->kskeleton()->initOGL();
 	//cout << "GL version: " << glGetString(GL_VERSION) << endl;
 	//cout << "GL renderer: " << glGetString(GL_RENDERER) << endl;
-	//cout << "GLSL version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << endl;
-	
+	//cout << "GLSL version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << endl;	
 	GLint i;
 	glGetIntegerv(GL_CONTEXT_FLAGS, &i);
 	
@@ -160,11 +160,12 @@ void MainWidget::paintGL()
 
 	m_Tech->enable();
 	m_Tech->SetDefault(m_Pipe->GetVPTrans());
-	//if (m_renderSkeleton) m_kskeleton->drawSkeleton(0);
-	if (m_renderAxes)				DrawAxes();
+	if (m_renderSkeleton) m_ksensor->kskeleton()->drawSkeleton(0);
+	if (m_renderAxes)	DrawAxes();
 
 	//if (m_renderCameraVectors)		m_Cam->DrawCameraVectors();
 	//*/
+	//update();
 }
 void MainWidget::keyPressEvent(QKeyEvent *event)
 {
@@ -226,6 +227,20 @@ void MainWidget::mouseMoveEvent(QMouseEvent *event)
 		m_Cam->rotateUp(dy);
 	}
 	m_lastPos = event->pos();
+
+	m_Pipe->SetCamera(m_Cam->GetPos(), m_Cam->GetTarget(), m_Cam->GetUp());
+	m_Skin->enable();
+	m_Skin->SetEyeWorldPos(m_Cam->GetPos());
+	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
+	m_Tech->enable();
+	m_Tech->SetDefault(m_Pipe->GetVPTrans());
+	update();
+}
+void MainWidget::wheelEvent(QWheelEvent *event)
+{
+	QPoint degrees = event->angleDelta() / 8;
+	//cout << degrees.x() << " " << degrees.y() << endl;
+	m_Cam->onMouseWheel(degrees.y(), true);
 
 	m_Pipe->SetCamera(m_Cam->GetPos(), m_Cam->GetTarget(), m_Cam->GetUp());
 	m_Skin->enable();

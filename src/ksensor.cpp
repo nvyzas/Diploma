@@ -91,24 +91,31 @@ bool KSensor::connect()
 		cout << "Could not specify if source is active. hr = " << hr << endl;
 	}
 
+	/*
 	safeRelease(&m_source);
+	//*/
 
 	return true;
 }
 bool KSensor::getBodyData()
 {
+	// Checks 1
 	if (!m_sensor) {
 		cout << "m_sensor = NULL" << endl;
 		return false;
 	}
-	/*if (!m_source) {
+	//*
+	if (!m_source) {
 		cout << "m_source = NULL" << endl;
 		return false;
-	}*/
+	}
+	//*/
 	if (!m_reader) {
 		cout << "m_reader = NULL" << endl;
 		return false;
 	}
+
+	// Checks 2
 	HRESULT hr;
 	BOOLEAN isOpen = false;
 	hr = m_sensor->get_IsOpen(&isOpen);
@@ -118,15 +125,26 @@ bool KSensor::getBodyData()
 	else {
 		cout << "Could not specify if sensor is open. hr = " << hr << endl;
 	}
-	/*BOOLEAN isActive = false;
+	//*
+	BOOLEAN isActive = false;
 	hr = m_source->get_IsActive(&isActive);
 	if (SUCCEEDED(hr)) {
 		if (!isActive) cout << "Source is not active." << endl;
 	}
 	else {
 		cout << "Could not specify if source is active. hr = " << hr << endl;
-	}*/
+	}
+	//*/
+	BOOLEAN isPaused = false;
+	hr = m_reader->get_IsPaused(&isPaused);
+	if (SUCCEEDED(hr)) {
+		if (isPaused) cout << "Reader is paused." << endl;
+	}
+	else {
+		cout << "Could not specify if reader is paused hr = " << hr << endl;
+	}
 
+	// Get frame
 	IBodyFrame* frame = NULL;
 	hr = m_reader->AcquireLatestFrame(&frame);
 	if (FAILED(hr)) {
