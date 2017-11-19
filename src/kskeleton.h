@@ -10,6 +10,7 @@
 
 // Standard C/C++
 #include <vector>
+#include <array>
 
 #define INVALID_JOINT_ID 123
 
@@ -25,9 +26,8 @@ struct KJoint
 	bool toBeTracked;
 	uint trackingState;
 
-	KJoint()
-	{
-	}
+	KJoint() {}
+
 	KJoint(std::string _name, uint  _parent, uint  _idOpposite, bool _toBeTracked)
 	{
 		name = _name;
@@ -35,13 +35,18 @@ struct KJoint
 		idOpposite = _idOpposite;
 		toBeTracked = _toBeTracked;
 	}
+
+	void print()
+	{
+		cout << setw(15) << name << "p: " << setw(25) << Position.ToString() << " q: " << printQuaternion1(Orientation) << printQuaternion2(Orientation) << printQuaternion3(Orientation) << endl;
+	}
 };
 
 class KSkeleton: protected OPENGL_FUNCTIONS
 {
 public:
 	KSkeleton();
-	void addFrame(const Joint *joints, const JointOrientation *orientations, const double &timestamp);
+	void addFrame(const Joint *joints, const JointOrientation *orientations, const double &timestamp, bool record);
 	void drawActiveJoint();
 	void drawSkeleton(uint id);
 	const KJoint* getKJoints() const;
@@ -51,14 +56,18 @@ public:
 	void printInfo() const;
 	void printJointHierarchy() const;
 	void printJoints() const;
-	void swapSides();
+	void printSequence() const;
 
 private:
 	KJoint m_joints[JointType_Count];
-	vector<KJoint*> sequence;
-	bool m_invertedSides;
-	uint m_activeJoint = JointType_SpineBase;
+	vector<KJoint*> m_sequence;
 
+	array<KJoint, JointType_Count> m_jts;
+	vector<array<KJoint, JointType_Count>> m_seq;
+
+	vector<double> m_timestamps;
+
+	uint m_activeJoint = JointType_SpineBase;
 };
 
 #endif

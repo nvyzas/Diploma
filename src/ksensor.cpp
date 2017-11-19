@@ -30,11 +30,16 @@ KSensor::KSensor()
 {
 	init(); 
 	connect();
+	m_log = new QFile("sensor_log.txt");
+	if (!m_log->open(QIODevice::WriteOnly | QIODevice::Text)) cout << "Could not open log file." << endl;
 }
 KSensor::~KSensor()
 {
+	m_log->close();
 	safeRelease(&m_reader);
+	safeRelease(&m_source);
 	m_sensor->Close();
+	safeRelease(&m_sensor);
 }
 bool KSensor::init() {
 	HRESULT hr;
@@ -120,7 +125,10 @@ bool KSensor::getBodyData()
 	BOOLEAN isOpen = false;
 	hr = m_sensor->get_IsOpen(&isOpen);
 	if (SUCCEEDED(hr)) {
-		if (!isOpen) cout << "Sensor is not open." << endl;
+		if (!isOpen) {
+			cout << "Sensor is not open." << endl;
+			return false;
+		}
 	}
 	else {
 		cout << "Could not specify if sensor is open. hr = " << hr << endl;
@@ -129,7 +137,10 @@ bool KSensor::getBodyData()
 	BOOLEAN isActive = false;
 	hr = m_source->get_IsActive(&isActive);
 	if (SUCCEEDED(hr)) {
-		if (!isActive) cout << "Source is not active." << endl;
+		if (!isActive) {
+			cout << "Source is not active." << endl;
+			return false;
+		}
 	}
 	else {
 		cout << "Could not specify if source is active. hr = " << hr << endl;
@@ -138,46 +149,56 @@ bool KSensor::getBodyData()
 	BOOLEAN isPaused = false;
 	hr = m_reader->get_IsPaused(&isPaused);
 	if (SUCCEEDED(hr)) {
-		if (isPaused) cout << "Reader is paused." << endl;
+		if (isPaused) {
+			cout << "Reader is paused." << endl;
+			return false;
+		}
 	}
 	else {
 		cout << "Could not specify if reader is paused hr = " << hr << endl;
 	}
 
+	bool result;
+	QTextStream forLog(m_log);
 	// Get frame
 	IBodyFrame* frame = NULL;
 	hr = m_reader->AcquireLatestFrame(&frame);
 	if (FAILED(hr)) {
-		cout << "Failed to acquire latest frame. hr = " << hr << endl;
-		return false;
+		forLog << "Failed to acquire latest frame. hr = " << hr << endl;
+		result = false;
 	} else {
+		forLog << "Got frame." << flush;
 		INT64 relTime = 0;
 		hr = frame->get_RelativeTime(&relTime);
 
 		IBody* bodies[BODY_COUNT] = { 0 };
 		if (FAILED(hr)) {
-			cout << "Could not get relative time. hr = " << hr << endl;
+			forLog << "Could not get relative time. hr = " << hr << endl;
 		} else {
-			cout << "Relative time = " << relTime << endl;
+			forLog << "RelativeTime=" << relTime << flush;
 			hr = frame->GetAndRefreshBodyData(_countof(bodies), bodies);
 		}
 
 		if (FAILED(hr)) {
-			cout << "Could not get and refresh body data. hr = " << hr << endl;
-		} else	{
-			processBodyFrameData(relTime, BODY_COUNT, bodies);
+			forLog << "Could not get and refresh body data. hr = " << hr << endl;
+		} else {
+			processBodyFrameData(bodies);
 		}
 
 		for (int i = 0; i < _countof(bodies); ++i) {
 			safeRelease(&bodies[i]);
 		}
 		safeRelease(&frame);
+
+		result = true;
 	}
+
 	// maybe release frame here
-	return true;
+	return result;
 }
-void KSensor::processBodyFrameData(INT64 timestamp, int bodyCount, IBody** bodies)
+void KSensor::processBodyFrameData(IBody** bodies)
 {
+	QTextStream furLog(m_log);
 	bool discardFrame = true;
 	BOOLEAN isTracked;
 	Joint joints[JointType_Count];
@@ -185,7 +206,7 @@ void KSensor::processBodyFrameData(INT64 timestamp, int bodyCount, IBody** bodie
 	for (int i = 0; i < BODY_COUNT; i++) {
 		bodies[i]->get_IsTracked(&isTracked);
 		if (isTracked) {
-			cout << "Found a body " << i << endl;
+			furLog << " BodyIndex=" << i;
 			bodies[i]->GetJoints(JointType_Count, joints);
 			bodies[i]->GetJointOrientations(JointType_Count, orientations);
 			discardFrame = false;
@@ -193,16 +214,20 @@ void KSensor::processBodyFrameData(INT64 timestamp, int bodyCount, IBody** bodie
 	}
 
 	if (!discardFrame) {
-		m_totalFramesCount++; 
+		m_acceptedFrames++;
+		furLog << " Frame=" << m_acceptedFrames;
+
 		if (m_frameBegin != 0) m_frameEnd = clock();
-		m_totalTime += double(m_frameEnd - m_frameBegin) / CLOCKS_PER_SEC;
-		m_skeleton.addFrame(joints, orientations, m_totalTime);
-		addMarkerData();
+		m_totalSeconds += double(m_frameEnd - m_frameBegin) / CLOCKS_PER_SEC;
+		furLog << " Seconds=" << m_totalSeconds;
+
+		m_skeleton.addFrame(joints, orientations, m_totalSeconds, m_isRecording);
+		//addMarkerData();
 		calculateFPS();
+		furLog << " FPS=" << m_fps << endl;
 		m_frameBegin = clock();
-	}
-	else {
-		cout << "Frame dropped" << endl;
+	} else {
+		furLog << " Frame dropped." << endl;
 	}
 
 }
@@ -225,15 +250,13 @@ void KSensor::calculateFPS() {
 		//  Reset frame count
 		m_frameCount = 0;
 	}
-
-	cout << "FPS = " << m_fps << endl;
 }
 void KSensor::addMarkerData()
 {
 	cout << "Adding frame to marker data string." << endl;
 	QTextStream qts(&m_markerData);
 	qts.setFieldWidth(12); // width for minus sign + 4 important digits + comma + 6 decimals
-	qts << QString("\n") << m_totalFramesCount << QString("\t") << m_totalTime;
+	qts << QString("\n") << m_acceptedFrames << QString("\t") << m_totalSeconds;
 	for (int i = 0; i < ARRAY_SIZE_IN_ELEMENTS(m_Joints); i++) {
 		qts << "\t" << m_Joints[i].Position.x*1000.;
 		qts << "\t" << m_Joints[i].Position.y*1000.;
@@ -247,7 +270,7 @@ bool KSensor::createTRC()
 	QTextStream out(m_trcFile);
 	out << "PathFileType\t4\t(X / Y / Z)\tjoint_positions.trc\n";
 	out << "DataRate\t" << "CameraRate\t" << "NumFrames\t" << "NumMarkers\t" << "Units\t" << "OrigDataRate\t" << "OrigDataStartFrame\t" << "OrigNumFrames\n";
-	out << "30\t" << "30\t" << m_totalFramesCount << "\t" << m_numMarkers << "\t" << "mm\t" << "30\t" << "1\t" << m_totalFramesCount << "\n";
+	out << "30\t" << "30\t" << m_acceptedFrames << "\t" << m_numMarkers << "\t" << "mm\t" << "30\t" << "1\t" << m_acceptedFrames << "\n";
 	out << "Frame#  \tTime";
 	for (int i = 0; i < ARRAY_SIZE_IN_ELEMENTS(m_Joints); i++) {
 		if (m_Joints[i].toBeTracked) out << "\t" << QString::fromStdString(m_Joints[i].name) << "\t\t";
@@ -264,8 +287,8 @@ bool KSensor::createTRC()
 void KSensor::resetRecordVars()
 {
 	// used to calculate calculate frame timestamps
-	m_totalFramesCount = 0;
-	m_totalTime = 0;
+	m_acceptedFrames = 0;
+	m_totalSeconds = 0;
 	m_frameBegin = 0, m_frameEnd = 0;
 
 	// used to calculate calculate fps

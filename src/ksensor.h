@@ -25,7 +25,7 @@ public:
 	bool connect();
 	KSkeleton *kskeleton();
 	bool getBodyData();
-	void processBodyFrameData(INT64 timestamp, int bodyCount, IBody** bodies);
+	void processBodyFrameData(IBody** bodies);
 	void calculateFPS();
 	void addMarkerData();
 	bool createTRC();
@@ -42,12 +42,14 @@ private:
 	QString m_markerData;
 	uint m_numMarkers;
 
-	// used to calculate frame timestamps
-	uint m_totalFramesCount = 0;
-	double m_totalTime = 0;
+	QFile *m_log;
+
+	// variables used to calculate non-discarded frame quantity and timestamps
+	uint m_acceptedFrames = 0;
+	double m_totalSeconds = 0;
 	clock_t m_frameBegin = 0, m_frameEnd = 0;
 
-	// used to calculate calculate fps
+	// variables used to calculate non-discarded fps
 	clock_t m_currentTime = 0, m_previousTime = 0; 
 	int m_fps = 0, m_frameCount = 0;
 

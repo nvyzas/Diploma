@@ -118,10 +118,10 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 		cout << "Record " << (m_ksensor.m_isRecording ? "ON" : "OFF") << endl;
 		if (m_ksensor.m_isRecording) {
 			m_ksensor.resetRecordVars();
-			m_timer->start(10);
+			//m_timer->start(10);
 		}
 		else {
-			m_timer->stop();
+			//m_timer->stop();
 		}
 		break;
 	case Qt::Key_T:

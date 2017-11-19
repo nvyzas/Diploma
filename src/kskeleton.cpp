@@ -8,34 +8,38 @@ KSkeleton::KSkeleton()
 	printJointHierarchy();
 }
 
-void KSkeleton::addFrame(const Joint *joints, const JointOrientation * orientations, const double &timestamp)
+void KSkeleton::addFrame(const Joint *joints, const JointOrientation *orientations, const double &timestamp, bool record)
 {
 	for (uint i = 0; i < JointType_Count; i++) {
 		const Joint &jt = joints[i];
 		const TrackingState &ts = jt.TrackingState;
-		if (ts == TrackingState_Inferred) {
+		/*if (ts == TrackingState_Inferred) {
 			cout << m_joints[i].name << " is inferred." << endl;
 		}
 		else if (ts == TrackingState_NotTracked) {
 			cout << m_joints[i].name << " is NOT tracked." << endl;
-		}
+		}*/
 		const JointOrientation & or = orientations[i];
 		//cout << "JointType: " << setw(2) << jt.JointType << "\tJointOrientationType: " << setw(2) << or.JointType << endl;
-		if (m_invertedSides) {
-			uint j = m_joints[i].idOpposite;
-			m_joints[j].Position = Vector3f(jt.Position.X, jt.Position.Y, jt.Position.Z);
-			m_joints[j].Orientation = QQuaternion(or .Orientation.w, or .Orientation.x, or .Orientation.y, or .Orientation.z);
-			m_joints[j].trackingState = ts;
-		}
-		else {
-			m_joints[i].Position = Vector3f(jt.Position.X, jt.Position.Y, jt.Position.Z);
-			m_joints[i].Orientation = QQuaternion(or .Orientation.w, or .Orientation.x, or .Orientation.y, or .Orientation.z);
-			m_joints[i].trackingState = ts;
-		}
+		
+		m_joints[i].Position = Vector3f(jt.Position.X, jt.Position.Y, jt.Position.Z);
+		m_joints[i].Orientation = QQuaternion(or .Orientation.w, or .Orientation.x, or .Orientation.y, or .Orientation.z);
+		m_joints[i].trackingState = ts;
 		//cout << left << setw(2) << i << ": " << left << setw(15) << j.name << " p=" << left << setw(25) << j.Position.ToString() << " q=" << j.Orientation.ToString() << j.Orientation.ToEulerAnglesString() << j.Orientation.ToAxisAngleString() << endl;
+		
+		if (true) {
+			for (uint i = 0; i < JointType_Count; i++) {
+				m_jts[i] = m_joints[i];
+			}
+			m_timestamps.push_back(timestamp);
+			m_seq.push_back(m_jts);
+		}
+		/*if (record) {
+			for (int i = 0; i < JointType_Count;i++){
+				m_seq.front() = (KJoint*)malloc(JointType_Count * sizeof(KJoint));
+		}*/
 	}
 }
-
 void KSkeleton::drawSkeleton(uint id)
 {
 	KJoint j = m_joints[id];
@@ -161,34 +165,20 @@ void KSkeleton::printJointHierarchy() const
 void KSkeleton::printJoints() const
 {
 	for (uint i = 0; i < JointType_Count; i++) {
-		const KJoint &j = m_joints[i];
-		cout << setw(15) << j.name << "p: " << setw(25) << j.Position.ToString() << " q: " << printQuaternion1(j.Orientation) << printQuaternion2(j.Orientation) << printQuaternion3(j.Orientation) << endl;
+		const KJoint &jt = m_joints[i];
+		cout << setw(15) << jt.name << "p: " << setw(25) << jt.Position.ToString() << " q: " << printQuaternion1(jt.Orientation) << printQuaternion2(jt.Orientation) << printQuaternion3(jt.Orientation) << endl;
 	}
 	cout << endl;
 }
 
-void KSkeleton::swapSides()
+void KSkeleton::printSequence() const
 {
-	// Positions: left side <-> right
-	swap(m_joints[JointType_HipLeft].Position, m_joints[JointType_HipRight].Position);
-	swap(m_joints[JointType_KneeLeft].Position, m_joints[JointType_KneeRight].Position);
-	swap(m_joints[JointType_AnkleLeft].Position, m_joints[JointType_AnkleRight].Position);
-	swap(m_joints[JointType_FootLeft].Position, m_joints[JointType_FootRight].Position);
-	swap(m_joints[JointType_ShoulderLeft].Position, m_joints[JointType_ShoulderRight].Position);
-	swap(m_joints[JointType_ElbowLeft].Position, m_joints[JointType_ElbowRight].Position);
-	swap(m_joints[JointType_WristLeft].Position, m_joints[JointType_WristRight].Position);
-	swap(m_joints[JointType_HandLeft].Position, m_joints[JointType_HandRight].Position);
-	swap(m_joints[JointType_ThumbLeft].Position, m_joints[JointType_ThumbRight].Position);
-	swap(m_joints[JointType_HandTipLeft].Position, m_joints[JointType_HandTipRight].Position);
-	// Orientations: left side <-> right
-	swap(m_joints[JointType_HipLeft].Orientation, m_joints[JointType_HipRight].Orientation);
-	swap(m_joints[JointType_KneeLeft].Orientation, m_joints[JointType_KneeRight].Orientation);
-	swap(m_joints[JointType_AnkleLeft].Orientation, m_joints[JointType_AnkleRight].Orientation);
-	swap(m_joints[JointType_FootLeft].Orientation, m_joints[JointType_FootRight].Orientation);
-	swap(m_joints[JointType_ShoulderLeft].Orientation, m_joints[JointType_ShoulderRight].Orientation);
-	swap(m_joints[JointType_ElbowLeft].Orientation, m_joints[JointType_ElbowRight].Orientation);
-	swap(m_joints[JointType_WristLeft].Orientation, m_joints[JointType_WristRight].Orientation);
-	swap(m_joints[JointType_HandLeft].Orientation, m_joints[JointType_HandRight].Orientation);
-	swap(m_joints[JointType_ThumbLeft].Orientation, m_joints[JointType_ThumbRight].Orientation);
-	swap(m_joints[JointType_HandTipLeft].Orientation, m_joints[JointType_HandTipRight].Orientation);
+	cout << "Number of frames in sequence: " << m_seq.size() << endl;
+	for (uint i = 0; i < 10; i++) {
+		cout << "Sequence=" << i << " Seconds=" << m_timestamps[i] << endl;
+		for (uint j = 0; j < JointType_Count; j++){
+			const KJoint &jt = m_seq[i][j];
+			cout << setw(15) << jt.name << "p: " << setw(25) << jt.Position.ToString() << " q: " << printQuaternion1(jt.Orientation) << printQuaternion2(jt.Orientation) << printQuaternion3(jt.Orientation) << endl;
+		}
+	}
 }

@@ -165,7 +165,7 @@ void MainWidget::paintGL()
 
 	//if (m_renderCameraVectors)		m_Cam->DrawCameraVectors();
 	//*/
-	//update();
+	update();
 }
 void MainWidget::keyPressEvent(QKeyEvent *event)
 {
@@ -202,6 +202,9 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		break;
 	case Qt::Key_G:
 	case Qt::Key_R:
+	case Qt::Key_S:
+		m_ksensor->kskeleton()->printSequence();
+		break;
 	case Qt::Key_Escape:
 		event->ignore();	// event passed to MainWidget's parent (MainWindow)
 		break;
