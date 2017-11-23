@@ -113,20 +113,8 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_G:
 		if (!m_ksensor.getBodyData()) cout << "Could not update kinect data." << endl;
 		break;
-	case Qt::Key_R:
-		m_ksensor.m_isRecording = !m_ksensor.m_isRecording;
-		cout << "Record " << (m_ksensor.m_isRecording ? "ON" : "OFF") << endl;
-		if (m_ksensor.m_isRecording) {
-			m_ksensor.resetRecordVars();
-			//m_timer->start(10);
-		}
-		else {
-			//m_timer->stop();
-		}
-		break;
 	case Qt::Key_T:
-		if (!m_ksensor.createTRC()) cout << "Could not create trc file" << endl;
-		else cout << "Created .trc file" << endl;
+		m_ksensor.skeleton()->createTRC();
 		break;
 	case Qt::Key_Escape:
 		close(); // implicitly makes the application quit by generating close event
@@ -234,10 +222,22 @@ void MainWindow::setupConnections()
 	connect(ui->checkBox_axes, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setRenderAxes(bool)));
 	// render model
 	connect(ui->checkBox_model, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setRenderModel(bool)));
-	// timer
+	
+	// Kinect
 	connect(m_timer, SIGNAL(timeout()), this, SLOT(getKinectData()));
+	connect(ui->horizontalSlider_progressPercent, SIGNAL(valueChanged(int)), SLOT(setActiveKinectSkeletonFrame(int)));
 }
 void MainWindow::getKinectData()
 {
 	if (m_ksensor.getBodyData()) ui->openGLWidget->update();
+}
+void MainWindow::setActiveKinectSkeletonFrame(int progressPercent)
+{
+	uint pp = progressPercent; // progressPercent implicitly cast to uint?
+	if (progressPercent > 100 || progressPercent < 0) {
+		cout << "Progress percent out of bounds: " << progressPercent << endl;
+	}
+	else {
+		m_ksensor.setSkeletonActiveFrame(progressPercent);
+	}
 }

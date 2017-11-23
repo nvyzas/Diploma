@@ -10,7 +10,7 @@
 #include <Kinect.h>
 
 // Qt
-class QFile;
+#include <QtCore/QFile>
 
 // Standard C/C++
 #include <string>
@@ -23,35 +23,39 @@ public:
 	~KSensor();
 	bool init();
 	bool connect();
-	KSkeleton *kskeleton();
+	KSkeleton *skeleton();
 	bool getBodyData();
 	void processBodyFrameData(IBody** bodies);
 	void calculateFPS();
-	void addMarkerData();
-	bool createTRC();
-	void resetRecordVars();
-	bool m_isRecording = false;
-private:
 
+	// Recording
+	void record();
+
+	// Playback
+	void setSkeletonActiveFrame(uint progressPercent);
+
+private:
 	KJoint m_Joints[JointType_Count];
 	IKinectSensor *m_sensor = nullptr;
 	IBodyFrameSource *m_source = nullptr;
 	IBodyFrameReader *m_reader = nullptr;
 
-	QFile *m_trcFile;
-	QString m_markerData;
-	uint m_numMarkers;
+	// Recording
+	QFile m_captureLog;
+	QTextStream m_forLog;
+	bool m_isRecording = false;
 
-	QFile *m_log;
-
-	// variables used to calculate non-discarded frame quantity and timestamps
+	// Frame counter and timestamps
 	uint m_acceptedFrames = 0;
 	double m_totalSeconds = 0;
-	clock_t m_frameBegin = 0, m_frameEnd = 0;
+	clock_t m_frameBegin = 0;
+	clock_t m_frameEnd = 0;
 
-	// variables used to calculate non-discarded fps
-	clock_t m_currentTime = 0, m_previousTime = 0; 
-	int m_fps = 0, m_frameCount = 0;
+	// FPS counter
+	clock_t m_currentTime = 0;
+	clock_t m_previousTime = 0;
+	int m_fps = 0;
+	int m_frameCount = 0;
 
 	KSkeleton m_skeleton;
 	KJoint m_leftFootStance;

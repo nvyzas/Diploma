@@ -247,6 +247,25 @@
            </widget>
           </item>
           <item>
+           <widget class="QGroupBox" name="groupBox_movement">
+            <property name="title">
+             <string>Movement</string>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_3">
+             <item>
+              <widget class="QSlider" name="horizontalSlider_progressPercent">
+               <property name="maximum">
+                <number>100</number>
+               </property>
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
            <spacer name="verticalSpacer">
             <property name="orientation">
              <enum>Qt::Vertical</enum>

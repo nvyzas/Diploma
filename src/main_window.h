@@ -30,6 +30,9 @@ private slots:
 	void getKinectData();
 	void recordKinectData();
 
+	// Kinect
+	void setActiveKinectSkeletonFrame(int progressPercent);
+
 protected:
 	void keyPressEvent(QKeyEvent *event) override;
 
@@ -42,7 +45,7 @@ private:
 	void setupConnections();
 	Ui::MainWindow *ui;
 
-	// Kinect variables
+	// Kinect
 	KSensor m_ksensor;	
 	QTimer *m_timer;
 	bool m_renderSkeleton = false;

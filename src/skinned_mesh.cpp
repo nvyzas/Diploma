@@ -18,10 +18,6 @@ SkinnedMesh::SkinnedMesh()
 	//initBoneMapping();
 	initKBoneMapping();
 }
-void SkinnedMesh::setKSkeleton(const KSkeleton &ks)
-{
-	m_pKBones = ks.getKJoints();
-}
 SkinnedMesh::~SkinnedMesh()
 {
     Clear();
@@ -574,7 +570,7 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 		auto kit = m_kboneMap.find(NodeName);
 		uint c;
 		if (kit != m_kboneMap.end() && (c = kit->second) != INVALID_JOINT_ID) { // model node	
-			q = m_pKBones[c].Orientation;
+			q = m_pKBones[c].orientation;
 			sso << "q abs from kinect (" << m_pKBones[c].name << "): " << printQuaternion1(q) << printQuaternion2(q) << printQuaternion3(q) << endl;
 			m_absQuats[i] = q;
 			if (NodeName == "Hips") {

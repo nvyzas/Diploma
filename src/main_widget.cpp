@@ -49,7 +49,7 @@ void MainWidget::initializeGL()
 
 	qDebug() << "Obtained format:" << format();
 	initializeOpenGLFunctions();
-	m_ksensor->kskeleton()->initOGL();
+	m_ksensor->skeleton()->initOGL();
 	//cout << "GL version: " << glGetString(GL_VERSION) << endl;
 	//cout << "GL renderer: " << glGetString(GL_RENDERER) << endl;
 	//cout << "GLSL version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << endl;	
@@ -160,7 +160,7 @@ void MainWidget::paintGL()
 
 	m_Tech->enable();
 	m_Tech->SetDefault(m_Pipe->GetVPTrans());
-	if (m_renderSkeleton) m_ksensor->kskeleton()->drawSkeleton(0);
+	if (m_renderSkeleton) m_ksensor->skeleton()->drawSkeleton(0);
 	if (m_renderAxes)	DrawAxes();
 
 	//if (m_renderCameraVectors)		m_Cam->DrawCameraVectors();
@@ -200,10 +200,11 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		m_play = !m_play;
 		cout << "Play " << (m_play ? "ON" : "OFF") << endl;
 		break;
-	case Qt::Key_G:
 	case Qt::Key_R:
+		m_ksensor->record();
+		break;
 	case Qt::Key_S:
-		m_ksensor->kskeleton()->printSequence();
+		m_ksensor->skeleton()->printSequence();
 		break;
 	case Qt::Key_Escape:
 		event->ignore();	// event passed to MainWidget's parent (MainWindow)
