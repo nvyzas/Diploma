@@ -15,26 +15,45 @@ class QFile;
 #include <vector>
 #include <array>
 
-#define INVALID_JOINT_ID 123
+#define INVALID_JOINT_ID -1
 #define NUM_MARKERS JointType_Count
 
-struct KJoint
+struct KNode
 {
-	string name;
-	Vector3f position;
-	uint trackingState;
-	QQuaternion orientation;
+	QString name;
 	uint parentId;
+	bool marked;
 	vector<uint> childrenId;
 
-	KJoint()
+	KNode()
+		:name("aJoint"),
+		parentId(INVALID_JOINT_ID),
+		marked(true)
 	{
 	}
 
-	KJoint(string _name, uint  _parent)
+	KNode(QString _name, uint  _parentId, bool _marked = true)
+		:name(_name),
+		parentId(_parentId),
+		marked(_marked)
 	{
-		name = _name;
-		parentId = _parent;
+	}
+
+};
+
+struct KJoint
+{
+	uint id; // probably not needed
+	Vector3f position;
+	uint trackingState;  // #! uint defined in qglobal.h
+	QQuaternion orientation;
+
+	KJoint()
+		:id(INVALID_JOINT_ID),
+		position(0.f,0.f,0.f),
+		orientation(1.f, 0.f, 0.f, 0.f),
+		trackingState(0) // #? initial value = 0
+	{
 	}
 
 	string getTrackingState() const
@@ -46,16 +65,15 @@ struct KJoint
 
 	void print() const
 	{
-		cout << setw(15) << name << "p: " << setw(25) << position.ToString() << getTrackingState() <<  endl;
+		cout << setw(15) << id << "p: " << setw(25) << position.ToString() << getTrackingState() <<  endl;
 	}
 
 	void printOrientation() const
 	{
-		cout << setw(15) << name << "q: " << printQuaternion1(orientation) << printQuaternion2(orientation) << printQuaternion3(orientation) << endl;
+		cout << setw(15) << id << "q: " << printQuaternion1(orientation) << printQuaternion2(orientation) << printQuaternion3(orientation) << endl;
 	}
-
-	
 };
+
 QDataStream& operator<<(QDataStream& out, const KJoint& jt)
 {
 	out << jt.position << jt.trackingState;
@@ -89,7 +107,6 @@ struct KFrame
 		}
 	}
 
-	void operator<<
 };
 
 class KSkeleton: protected OPENGL_FUNCTIONS
@@ -112,6 +129,7 @@ public:
 	void saveToBinary() const;
 
 private:
+	array<KNode, NUM_MARKERS> m_nodes; // these define the kinect skeleton hierarchy
 	array<KJoint, NUM_MARKERS> m_joints;
 	vector<KFrame> m_sequence;
 	vector<KFrame> m_interpolatedSequence;
