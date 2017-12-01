@@ -196,6 +196,12 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		m_Mesh->flipParameter(key - Qt::Key_0);
 		Transform(true);
 		break;
+	case Qt::Key_C:
+		if (!m_ksensor->connect()) cout << "Could not connect to kinect sensor." << endl;
+		break;
+	case Qt::Key_G:
+		if (!m_ksensor->getBodyData()) cout << "Could not update kinect data." << endl;
+		break;
 	case Qt::Key_Space:
 		m_play = !m_play;
 		cout << "Play " << (m_play ? "ON" : "OFF") << endl;
@@ -204,6 +210,15 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		m_ksensor->record();
 		break;
 	case Qt::Key_S:
+		m_ksensor->skeleton()->saveToBinary();
+		break;
+	case Qt::Key_T:
+		m_ksensor->skeleton()->createTRC();
+		break;
+	case Qt::Key_L:
+		m_ksensor->skeleton()->loadFromBinary();
+		break;
+	case Qt::Key_P:
 		m_ksensor->skeleton()->printSequence();
 		break;
 	case Qt::Key_Escape:

@@ -68,4 +68,7 @@ float wrapAngle(float angle, float limit)
 	return angle - limit * floor(angle / limit);
 }
 
-
+// units/(units/time) => time (seconds) * 1000 = milliseconds
+double ticksToMilliseconds(clock_t ticks) {
+	return (ticks / (double)CLOCKS_PER_SEC)*1000.;
+}

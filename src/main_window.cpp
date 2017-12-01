@@ -107,15 +107,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 	cout << "MainWindow saw this keyboard event" << endl;
 	int key = event->key();
 	switch (key) {
-	case Qt::Key_C:		
-		if (!m_ksensor.connect()) cout << "Could not connect to kinect sensor." << endl;
-		break;
-	case Qt::Key_G:
-		if (!m_ksensor.getBodyData()) cout << "Could not update kinect data." << endl;
-		break;
-	case Qt::Key_T:
-		m_ksensor.skeleton()->createTRC();
-		break;
+	// do not put any other keys here!
 	case Qt::Key_Escape:
 		close(); // implicitly makes the application quit by generating close event
 		break;
@@ -178,14 +170,17 @@ void MainWindow::loadActiveBoneRotationZ()
 }
 void MainWindow::setupObjects()
 {
+	// Skinned Mesh
 	for (const auto& fi : QDir("models/", "*.dae").entryInfoList()) {
 		ui->comboBox_activeModel->addItem(fi.baseName());
 	}
-	ui->openGLWidget->setModelName(ui->comboBox_activeModel->currentText());
 	ui->checkBox_modelSkinning->setChecked(ui->openGLWidget->modelSkinning());
 
 	ui->comboBox_activeBone->addItems(ui->openGLWidget->modelBoneList());
 	loadActiveBoneInfo();
+
+	ui->openGLWidget->setModelName(ui->comboBox_activeModel->currentText());
+	ui->openGLWidget->setKSensor(m_ksensor);
 
 	ui->checkBox_axes->setChecked(ui->openGLWidget->renderModel());
 	ui->checkBox_model->setChecked(ui->openGLWidget->renderAxes());
@@ -196,7 +191,9 @@ void MainWindow::setupObjects()
 	ui->pushButton_info->setMenu(menuInfo);
 
 	m_timer = new QTimer(this);
-	ui->openGLWidget->setKSensor(m_ksensor);
+	m_timer->setInterval(1000. / 30.);
+	m_timer->setTimerType(Qt::CoarseTimer);
+	//m_timer->start();
 }
 void MainWindow::setupConnections()
 {

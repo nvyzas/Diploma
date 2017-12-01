@@ -65,55 +65,48 @@ struct KJoint
 
 	void print() const
 	{
-		cout << setw(15) << id << "p: " << setw(25) << position.ToString() << getTrackingState() <<  endl;
+		cout << "position: " << setw(25) << position.ToString() << getTrackingState() <<  endl;
 	}
 
 	void printOrientation() const
 	{
-		cout << setw(15) << id << "q: " << printQuaternion1(orientation) << printQuaternion2(orientation) << printQuaternion3(orientation) << endl;
+		cout << "orientation: " << printQuaternion1(orientation) << printQuaternion2(orientation) << printQuaternion3(orientation) << endl;
 	}
 };
 
-QDataStream& operator<<(QDataStream& out, const KJoint& jt)
-{
-	out << jt.position << jt.trackingState;
-	return out;
-}
-QDataStream& operator>>(QDataStream& in, const KJoint& jt)
-{
-	in << jt.position << jt.trackingState;
-	return in;
-}
+QDataStream& operator<<(QDataStream& out, const KJoint& jt);
+QDataStream& operator>>(QDataStream& in, const KJoint& jt);
 
 struct KFrame
 {
-	array<KJoint, NUM_MARKERS> joints;
+	uint serial; // serial number
 	double timestamp;
+	array<KJoint, NUM_MARKERS> joints;
 
 	// Interpolates this frame between frames "next" and "previous" at time "interpolationTime"
 	void interpolate(const KFrame& previous, const KFrame& next, double interpolationTime)
 	{
-		timestamp = interpolationTime;
-
+		cout << "Interpolating between frame " << previous.serial << " and " << next.serial << " at time " << interpolationTime << endl;
 		double percentDistance = (interpolationTime - previous.timestamp) / (next.timestamp - previous.timestamp);
-		if (next.timestamp < previous.timestamp) cout << "next frame time < previous frame time !" << endl;
+		/*if (next.timestamp < previous.timestamp) cout << "next frame time < previous frame time !" << endl;
 		if (interpolationTime > next.timestamp) cout << "interpolation time > next frame time " << interpolationTime << " > " << next.timestamp << endl;
-		if (interpolationTime < previous.timestamp) cout << "interpolation time < previous frame time " << interpolationTime << " < " << previous.timestamp << endl;
+		if (interpolationTime < previous.timestamp) cout << "interpolation time < previous frame time " << interpolationTime << " < " << previous.timestamp << endl;*/
 
 		for (uint i = 0; i < NUM_MARKERS; i++) {
 			joints[i].position.x = previous.joints[i].position.x + percentDistance * (next.joints[i].position.x - previous.joints[i].position.x);
 			joints[i].position.y = previous.joints[i].position.y + percentDistance * (next.joints[i].position.y - previous.joints[i].position.y);
 			joints[i].position.z = previous.joints[i].position.z + percentDistance * (next.joints[i].position.z - previous.joints[i].position.z);
 		}
+		timestamp = interpolationTime;
+		serial = next.serial;
 	}
-
 };
 
 class KSkeleton: protected OPENGL_FUNCTIONS
 {
 public:
 	KSkeleton();
-	void addFrame(const Joint *joints, const JointOrientation *orientations, const double &time, bool record);
+	void addFrame(const Joint *joints, const JointOrientation *orientations, const double &time);
 	void drawActiveJoint();
 	void drawSkeleton(uint id);
 	void initJoints();
@@ -127,7 +120,11 @@ public:
 	bool readTRC();
 	void setActiveFrame(uint progressPercent);
 	void saveToBinary() const;
+	void loadFromBinary();
+	void resetRecordVariables();
 
+	bool m_recordingOn = false;
+	bool m_filteringOn = true;
 private:
 	array<KNode, NUM_MARKERS> m_nodes; // these define the kinect skeleton hierarchy
 	array<KJoint, NUM_MARKERS> m_joints;
@@ -141,15 +138,14 @@ private:
 	// trc file
 	QFile *m_trcFile;
 	QString m_markerData;
-
+	
 	uint m_activeJoint = JointType_SpineBase;
 
 	// Savitzky-Golay filter
-#define NUM_POINTS 5
-	bool m_enableFiltering = true;
-	const double m_timeStep = 1. / 30.;
+	const double m_timeStep = 0.03;
+	static const int m_numPoints = 5;
 	// Cubic, Symmetric, 5 Points
-	float m_sgCoefficients[NUM_POINTS] = {-3, 12, 17, 12, -3 };
+	float m_sgCoefficients[m_numPoints] = {-3, 12, 17, 12, -3 };
 	void sgFilter();
 };
 

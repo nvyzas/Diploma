@@ -8,72 +8,92 @@
 // Qt
 #include <QtCore/QFile>
 
+QDataStream& operator<<(QDataStream& out, const KJoint& jt)
+{
+	out << jt.position << jt.trackingState;
+	return out;
+}
+QDataStream& operator>>(QDataStream& in, const KJoint& jt)
+{
+	in << jt.position << jt.trackingState;
+	return in;
+}
+
 KSkeleton::KSkeleton()
 {
 	initJoints();
 	printJointHierarchy();
 }
 
-void KSkeleton::addFrame(const Joint *joints, const JointOrientation *orientations, const double &time, bool record)
+void KSkeleton::addFrame(const Joint *joints, const JointOrientation *orientations, const double &time)
 {
 	for (uint i = 0; i < JointType_Count; i++) {
-		const Joint &jt = joints[i];
-		const JointOrientation & or = orientations[i];
+		const Joint& jt = joints[i];
+		const JointOrientation& or = orientations[i];
 		m_joints[i].position = Vector3f(jt.Position.X, jt.Position.Y, jt.Position.Z);
 		m_joints[i].trackingState = jt.TrackingState;
-		m_joints[i].orientation = QQuaternion(or .Orientation.w, or .Orientation.x, or .Orientation.y, or .Orientation.z);
+		m_joints[i].orientation = QQuaternion(or.Orientation.w, or.Orientation.x, or.Orientation.y, or.Orientation.z);
 	}
 
-	if (record) {
+	if (m_recordingOn) {
 		KFrame kframe;
 		kframe.timestamp = time;
 		kframe.joints = m_joints;
+		kframe.serial = m_sequence.size();
 		m_sequence.push_back(kframe);
-		if (m_enableFiltering) {
-			uint currentIndex = m_sequence.size() - 1;
-			double interpolationTime = m_timeStep * currentIndex;
+				
+		if (m_filteringOn) {
+			double interpolationTime = m_timeStep * kframe.serial;
 			if (interpolationTime == time) {
 				cout << "interpolation time = frame time = " << time << endl;
 			}
 			else if (interpolationTime > time) {
-				cout << "interpolation time > frame time " << interpolationTime << " > " << time << endl;
+				cout << "Error: interpolation time > frame time\t" << interpolationTime << " > " << time;
+				cout << " Difference = " << interpolationTime - time << endl;
 			}
 			else {
+				cout << "interpolation time < frame time\t" << interpolationTime << " < " << time;
+				cout << " Difference = " << interpolationTime - time << endl;
 				kframe.interpolate(m_sequence.end()[-2], m_sequence.back(), interpolationTime);
 			}
 			m_interpolatedSequence.push_back(kframe);
+			sgFilter();
 		}
 	}
 }
 void KSkeleton::sgFilter()
 {
+	//uint currentIndex = m_interpolatedSequence.back().serial;
 	uint currentIndex = m_sequence.size() - 1;
-	if (currentIndex >= NUM_POINTS) {
-		uint filteredIndex = currentIndex - NUM_POINTS / 2;
+	cout << "currentIndex=" << currentIndex;
+	if (currentIndex >= m_numPoints - 1) {
+		uint filteredIndex = currentIndex - m_numPoints / 2;
+		cout << " filteredIndex=" << filteredIndex;
 		KFrame filteredInterpolatedFrame;
-		cout << "filteredIndex=" << filteredIndex;
 		for (uint i = 0; i < 1; i++) {
-			for (uint j = -NUM_POINTS; j < NUM_POINTS; j++) {
+			cout << " indices=";
+			for (uint j = 0; j < m_numPoints; j++) {
+				cout << "(" << filteredIndex + j - m_numPoints / 2 << "," << m_sgCoefficients[j] << ")";
 				filteredInterpolatedFrame.joints[i].position +=
-					m_interpolatedSequence[filteredIndex + j].joints[i].position*m_sgCoefficients[j + NUM_POINTS / 2] * (1.f / 35.f);
-				cout << " " << filteredIndex + j << " " << m_sgCoefficients[j + NUM_POINTS / 2];
+					m_interpolatedSequence[filteredIndex + j - m_numPoints / 2].joints[i].position *	m_sgCoefficients[j] * (1.f / 35.f);
 			}
+			cout << " PositionBefore=" << filteredInterpolatedFrame.joints[i].position.ToString();
+			cout << endl;
 		}
-		cout << endl;
 	}
 	else {
-		cout << "Current index = " << currentIndex << "Not enough frames to start filtering." << endl;
+		cout << " Not enough frames to start filtering." << endl;
 	}
 
 }
 bool KSkeleton::createTRC()
 {
-	QFile file("joint_positions.trc");
-	if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+	QFile qf("joint_positions.trc");
+	if (!qf.open(QIODevice::WriteOnly | QIODevice::Text)) {
 		cout << "Could not create .trc file" << endl;
 		return false;
 	}
-	QTextStream out(m_trcFile);
+	QTextStream out(&qf);
 	// Line 1
 	out << "PathFileType\t";
 	out << "4\t";
@@ -121,14 +141,14 @@ bool KSkeleton::createTRC()
 		}
 	}
 	out << flush;
-	file.close();
+	qf.close();
 	return true;
 }
 bool KSkeleton::readTRC()
 {
 	QFile file("joint_positions.trc");
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-		cout << "Could not read .trc file" << endl;
+		cout << "Could not read joint_positions.trc file" << endl;
 		return false;
 	}
 	while (!file.atEnd()) {
@@ -271,10 +291,11 @@ void KSkeleton::printSequence() const
 		return;
 	}
 	cout << "Number of frames in sequence: " << m_sequence.size() << endl;
-	for (uint i = 0; i < 10; i++) {
+	for (uint i = 0; i < 3; i++) {
 		cout << "Frame=" << i << " Timestamp=" << m_sequence[i].timestamp << endl;
 		for (uint j = 0; j < JointType_Count; j++) {
 			const KJoint &jt = m_sequence[i].joints[j];
+			cout << setw(15) << (m_nodes[j].name).toStdString() << ": ";
 			jt.print();
 		}
 	}
@@ -294,12 +315,46 @@ void KSkeleton::setActiveFrame(uint progressPercent)
 void KSkeleton::saveToBinary() const
 {
 	QFile qf("sequences.txt");
-	if (!qf.open(QIODevice::ReadOnly | QIODevice::Text)) {
-		cout << "Count not create sequences.txt file" << endl;
+	if (!qf.open(QIODevice::WriteOnly)) {
+		cout << "Cannot write to sequences.txt file." << endl;
 		return;
 	}
-	QDataStream qds(&qf);
+	QDataStream out(&qf);
 	for (uint i = 0; i < m_sequence.size(); i++) {
-		qds << m_sequence[i].joints << m_sequence[i].timestamp;
+		out << m_sequence[i].serial;
+		out << m_sequence[i].timestamp;
+		for (uint j = 0; j < NUM_MARKERS; j++) {
+			out << m_sequence[i].joints[j];
+		}
 	}
+	//qf.flush();
+	qf.close();
+}
+
+void KSkeleton::loadFromBinary()
+{
+	QFile qf("sequences.txt");
+	if (!qf.open(QIODevice::ReadOnly)) {
+		cout << "Cannot read from sequences.txt file." << endl;
+		return;
+	}
+	QDataStream in(&qf);
+	for (uint i = 0; i < m_sequence.size(); i++) {
+		in >> m_sequence[i].serial;
+		in >> m_sequence[i].timestamp;
+		for (uint j = 0; j < NUM_MARKERS; j++) {
+			in >> m_sequence[i].joints[j];
+		}
+		
+	}
+	qf.close();
+}
+
+void KSkeleton::resetRecordVariables()
+{
+	// #todo: clear may be expensive so add if for each clear
+	m_sequence.clear();
+	m_interpolatedSequence.clear();
+	m_filteredInterpolatedSequence.clear();
+	m_filteredSequence.clear();
 }

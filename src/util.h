@@ -51,5 +51,6 @@ float wrapAngle(float angle, float limit);
 string printQuaternion1(const QQuaternion &q);
 string printQuaternion2(const QQuaternion &q);
 string printQuaternion3(const QQuaternion &q);
+double ticksToMilliseconds(clock_t ticks);
 
 #endif	/* UTIL_H */

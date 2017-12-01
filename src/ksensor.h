@@ -28,7 +28,7 @@ public:
 	void processBodyFrameData(IBody** bodies);
 	void calculateFPS();
 
-	// Recording
+	// Start/Stop frame recording in KSkeleton class
 	void record();
 
 	// Playback
@@ -40,22 +40,24 @@ private:
 	IBodyFrameSource *m_source = nullptr;
 	IBodyFrameReader *m_reader = nullptr;
 
-	// Recording
 	QFile m_captureLog;
 	QTextStream m_forLog;
-	bool m_isRecording = false;
 
 	// Frame counter and timestamps
+	bool m_lastAttemptFailed = false;
+	uint m_consecutiveFails = 0;
+
+	uint m_acquiredFrames = 0;
+	INT64 m_firstRelativeTime;
+	INT64 m_lastRelativeTime;
+
 	uint m_acceptedFrames = 0;
-	double m_totalSeconds = 0;
-	clock_t m_frameBegin = 0;
-	clock_t m_frameEnd = 0;
+	double m_totalTime = 0;
+	clock_t m_ticksNow;
+	clock_t m_ticksBefore;
 
 	// FPS counter
-	clock_t m_currentTime = 0;
-	clock_t m_previousTime = 0;
-	int m_fps = 0;
-	int m_frameCount = 0;
+	double m_fps = 0.;
 
 	KSkeleton m_skeleton;
 	KJoint m_leftFootStance;
