@@ -13,6 +13,7 @@ class Pipeline;
 #include "util.h"
 
 // Qt
+#include <QtCore\QTimer>
 #include <QtWidgets\QOpenGLWidget>
 QT_FORWARD_DECLARE_CLASS(QOpenGLTexture);
 
@@ -25,7 +26,7 @@ class MainWidget : public QOpenGLWidget, protected OPENGL_FUNCTIONS
 public:
 	MainWidget(QWidget *parent = Q_NULLPTR);
 	~MainWidget();
-
+	
 	bool renderAxes() const;
 
 	// skinned mesh related
@@ -42,6 +43,7 @@ public slots:
 	void setRenderModel(bool state);
 	void setModelName(const QString &modelName);
 	void setModelSkinning(bool state);
+	void updateIndirect();
 	
 protected:
 	void initializeGL();
@@ -52,6 +54,16 @@ protected:
 	void wheelEvent(QWheelEvent *event) override;
 
 private:
+	enum class Mode
+	{
+		CAPTURE,
+		PLAYBACK
+	};
+
+	Mode m_modeOfOperation = Mode::CAPTURE;
+	QTimer m_timer;
+	uint m_frameIndex = 0;
+
 	KSensor *m_ksensor;
 	Camera *m_Cam;
 	Technique *m_Tech;

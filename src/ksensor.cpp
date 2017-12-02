@@ -32,7 +32,7 @@ KSensor::KSensor()
 		return;
 	}
 	m_forLog.setFieldAlignment(QTextStream::AlignLeft);
-	m_forLog.setRealNumberPrecision(6);
+	m_forLog.setRealNumberPrecision(8);
 	m_forLog.setDevice(&m_captureLog);
 }
 KSensor::~KSensor()
@@ -183,14 +183,8 @@ bool KSensor::getBodyData()
 			m_forLog << " Could not get relative time. hr = " << hr << endl;
 		} 
 		else {
-			if (m_acquiredFrames == 1) {
-				m_firstRelativeTime = relativeTime;
-				m_lastRelativeTime = relativeTime;
-			}
-			relativeTime -= m_firstRelativeTime;
-			m_forLog << "  RelativeTime=" << qSetFieldWidth(10) << (double)relativeTime / 10000000.;
-			m_forLog << "  Difference=" << qSetFieldWidth(10) << (double)(relativeTime-m_lastRelativeTime) / 10000000.;
-			m_lastRelativeTime = relativeTime;
+			m_totalRelativeTime = (double)relativeTime / 10000000.;
+			m_forLog << " RelativeTime=" << qSetFieldWidth(10) << m_totalRelativeTime;
 			hr = frame->GetAndRefreshBodyData(_countof(bodies), bodies);
 		}
 
@@ -228,22 +222,34 @@ void KSensor::processBodyFrameData(IBody** bodies)
 
 	if (discardFrame) {
 		m_forLog << " Frame discarded." << endl;
+		if (m_skeleton.m_recordingOn) record(); // stop recording
 	} 
 	else {
+		m_acceptedFrames++;
+		m_forLog << " Frame accepted. " << qSetFieldWidth(4) << m_acceptedFrames;
+		if (m_acceptedFrames == 1) {
+			m_relativeTimeOffset = m_totalRelativeTime;
+			m_lastRelativeTime = 0;
+		}
+		m_totalRelativeTime -= m_relativeTimeOffset;
+		double interval = m_totalRelativeTime - m_lastRelativeTime;
+		m_forLog << "  RelativeTime=" << qSetFieldWidth(10) << m_totalRelativeTime;
+		m_forLog << "  Interval=" << qSetFieldWidth(10) << interval;
+		if (m_acceptedFrames > 1) m_averageInterval = (m_averageInterval*(m_acceptedFrames - 2) + interval) / (m_acceptedFrames - 1);
+		m_lastRelativeTime = m_totalRelativeTime;
+
 		m_ticksNow = clock();
-		if (m_acceptedFrames == 0) {
+		if (m_acceptedFrames == 1) {
 			m_ticksBefore = m_ticksNow;
 		}
 
-		m_acceptedFrames++;
-		m_forLog << " Frame=" << qSetFieldWidth(4) << m_acceptedFrames;
 		double deltaTime = (double)(m_ticksNow - m_ticksBefore) / (double)CLOCKS_PER_SEC;
 		m_totalTime += deltaTime;
-		m_forLog << " Time=" << qSetFieldWidth(5) << m_totalTime;
-		m_forLog << " deltaTime=" << qSetFieldWidth(5) << deltaTime;
+		m_forLog << "  Time=" << qSetFieldWidth(5) << m_totalTime;
+		m_forLog << "  deltaTime=" << qSetFieldWidth(5) << deltaTime;
 		calculateFPS();
-		m_skeleton.addFrame(joints, orientations, m_totalTime);
-		m_forLog << " FPS=" << m_fps << endl;
+		m_skeleton.addFrame(joints, orientations, m_totalRelativeTime);
+		m_forLog << "  FPS=" << m_fps << endl;
 		m_ticksBefore = m_ticksNow;
 	}
 }
@@ -277,7 +283,7 @@ void KSensor::record()
 		// Reset record related variables
 		m_acceptedFrames = 0;
 		m_totalTime = 0;
-
+		m_averageInterval = 0;
 		m_fps = 0;
 		m_skeleton.resetRecordVariables();
 
@@ -287,7 +293,8 @@ void KSensor::record()
 	else {
 		m_skeleton.m_recordingOn = false;
 		cout << "Recording stopped." << endl;
-
+		cout << "Average frame interval (milliseconds) = " << m_averageInterval << endl;
+		m_skeleton.setTimestep(m_averageInterval);
 		m_skeleton.createTRC();
 		m_skeleton.saveToBinary();
 		m_skeleton.printSequence();

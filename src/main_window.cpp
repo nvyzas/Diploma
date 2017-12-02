@@ -191,8 +191,8 @@ void MainWindow::setupObjects()
 	ui->pushButton_info->setMenu(menuInfo);
 
 	m_timer = new QTimer(this);
-	m_timer->setInterval(1000. / 30.);
 	m_timer->setTimerType(Qt::CoarseTimer);
+	m_timer->setInterval(1000. / 30.);
 	//m_timer->start();
 }
 void MainWindow::setupConnections()

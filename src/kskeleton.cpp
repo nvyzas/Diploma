@@ -21,8 +21,9 @@ QDataStream& operator>>(QDataStream& in, const KJoint& jt)
 
 KSkeleton::KSkeleton()
 {
-	initJoints();
+	initJointHierarchy();
 	printJointHierarchy();
+	loadFromBinary();
 }
 
 void KSkeleton::addFrame(const Joint *joints, const JointOrientation *orientations, const double &time)
@@ -45,14 +46,15 @@ void KSkeleton::addFrame(const Joint *joints, const JointOrientation *orientatio
 		if (m_filteringOn) {
 			double interpolationTime = m_timeStep * kframe.serial;
 			if (interpolationTime == time) {
-				cout << "interpolation time = frame time = " << time << endl;
+				cout << "interpolationTime = frameTime = " << time << endl;
 			}
 			else if (interpolationTime > time) {
-				cout << "Error: interpolation time > frame time\t" << interpolationTime << " > " << time;
+				cout << "interpolationTime > frameTime\t" << interpolationTime << " > " << time;
 				cout << " Difference = " << interpolationTime - time << endl;
+				kframe.interpolate(m_sequence.end()[-2], m_sequence.back(), interpolationTime);
 			}
 			else {
-				cout << "interpolation time < frame time\t" << interpolationTime << " < " << time;
+				cout << "interpolationTime < frameTime\t" << interpolationTime << " < " << time;
 				cout << " Difference = " << interpolationTime - time << endl;
 				kframe.interpolate(m_sequence.end()[-2], m_sequence.back(), interpolationTime);
 			}
@@ -198,7 +200,7 @@ void KSkeleton::drawActiveJoint()
 	glEnd();
 }
 
-void KSkeleton::initJoints()
+void KSkeleton::initJointHierarchy()
 {
 	// Set parents
 	// core
@@ -300,13 +302,45 @@ void KSkeleton::printSequence() const
 		}
 	}
 }
-void KSkeleton::setActiveFrame(uint progressPercent)
+
+double KSkeleton::timeStep() const
+{
+	return m_timeStep;
+}
+void KSkeleton::setTimestep(double timestep)
+{
+	m_timeStep = timestep;
+}
+uint KSkeleton::activeFrame() const
+{
+	return m_activeFrame;
+}
+void KSkeleton::nextActiveFrame()
+{
+	//if (!m_playOn) return;
+	if (++m_activeFrame > m_interpolatedSequence.size()) m_activeFrame = 0;
+}
+void KSkeleton::setActiveFrame(uint index)
+{
+	if (m_interpolatedSequence.size() == 0) {
+		cout << "Interpolated sequence is empty." << endl;
+	}
+	else if (index<0 || index>=m_interpolatedSequence.size()) {
+		cout << "Out of bounds" << endl;
+	}
+	else {
+		m_activeFrame = index;
+		cout << "Active frame index = " << m_activeFrame << endl;
+		m_joints = m_sequence[m_activeFrame].joints;
+	}
+}
+void KSkeleton::setActiveFrame(float progressPercent)
 {
 	if (m_sequence.size() == 0) {
 		cout << "No sequence recorded." << endl;
 	}
 	else {
-		m_activeFrame = m_sequence.size() * progressPercent / 100;
+		m_activeFrame = m_sequence.size() * progressPercent / 100.f;
 		cout << "Active frame = " << m_activeFrame << endl;
 		m_joints = m_sequence[m_activeFrame].joints;
 	}
@@ -319,7 +353,11 @@ void KSkeleton::saveToBinary() const
 		cout << "Cannot write to sequences.txt file." << endl;
 		return;
 	}
+	else {
+		cout << "Saving to sequences.txt" << endl;
+	}
 	QDataStream out(&qf);
+	//out.setVersion(QDataStream::Qt_5_9);
 	for (uint i = 0; i < m_sequence.size(); i++) {
 		out << m_sequence[i].serial;
 		out << m_sequence[i].timestamp;
@@ -327,27 +365,32 @@ void KSkeleton::saveToBinary() const
 			out << m_sequence[i].joints[j];
 		}
 	}
-	//qf.flush();
 	qf.close();
+	cout << "Size of saved sequence: " << m_sequence.size() << endl;
 }
 
 void KSkeleton::loadFromBinary()
 {
+	m_sequence.clear();
 	QFile qf("sequences.txt");
 	if (!qf.open(QIODevice::ReadOnly)) {
 		cout << "Cannot read from sequences.txt file." << endl;
 		return;
 	}
+	else {
+		cout << "Loading from sequences.txt" << endl;
+	}
 	QDataStream in(&qf);
+	//in.setVersion(QDataStream::Qt_5_9);
 	for (uint i = 0; i < m_sequence.size(); i++) {
 		in >> m_sequence[i].serial;
 		in >> m_sequence[i].timestamp;
 		for (uint j = 0; j < NUM_MARKERS; j++) {
 			in >> m_sequence[i].joints[j];
-		}
-		
+		}		
 	}
 	qf.close();
+	cout << "Size of loaded sequence: " << m_sequence.size() << endl;
 }
 
 void KSkeleton::resetRecordVariables()

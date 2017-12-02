@@ -48,8 +48,10 @@ private:
 	uint m_consecutiveFails = 0;
 
 	uint m_acquiredFrames = 0;
-	INT64 m_firstRelativeTime;
-	INT64 m_lastRelativeTime;
+	double m_relativeTimeOffset;
+	double m_lastRelativeTime;
+	double m_totalRelativeTime;
+	double m_averageInterval = 0;
 
 	uint m_acceptedFrames = 0;
 	double m_totalTime = 0;

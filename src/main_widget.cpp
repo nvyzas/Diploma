@@ -21,11 +21,16 @@
 // Standard C/C++
 #include <cassert>
 
-MainWidget::MainWidget(QWidget *parent) : QOpenGLWidget(parent)
+MainWidget::MainWidget(QWidget *parent)
+	: QOpenGLWidget(parent)
+	,m_timer(this)
 {
 	m_Mesh = new SkinnedMesh();
 	m_VAO = 0;
 	ZERO_MEM(m_Buffers);
+
+	m_timer.setTimerType(Qt::PreciseTimer);
+	connect(&m_timer, SIGNAL(timeout()), this, SLOT(updateIndirect()));
 }
 MainWidget::~MainWidget()
 {
@@ -142,7 +147,8 @@ void MainWidget::paintGL()
 	glClearColor(0.f, 0.f, 0.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	m_ksensor->getBodyData();
+	if (m_modeOfOperation==Mode::CAPTURE) m_ksensor->getBodyData();
+	else m_ksensor->skeleton()->nextActiveFrame();
 	/*
 	m_Skin->enable();
 	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
@@ -202,9 +208,32 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_G:
 		if (!m_ksensor->getBodyData()) cout << "Could not update kinect data." << endl;
 		break;
-	case Qt::Key_Space:
-		m_play = !m_play;
-		cout << "Play " << (m_play ? "ON" : "OFF") << endl;
+	case Qt::Key_L:
+		m_ksensor->skeleton()->loadFromBinary();
+		break;
+	case Qt::Key_M:
+		if (m_modeOfOperation == Mode::CAPTURE) {
+			m_modeOfOperation = Mode::PLAYBACK;
+			m_timer.setInterval((int)(m_ksensor->skeleton()->timeStep() * 1000));
+			cout << "Mode: PLAYBACK" << endl;
+		}
+		else {
+			m_modeOfOperation = Mode::CAPTURE;
+			m_timer.setInterval((int)(m_ksensor->skeleton()->timeStep() * 1000));
+			cout << "Mode: CAPTURE" << endl;
+		}
+		break;
+	case Qt::Key_P:
+		if (m_play) {
+			m_play = false;
+			cout << "Play: OFF" << endl;
+			m_timer.stop();
+		}
+		else {
+			m_play = true;
+			cout << "Play: ON" << endl;
+			m_timer.start();
+		}
 		break;
 	case Qt::Key_R:
 		m_ksensor->record();
@@ -214,12 +243,6 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		break;
 	case Qt::Key_T:
 		m_ksensor->skeleton()->createTRC();
-		break;
-	case Qt::Key_L:
-		m_ksensor->skeleton()->loadFromBinary();
-		break;
-	case Qt::Key_P:
-		m_ksensor->skeleton()->printSequence();
 		break;
 	case Qt::Key_Escape:
 		event->ignore();	// event passed to MainWidget's parent (MainWindow)
@@ -504,4 +527,7 @@ void MainWidget::setKSensor(KSensor &ksensor)
 {
 	m_ksensor = &ksensor;
 }
-
+void MainWidget::updateIndirect()
+{
+	update();
+}

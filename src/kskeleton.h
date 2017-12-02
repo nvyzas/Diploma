@@ -109,7 +109,7 @@ public:
 	void addFrame(const Joint *joints, const JointOrientation *orientations, const double &time);
 	void drawActiveJoint();
 	void drawSkeleton(uint id);
-	void initJoints();
+	void initJointHierarchy();
 	bool initOGL();
 	void nextJoint(int step);
 	void printInfo() const;
@@ -118,11 +118,18 @@ public:
 	void printSequence() const;
 	bool createTRC();
 	bool readTRC();
-	void setActiveFrame(uint progressPercent);
+
+	uint activeFrame() const;
+	void setActiveFrame(uint index);
+	void setActiveFrame(float progressPercent);
+	void nextActiveFrame();
+	double timeStep() const;
+	void setTimestep(double timestep);
 	void saveToBinary() const;
 	void loadFromBinary();
 	void resetRecordVariables();
 
+	bool m_playOn = false;
 	bool m_recordingOn = false;
 	bool m_filteringOn = true;
 private:
@@ -142,7 +149,7 @@ private:
 	uint m_activeJoint = JointType_SpineBase;
 
 	// Savitzky-Golay filter
-	const double m_timeStep = 0.03;
+	double m_timeStep = 0.0333345;
 	static const int m_numPoints = 5;
 	// Cubic, Symmetric, 5 Points
 	float m_sgCoefficients[m_numPoints] = {-3, 12, 17, 12, -3 };
