@@ -178,7 +178,7 @@ private:
 	vector<Vector3f> m_corVecs; // correction vectors
 	vector<QQuaternion> m_corQuats; // correction quaternions 
 	vector<Matrix4f> m_corMats;
-	uint m_numBones;
+	uint m_numBones = 0; // crash if not 0
 	uint m_numKBones;
 	uint m_numVertices; // total number of vertices
 	unsigned long long m_vertexArrayBytes;

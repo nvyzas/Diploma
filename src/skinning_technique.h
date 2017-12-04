@@ -6,29 +6,29 @@
 
 struct BaseLight
 {
-    Vector3f Color;
+    QVector3D Color;
     float AmbientIntensity;
     float DiffuseIntensity;
 
     BaseLight()
     {
-        Color = Vector3f(0.0f, 0.0f, 0.0f);
+        Color = QVector3D(0.0f, 0.0f, 0.0f);
         AmbientIntensity = 0.0f;
         DiffuseIntensity = 0.0f;
     }
 };
 struct DirectionalLight : public BaseLight
 {        
-    Vector3f Direction;
+	QVector3D Direction;
 
     DirectionalLight()
     {
-        Direction = Vector3f(0.0f, 0.0f, 0.0f);
+        Direction = QVector3D(0.0f, 0.0f, 0.0f);
     }
 };
 struct PointLight : public BaseLight
 {
-    Vector3f Position;
+	QVector3D Position;
 
     struct
     {
@@ -39,7 +39,7 @@ struct PointLight : public BaseLight
 
     PointLight()
     {
-        Position = Vector3f(0.0f, 0.0f, 0.0f);
+        Position = QVector3D(0.0f, 0.0f, 0.0f);
         Attenuation.Constant = 1.0f;
         Attenuation.Linear = 0.0f;
         Attenuation.Exp = 0.0f;
@@ -47,12 +47,12 @@ struct PointLight : public BaseLight
 };
 struct SpotLight : public PointLight
 {
-    Vector3f Direction;
+	QVector3D Direction;
     float Cutoff;
 
     SpotLight()
     {
-        Direction = Vector3f(0.0f, 0.0f, 0.0f);
+        Direction = QVector3D(0.0f, 0.0f, 0.0f);
         Cutoff = 0.0f;
     }
 };
@@ -71,7 +71,7 @@ public:
     void SetDirectionalLight(const DirectionalLight& Light);
     void SetPointLights(uint NumLights, const PointLight* pLights);
     void SetSpotLights(uint NumLights, const SpotLight* pLights);
-    void SetEyeWorldPos(const Vector3f& EyeWorldPos);
+    void SetEyeWorldPos(const QVector3D& EyeWorldPos);
     void SetMatSpecularIntensity(float Intensity);
     void SetMatSpecularPower(float Power);
     void setBoneTransform(uint Index, const Matrix4f& Transform);

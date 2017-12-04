@@ -167,16 +167,16 @@ void SkinningTechnique::SetColorTextureUnit(uint TextureUnit)
 }
 void SkinningTechnique::SetDirectionalLight(const DirectionalLight& Light)
 {
-    glUniform3f(m_dirLightLocation.Color, Light.Color.x, Light.Color.y, Light.Color.z);
+    glUniform3f(m_dirLightLocation.Color, Light.Color.x(), Light.Color.y(), Light.Color.z());
     glUniform1f(m_dirLightLocation.AmbientIntensity, Light.AmbientIntensity);
-    Vector3f Direction = Light.Direction;
-    Direction.Normalize();
-    glUniform3f(m_dirLightLocation.Direction, Direction.x, Direction.y, Direction.z);
+	QVector3D Direction = Light.Direction;
+    Direction.normalize();
+    glUniform3f(m_dirLightLocation.Direction, Direction.x(), Direction.y(), Direction.z());
     glUniform1f(m_dirLightLocation.DiffuseIntensity, Light.DiffuseIntensity);
 }
-void SkinningTechnique::SetEyeWorldPos(const Vector3f& EyeWorldPos)
+void SkinningTechnique::SetEyeWorldPos(const QVector3D& EyeWorldPos)
 {
-    glUniform3f(m_eyeWorldPosLocation, EyeWorldPos.x, EyeWorldPos.y, EyeWorldPos.z);
+    glUniform3f(m_eyeWorldPosLocation, EyeWorldPos.x(), EyeWorldPos.y(), EyeWorldPos.z());
 }
 void SkinningTechnique::SetMatSpecularIntensity(float Intensity)
 {
@@ -191,10 +191,10 @@ void SkinningTechnique::SetPointLights(uint NumLights, const PointLight* pLights
     glUniform1i(m_numPointLightsLocation, NumLights);
     
     for (unsigned int i = 0 ; i < NumLights ; i++) {
-        glUniform3f(m_pointLightsLocation[i].Color, pLights[i].Color.x, pLights[i].Color.y, pLights[i].Color.z);
+        glUniform3f(m_pointLightsLocation[i].Color, pLights[i].Color.x(), pLights[i].Color.y(), pLights[i].Color.z());
         glUniform1f(m_pointLightsLocation[i].AmbientIntensity, pLights[i].AmbientIntensity);
         glUniform1f(m_pointLightsLocation[i].DiffuseIntensity, pLights[i].DiffuseIntensity);
-        glUniform3f(m_pointLightsLocation[i].Position, pLights[i].Position.x, pLights[i].Position.y, pLights[i].Position.z);
+        glUniform3f(m_pointLightsLocation[i].Position, pLights[i].Position.x(), pLights[i].Position.y(), pLights[i].Position.z());
         glUniform1f(m_pointLightsLocation[i].Atten.Constant, pLights[i].Attenuation.Constant);
         glUniform1f(m_pointLightsLocation[i].Atten.Linear, pLights[i].Attenuation.Linear);
         glUniform1f(m_pointLightsLocation[i].Atten.Exp, pLights[i].Attenuation.Exp);
@@ -205,13 +205,13 @@ void SkinningTechnique::SetSpotLights(uint NumLights, const SpotLight* pLights)
     glUniform1i(m_numSpotLightsLocation, NumLights);
 
     for (unsigned int i = 0 ; i < NumLights ; i++) {
-        glUniform3f(m_spotLightsLocation[i].Color, pLights[i].Color.x, pLights[i].Color.y, pLights[i].Color.z);
+        glUniform3f(m_spotLightsLocation[i].Color, pLights[i].Color.x(), pLights[i].Color.y(), pLights[i].Color.z());
         glUniform1f(m_spotLightsLocation[i].AmbientIntensity, pLights[i].AmbientIntensity);
         glUniform1f(m_spotLightsLocation[i].DiffuseIntensity, pLights[i].DiffuseIntensity);
-        glUniform3f(m_spotLightsLocation[i].Position,  pLights[i].Position.x, pLights[i].Position.y, pLights[i].Position.z);
-        Vector3f Direction = pLights[i].Direction;
-        Direction.Normalize();
-        glUniform3f(m_spotLightsLocation[i].Direction, Direction.x, Direction.y, Direction.z);
+        glUniform3f(m_spotLightsLocation[i].Position,  pLights[i].Position.x(), pLights[i].Position.y(), pLights[i].Position.z());
+		QVector3D Direction = pLights[i].Direction;
+        Direction.normalize();
+        glUniform3f(m_spotLightsLocation[i].Direction, Direction.x(), Direction.y(), Direction.z());
         glUniform1f(m_spotLightsLocation[i].Cutoff, cosf(ToRadian(pLights[i].Cutoff)));
         glUniform1f(m_spotLightsLocation[i].Atten.Constant, pLights[i].Attenuation.Constant);
         glUniform1f(m_spotLightsLocation[i].Atten.Linear,   pLights[i].Attenuation.Linear);

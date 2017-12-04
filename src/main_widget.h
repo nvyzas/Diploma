@@ -43,6 +43,8 @@ public slots:
 	void setRenderModel(bool state);
 	void setModelName(const QString &modelName);
 	void setModelSkinning(bool state);
+
+	void changeMode();
 	void updateIndirect();
 	
 protected:
@@ -59,17 +61,19 @@ private:
 		CAPTURE,
 		PLAYBACK
 	};
-
-	Mode m_modeOfOperation = Mode::CAPTURE;
 	QTimer m_timer;
-	uint m_frameIndex = 0;
+
+	Mode m_modeOfOperation;
+	const uint m_captureInterval = 10; // milliseconds
+	uint m_playbackInterval;
+
 
 	KSensor *m_ksensor;
 	Camera *m_Cam;
 	Technique *m_Tech;
 	SkinningTechnique *m_Skin;
 	Pipeline *m_Pipe;
-	//OpenSimModel m_osm;
+	OpenSimModel m_osm;
 	
 	QPoint m_lastPos;
 

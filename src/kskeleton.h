@@ -9,10 +9,11 @@
 #include <Kinect.h>
 
 // Qt
+//#include <QtCore\QVector>
 class QFile;
 
 // Standard C/C++
-#include <vector>
+//#include <vector>
 #include <array>
 
 #define INVALID_JOINT_ID -1
@@ -44,7 +45,7 @@ struct KNode
 struct KJoint
 {
 	uint id; // probably not needed
-	Vector3f position;
+	QVector3D position;
 	uint trackingState;  // #! uint defined in qglobal.h
 	QQuaternion orientation;
 
@@ -56,7 +57,7 @@ struct KJoint
 	{
 	}
 
-	string getTrackingState() const
+	QString getTrackingState() const
 	{
 		if (trackingState == TrackingState_Tracked) return "Tracked";
 		else if (trackingState == TrackingState_Inferred) return "Inferred";
@@ -65,17 +66,17 @@ struct KJoint
 
 	void print() const
 	{
-		cout << "position: " << setw(25) << position.ToString() << getTrackingState() <<  endl;
+		qDebug() << "position: " << position << getTrackingState();
 	}
 
 	void printOrientation() const
 	{
-		cout << "orientation: " << printQuaternion1(orientation) << printQuaternion2(orientation) << printQuaternion3(orientation) << endl;
+		qDebug() << "orientation: " << toString(orientation) << toStringEulerAngles(orientation) << toStringAxisAngle(orientation);
 	}
 };
 
-QDataStream& operator<<(QDataStream& out, const KJoint& jt);
-QDataStream& operator>>(QDataStream& in, const KJoint& jt);
+QDataStream& operator<<(QDataStream& out, const KJoint& joint);
+QDataStream& operator>>(QDataStream& in, const KJoint& joint);
 
 struct KFrame
 {
@@ -93,14 +94,17 @@ struct KFrame
 		if (interpolationTime < previous.timestamp) cout << "interpolation time < previous frame time " << interpolationTime << " < " << previous.timestamp << endl;*/
 
 		for (uint i = 0; i < NUM_MARKERS; i++) {
-			joints[i].position.x = previous.joints[i].position.x + percentDistance * (next.joints[i].position.x - previous.joints[i].position.x);
-			joints[i].position.y = previous.joints[i].position.y + percentDistance * (next.joints[i].position.y - previous.joints[i].position.y);
-			joints[i].position.z = previous.joints[i].position.z + percentDistance * (next.joints[i].position.z - previous.joints[i].position.z);
+			joints[i].position.setX(previous.joints[i].position.x() + percentDistance * (next.joints[i].position.x() - previous.joints[i].position.x()));
+			joints[i].position.setY(previous.joints[i].position.y() + percentDistance * (next.joints[i].position.y() - previous.joints[i].position.y()));
+			joints[i].position.setZ(previous.joints[i].position.z() + percentDistance * (next.joints[i].position.z() - previous.joints[i].position.z()));
 		}
 		timestamp = interpolationTime;
 		serial = next.serial;
 	}
 };
+
+QDataStream& operator<<(QDataStream& out, const KFrame& frame);
+QDataStream& operator>>(QDataStream& in, const KFrame& frame);
 
 class KSkeleton: protected OPENGL_FUNCTIONS
 {
@@ -135,10 +139,10 @@ public:
 private:
 	array<KNode, NUM_MARKERS> m_nodes; // these define the kinect skeleton hierarchy
 	array<KJoint, NUM_MARKERS> m_joints;
-	vector<KFrame> m_sequence;
-	vector<KFrame> m_interpolatedSequence;
-	vector<KFrame> m_filteredInterpolatedSequence;
-	vector<KFrame> m_filteredSequence;
+	QVector<KFrame> m_sequence;
+	QVector<KFrame> m_interpolatedSequence;
+	QVector<KFrame> m_filteredInterpolatedSequence;
+	QVector<KFrame> m_filteredSequence;
 
 	uint m_activeFrame;
 

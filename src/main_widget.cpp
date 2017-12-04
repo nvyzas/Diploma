@@ -29,8 +29,12 @@ MainWidget::MainWidget(QWidget *parent)
 	m_VAO = 0;
 	ZERO_MEM(m_Buffers);
 
+
 	m_timer.setTimerType(Qt::PreciseTimer);
 	connect(&m_timer, SIGNAL(timeout()), this, SLOT(updateIndirect()));
+	m_modeOfOperation = Mode::CAPTURE;
+	m_timer.setInterval(m_captureInterval);
+	m_timer.start();
 }
 MainWidget::~MainWidget()
 {
@@ -47,6 +51,7 @@ MainWidget::~MainWidget()
 // This virtual function is called once before the first call to paintGL() or resizeGL().
 void MainWidget::initializeGL()
 {
+	m_playbackInterval = m_ksensor->skeleton()->timeStep() * 1000;
 	m_Cam = new Camera();
 	m_Tech = new Technique();
 	m_Skin = new SkinningTechnique();
@@ -128,10 +133,10 @@ void MainWidget::MySetup()
 	m_Skin->enable();
 	m_Skin->SetColorTextureUnit(0);
 	DirectionalLight directionalLight;
-	directionalLight.Color = Vector3f(1.0f, 1.0f, 1.0f);
+	directionalLight.Color = QVector3D(1.f, 1.f, 1.f);
 	directionalLight.AmbientIntensity = 0.7f;
 	directionalLight.DiffuseIntensity = 0.9f;
-	directionalLight.Direction = Vector3f(0.0f, -1.0, 0.0);
+	directionalLight.Direction = QVector3D(0.f, -1.f, 0.f);
 	m_Skin->SetDirectionalLight(directionalLight);
 	m_Skin->SetMatSpecularIntensity(0.0f);
 	m_Skin->SetMatSpecularPower(0);
@@ -171,7 +176,6 @@ void MainWidget::paintGL()
 
 	//if (m_renderCameraVectors)		m_Cam->DrawCameraVectors();
 	//*/
-	update();
 }
 void MainWidget::keyPressEvent(QKeyEvent *event)
 {
@@ -189,7 +193,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		m_Tech->enable();
 		m_Tech->SetDefault(m_Pipe->GetVPTrans());
 		break;
-	case Qt::Key_0:
+	/*case Qt::Key_0:
 	case Qt::Key_1:
 	case Qt::Key_2:
 	case Qt::Key_3:
@@ -201,9 +205,22 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_9:
 		m_Mesh->flipParameter(key - Qt::Key_0);
 		Transform(true);
+		break;*/
+	case Qt::Key_1:
+		m_playbackInterval *= 2;
+		cout << "Playback interval: " << m_playbackInterval << endl;
+		m_timer.setInterval(m_playbackInterval);
+		break;
+	case Qt::Key_3:
+		m_playbackInterval /=2;
+		cout << "Playback interval: " << m_playbackInterval << endl;
+		m_timer.setInterval(m_playbackInterval);
 		break;
 	case Qt::Key_C:
 		if (!m_ksensor->connect()) cout << "Could not connect to kinect sensor." << endl;
+		break;
+	case Qt::Key_F:
+		m_ksensor->skeleton()->m_filteringOn = !m_ksensor->skeleton()->m_filteringOn;
 		break;
 	case Qt::Key_G:
 		if (!m_ksensor->getBodyData()) cout << "Could not update kinect data." << endl;
@@ -212,16 +229,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		m_ksensor->skeleton()->loadFromBinary();
 		break;
 	case Qt::Key_M:
-		if (m_modeOfOperation == Mode::CAPTURE) {
-			m_modeOfOperation = Mode::PLAYBACK;
-			m_timer.setInterval((int)(m_ksensor->skeleton()->timeStep() * 1000));
-			cout << "Mode: PLAYBACK" << endl;
-		}
-		else {
-			m_modeOfOperation = Mode::CAPTURE;
-			m_timer.setInterval((int)(m_ksensor->skeleton()->timeStep() * 1000));
-			cout << "Mode: CAPTURE" << endl;
-		}
+		changeMode();
 		break;
 	case Qt::Key_P:
 		if (m_play) {
@@ -240,6 +248,9 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		break;
 	case Qt::Key_S:
 		m_ksensor->skeleton()->saveToBinary();
+		break;
+	case Qt::Key_Q:
+		m_ksensor->skeleton()->printSequence();
 		break;
 	case Qt::Key_T:
 		m_ksensor->skeleton()->createTRC();
@@ -334,11 +345,11 @@ void MainWidget::DrawAxes(Vector3f origin, Vector3f vx, Vector3f vy, Vector3f vz
 }
 void MainWidget::DrawTestAxes()
 {
-	Vector3f o(0.0f, 0.0f, 0.0f);
+	Vector3f origin(0.0f, 0.0f, 0.0f);
 	Vector3f vx = Vector3f::UnitX;
 	Vector3f vy = Vector3f::UnitY;
 	Vector3f vz = Vector3f::UnitZ;
-	DrawAxes(o, vx, vy, vz, 1);
+	DrawAxes(origin, vx, vy, vz, 1);
 	Matrix4f R;
 	R.InitRotateTransform(45, 0, 0);
 }
@@ -530,4 +541,18 @@ void MainWidget::setKSensor(KSensor &ksensor)
 void MainWidget::updateIndirect()
 {
 	update();
+}
+void MainWidget::changeMode()
+{
+		if (m_modeOfOperation == Mode::CAPTURE) {
+			m_modeOfOperation = Mode::PLAYBACK;
+			m_timer.setInterval(m_playbackInterval);
+			cout << "Mode: PLAYBACK" << endl;
+		}
+		else {
+			m_modeOfOperation = Mode::CAPTURE;
+			m_timer.setInterval(m_captureInterval);
+			cout << "Mode: CAPTURE" << endl;
+		}
+		m_timer.start();
 }

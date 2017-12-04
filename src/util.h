@@ -48,9 +48,11 @@ inline bool getBit(int number, int position)
 	return (number >> position) & 0;
 }
 float wrapAngle(float angle, float limit);
-string printQuaternion1(const QQuaternion &q);
-string printQuaternion2(const QQuaternion &q);
-string printQuaternion3(const QQuaternion &q);
+QString toString(const QQuaternion &q);
+QString toStringEulerAngles(const QQuaternion &q);
+QString toStringAxisAngle(const QQuaternion &q);
+QString toStringCartesian(const QVector3D &v);
+QString toStringSpherical(const QVector3D &v);
 double ticksToMilliseconds(clock_t ticks);
 
 #endif	/* UTIL_H */

@@ -1,4 +1,7 @@
+// Own
 #include "camera.h"
+
+// Standard C/C++
 #include <iostream>
 
 using namespace std;
@@ -15,21 +18,21 @@ Camera::Camera()
 	m_theta		   = 90.0f;
 	m_phi		   = 90.0f;
 	UpdateCartesian();
-	m_offset	   = Vector3f(0.0f, 0.0f, 2.0f); 
-	m_center       = Vector3f(0.0f, 0.0f, 2.0f); // focus point of camera
-    m_up           = Vector3f(0.0f, 1.0f, 0.0f); // direction of up vector
+	m_offset	   = QVector3D(0.0f, 0.0f, 2.0f);
+	m_center       = QVector3D(0.0f, 0.0f, 2.0f); // focus point of camera
+    m_up           = QVector3D(0.0f, 1.0f, 0.0f); // direction of up vector
 	UpdateCamera();
 }
 // use it after setting XYZ, offset, center and up
 void Camera::UpdateCamera() {
 	m_pos = GetXYZ() + m_offset;
 	m_target = m_center - m_pos;
-	m_target.Normalize();
+	m_target.normalize();
 	//m_up = Vector3f(sin(90.0f-m_Phi)*cos(180.0f+m_Theta), cos(m_Phi), -sin(m_Phi)*sin(m_Theta));
 	//m_up = (m_Phi == 180.0f || m_Phi == 360.0f) ? m_up*(-1) : m_up;
-	m_up.Normalize();
-	m_right = m_target.Cross(m_up);
-	m_right.Normalize();
+	m_up.normalize();
+	m_right = QVector3D::crossProduct(m_target, m_up);
+	m_right.normalize();
 }
 void Camera::UpdateSpherical()
 {
@@ -142,21 +145,21 @@ void Camera::onMouseWheel(int degrees, bool print)
 	if (print) PrintInfo();
 	//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
 }
-void Camera::Setup(const Vector3f& Pos, const Vector3f& Center, const Vector3f& Up)
+void Camera::Setup(const QVector3D& Pos, const QVector3D& Center, const QVector3D& Up)
 {
 	m_pos = Pos;
 	m_center = Center;
 	m_up = Up;
-	m_up.Normalize();
+	m_up.normalize();
 	m_target = m_center - m_pos;
-	m_target.Normalize();
+	m_target.normalize();
 }
 void Camera::PrintInfo()
 {
-	cout << "Camera:" << endl;
-	cout << "RTF      = " << setw(30) << GetRTF().ToString() << " XYZ    = " << setw(30) << GetXYZ().ToString() << " Offset   = " << m_offset.ToString() << endl;
-	cout << "Position = " << setw(30) << m_pos.ToString()    << " Center = " << setw(30) << m_center.ToString() << " Distance = " << m_pos.DistanceFrom(m_center) << endl;
-	cout << "Target   = " << setw(30) << m_target.ToString() << " Up     = " << setw(30) << m_up.ToString()     << " Right    = " << m_right.ToString() << endl;
+	qDebug() << "Camera:";
+	qDebug() << "RTF      = " << toStringSpherical(GetRTF()) << " XYZ    = " << toStringCartesian(GetXYZ()) << " Offset   = " << toStringCartesian(m_offset);
+	qDebug() << "Position = " << toStringCartesian(m_pos)    << " Center = " << toStringCartesian(m_center) << " Distance = " << m_pos.distanceToPoint(m_center);
+	qDebug() << "Target   = " << toStringCartesian(m_target) << " Up     = " << toStringCartesian(m_up)     << " Right    = " << toStringCartesian(m_right);
 	//cout << "Step=" << m_Step << " AngleStep(degrees)=" << m_angleStep << endl;
 }
 //void Camera::DrawCameraVectors()

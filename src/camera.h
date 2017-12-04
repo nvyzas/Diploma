@@ -1,8 +1,12 @@
 #ifndef CAMERA_H
 #define	CAMERA_H
 
+// Project
 #include "math_3d.h"
 #include "util.h"
+
+// Qt
+#include "QtGui\QVector3D"
 
 class Camera
 {
@@ -12,30 +16,30 @@ public:
 	void onKeyboardArrow(int key, bool print);
 	void onMouseWheel(int degrees, bool print);
 	void PrintInfo();
-	void Setup(const Vector3f& Pos, const Vector3f& Center, const Vector3f& Up);
+	void Setup(const QVector3D& Pos, const QVector3D& Center, const QVector3D& Up);
 
 	void rotateRight(float mult);
 	void rotateUp(float mult);
 
-    const Vector3f& GetPos() const
+    const QVector3D& GetPos() const
     {
         return m_pos;
     }
 
-    const Vector3f& GetTarget() const
+    const QVector3D& GetTarget() const
     {
         return m_target;
     }
 
-    const Vector3f& GetUp() const
+    const QVector3D& GetUp() const
     {
         return m_up;
     }
-	const Vector3f& GetRight() const
+	const QVector3D& GetRight() const
 	{
 		return m_right;
 	}
-	const Vector3f& GetCenter() const
+	const QVector3D& GetCenter() const
 	{
 		return m_center;
 	}
@@ -47,7 +51,7 @@ public:
 	{
 		return m_windowHeight;
 	}
-	void SetCam(const Vector3f &Pos, const Vector3f &Target, const Vector3f &Up)
+	void SetCam(const QVector3D &Pos, const QVector3D &Target, const QVector3D &Up)
 	{
 		m_pos = Pos;
 		m_target = Target;
@@ -62,28 +66,28 @@ public:
 	float m_rho;
 	float m_theta;
 	float m_phi;
-	Vector3f m_offset;
-	Vector3f GetXYZ() const
+	QVector3D m_offset;
+	QVector3D GetXYZ() const
 	{
-		return Vector3f(m_x, m_y, m_z);
+		return QVector3D(m_x, m_y, m_z);
 	}
-	Vector3f GetRTF() const
+	QVector3D GetRTF() const
 	{
-		return Vector3f(m_rho, m_theta, m_phi);
+		return QVector3D(m_rho, m_theta, m_phi);
 	}
 	void UpdateCamera();
 	//void DrawCameraVectors();
 
 private:
-    Vector3f m_pos;
-    Vector3f m_target;
-    Vector3f m_up;
-	Vector3f m_right;
+	QVector3D m_pos;
+	QVector3D m_target;
+	QVector3D m_up;
+	QVector3D m_right;
 	
     int m_windowWidth;
     int m_windowHeight;
 
-	Vector3f m_center;
+	QVector3D m_center;
 	void UpdateCartesian();
 	void UpdateSpherical();	// not used atm
 };

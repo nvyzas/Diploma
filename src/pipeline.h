@@ -6,15 +6,15 @@
 
 struct Orientation
 {
-    Vector3f m_scale;
-    Vector3f m_rotation;
-    Vector3f m_pos;       
+	QVector3D m_scale;
+	QVector3D m_rotation;
+	QVector3D m_pos;
     
     Orientation()
     {
-        m_scale    = Vector3f(1.0f, 1.0f, 1.0f);
-        m_rotation = Vector3f(0.0f, 0.0f, 0.0f);
-        m_pos      = Vector3f(0.0f, 0.0f, 0.0f);
+        m_scale    = QVector3D(1.0f, 1.0f, 1.0f);
+        m_rotation = QVector3D(0.0f, 0.0f, 0.0f);
+        m_pos      = QVector3D(0.0f, 0.0f, 0.0f);
     }
 };
 
@@ -24,9 +24,9 @@ class Pipeline
 public:
     Pipeline()
     {
-        m_scale      = Vector3f(1.0f, 1.0f, 1.0f);
-        m_worldPos   = Vector3f(0.0f, 0.0f, 0.0f);
-        m_rotateInfo = Vector3f(0.0f, 0.0f, 0.0f);
+        m_scale      = QVector3D(1.0f, 1.0f, 1.0f);
+        m_worldPos   = QVector3D(0.0f, 0.0f, 0.0f);
+        m_rotateInfo = QVector3D(0.0f, 0.0f, 0.0f);
     }
 
     void Scale(float s)
@@ -34,40 +34,40 @@ public:
         Scale(s, s, s);
     }
     
-    void Scale(const Vector3f& scale)
+    void Scale(const QVector3D& scale)
     {
-        Scale(scale.x, scale.y, scale.z);
+        Scale(scale.x(), scale.y(), scale.z());
     }
     
     void Scale(float ScaleX, float ScaleY, float ScaleZ)
     {
-        m_scale.x = ScaleX;
-        m_scale.y = ScaleY;
-        m_scale.z = ScaleZ;
+        m_scale.setX(ScaleX);
+        m_scale.setY(ScaleY);
+        m_scale.setZ(ScaleZ);
     }
 
     void WorldPos(float x, float y, float z)
     {
-        m_worldPos.x = x;
-        m_worldPos.y = y;
-        m_worldPos.z = z;
+        m_worldPos.setX(x);
+        m_worldPos.setY(y);
+        m_worldPos.setZ(z);
     }
     
-    void WorldPos(const Vector3f& Pos)
+    void WorldPos(const QVector3D& Pos)
     {
         m_worldPos = Pos;
     }
 
     void Rotate(float RotateX, float RotateY, float RotateZ)
     {
-        m_rotateInfo.x = RotateX;
-        m_rotateInfo.y = RotateY;
-        m_rotateInfo.z = RotateZ;
+        m_rotateInfo.setX(RotateX);
+        m_rotateInfo.setY(RotateY);
+        m_rotateInfo.setZ(RotateZ);
     }
     
-    void Rotate(const Vector3f& r)
+    void Rotate(const QVector3D& r)
     {
-        Rotate(r.x, r.y, r.z);
+        Rotate(r.x(), r.y(), r.z());
     }
 
     void SetPerspectiveProj(const PersProjInfo& p)
@@ -80,7 +80,7 @@ public:
         m_orthoProjInfo = p;
     }    
 
-    void SetCamera(const Vector3f& Pos, const Vector3f& Target, const Vector3f& Up)
+    void SetCamera(const QVector3D& Pos, const QVector3D& Target, const QVector3D& Up)
     {
         m_camera.Pos = Pos;
         m_camera.Target = Target;
@@ -109,17 +109,17 @@ public:
     const Matrix4f& GetProjTrans();
 
 private:
-    Vector3f m_scale;
-    Vector3f m_worldPos;
-    Vector3f m_rotateInfo;
+	QVector3D m_scale;
+	QVector3D m_worldPos;
+	QVector3D m_rotateInfo;
 
     PersProjInfo m_persProjInfo;
     OrthoProjInfo m_orthoProjInfo;
 
     struct {
-        Vector3f Pos;
-        Vector3f Target;
-        Vector3f Up;
+		QVector3D Pos;
+		QVector3D Target;
+		QVector3D Up;
     } m_camera;
 
     Matrix4f m_WVPtransformation;

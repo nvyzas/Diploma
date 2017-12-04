@@ -53,6 +53,8 @@ private:
 	double m_totalRelativeTime;
 	double m_averageInterval = 0;
 
+	uint captureInterval = 10; // milliseconds
+
 	uint m_acceptedFrames = 0;
 	double m_totalTime = 0;
 	clock_t m_ticksNow;

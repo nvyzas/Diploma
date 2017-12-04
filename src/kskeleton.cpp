@@ -8,14 +8,31 @@
 // Qt
 #include <QtCore/QFile>
 
-QDataStream& operator<<(QDataStream& out, const KJoint& jt)
+QDataStream& operator<<(QDataStream& out, const KJoint& joint)
 {
-	out << jt.position << jt.trackingState;
+	out << joint.position << joint.trackingState;
 	return out;
 }
-QDataStream& operator>>(QDataStream& in, const KJoint& jt)
+QDataStream& operator>>(QDataStream& in, KJoint& joint)
 {
-	in << jt.position << jt.trackingState;
+	in >> joint.position >> joint.trackingState;
+	return in;
+}
+
+QDataStream& operator<<(QDataStream& out, const KFrame& frame)
+{
+	out << frame.serial << frame.timestamp;
+	for (uint i = 0; i < NUM_MARKERS; i++) {
+		out << frame.joints[i];
+	}
+	return out;
+}
+QDataStream& operator>>(QDataStream& in, KFrame& frame)
+{
+	in >> frame.serial >> frame.timestamp;
+	for (uint i = 0; i < NUM_MARKERS; i++) {
+		in >> frame.joints[i];
+	}
 	return in;
 }
 
@@ -31,7 +48,7 @@ void KSkeleton::addFrame(const Joint *joints, const JointOrientation *orientatio
 	for (uint i = 0; i < JointType_Count; i++) {
 		const Joint& jt = joints[i];
 		const JointOrientation& or = orientations[i];
-		m_joints[i].position = Vector3f(jt.Position.X, jt.Position.Y, jt.Position.Z);
+		m_joints[i].position = QVector3D(jt.Position.X, jt.Position.Y, jt.Position.Z);
 		m_joints[i].trackingState = jt.TrackingState;
 		m_joints[i].orientation = QQuaternion(or.Orientation.w, or.Orientation.x, or.Orientation.y, or.Orientation.z);
 	}
@@ -79,7 +96,7 @@ void KSkeleton::sgFilter()
 				filteredInterpolatedFrame.joints[i].position +=
 					m_interpolatedSequence[filteredIndex + j - m_numPoints / 2].joints[i].position *	m_sgCoefficients[j] * (1.f / 35.f);
 			}
-			cout << " PositionBefore=" << filteredInterpolatedFrame.joints[i].position.ToString();
+			qDebug() << " PositionBefore=" << filteredInterpolatedFrame.joints[i].position;
 			cout << endl;
 		}
 	}
@@ -137,9 +154,9 @@ bool KSkeleton::createTRC()
 	for (uint i = 0; i < m_sequence.size(); i++) {
 		out << "\n" << i << "\t" << m_sequence[i].timestamp;
 		for (int j = 0; j < NUM_MARKERS; j++) {
-			out << "\t" << m_sequence[i].joints[j].position.x*1000.;
-			out << "\t" << m_sequence[i].joints[j].position.y*1000.;
-			out << "\t" << m_sequence[i].joints[j].position.z*1000.;
+			out << "\t" << m_sequence[i].joints[j].position.x()*1000.f;
+			out << "\t" << m_sequence[i].joints[j].position.y()*1000.f;
+			out << "\t" << m_sequence[i].joints[j].position.z()*1000.f;
 		}
 	}
 	out << flush;
@@ -168,8 +185,8 @@ void KSkeleton::drawSkeleton(uint parentId)
 		const KJoint &child = m_joints[childId];
 		glBegin(GL_LINES);
 		glColor3f(0xFF, 0xFF, 0xFF);
-		glVertex3f(parent.position.x, parent.position.y, parent.position.z);
-		glVertex3f(child.position.x, child.position.y, child.position.z);
+		glVertex3f(parent.position.x(), parent.position.y(), parent.position.z());
+		glVertex3f(child.position.x(), child.position.y(), child.position.z());
 		glEnd();
 		drawSkeleton(childId);
 	}
@@ -178,24 +195,24 @@ void KSkeleton::drawSkeleton(uint parentId)
 void KSkeleton::drawActiveJoint()
 {
 	glBegin(GL_LINES);
-	const Vector3f &p = m_joints[m_activeJoint].position;
-	QVector3D qp(p.x, p.y, p.z);
+	const QVector3D &p = m_joints[m_activeJoint].position;
+	QVector3D qp(p.x(), p.y(), p.z());
 	const QQuaternion &q = m_joints[m_activeJoint].orientation;
 	QVector3D v;
 
 	v = q.rotatedVector(QVector3D(1.f, 0.f, 0.f)) + qp;
 	glColor3f(0xFF, 0xFF, 0);
-	glVertex3f(p.x, p.y, p.z);
+	glVertex3f(p.x(), p.y(), p.z());
 	glVertex3f(v.x(), v.y(), v.z());
 
 	v = q.rotatedVector(QVector3D(0.f, 1.f, 0.f)) + qp;
 	glColor3f(0, 0xFF, 0xFF);
-	glVertex3f(p.x, p.y, p.z);
+	glVertex3f(p.x(), p.y(), p.z());
 	glVertex3f(v.x(), v.y(), v.z());
 
 	v = q.rotatedVector(QVector3D(0.f, 0.f, 1.f)) + qp;
 	glColor3f(0xFF, 0, 0xFF);
-	glVertex3f(p.x, p.y, p.z);
+	glVertex3f(p.x(), p.y(), p.z());
 	glVertex3f(v.x(), v.y(), v.z());
 	glEnd();
 }
@@ -318,7 +335,14 @@ uint KSkeleton::activeFrame() const
 void KSkeleton::nextActiveFrame()
 {
 	//if (!m_playOn) return;
-	if (++m_activeFrame > m_interpolatedSequence.size()) m_activeFrame = 0;
+	if (++m_activeFrame > m_sequence.size()) m_activeFrame = 0;
+	if (m_filteringOn) {
+		m_joints = m_interpolatedSequence[m_activeFrame].joints;
+	}
+	else {
+		m_joints = m_filteredInterpolatedSequence[m_activeFrame].joints;
+	}
+	m_joints = m_sequence[m_activeFrame].joints;
 }
 void KSkeleton::setActiveFrame(uint index)
 {
@@ -354,41 +378,28 @@ void KSkeleton::saveToBinary() const
 		return;
 	}
 	else {
-		cout << "Saving to sequences.txt" << endl;
+		cout << "Saving to binary sequences.txt" << endl;
 	}
 	QDataStream out(&qf);
 	//out.setVersion(QDataStream::Qt_5_9);
-	for (uint i = 0; i < m_sequence.size(); i++) {
-		out << m_sequence[i].serial;
-		out << m_sequence[i].timestamp;
-		for (uint j = 0; j < NUM_MARKERS; j++) {
-			out << m_sequence[i].joints[j];
-		}
-	}
+	out << m_sequence;
 	qf.close();
 	cout << "Size of saved sequence: " << m_sequence.size() << endl;
 }
 
 void KSkeleton::loadFromBinary()
 {
-	m_sequence.clear();
 	QFile qf("sequences.txt");
 	if (!qf.open(QIODevice::ReadOnly)) {
 		cout << "Cannot read from sequences.txt file." << endl;
 		return;
 	}
 	else {
-		cout << "Loading from sequences.txt" << endl;
+		cout << "Loading from binary sequences.txt" << endl;
 	}
 	QDataStream in(&qf);
 	//in.setVersion(QDataStream::Qt_5_9);
-	for (uint i = 0; i < m_sequence.size(); i++) {
-		in >> m_sequence[i].serial;
-		in >> m_sequence[i].timestamp;
-		for (uint j = 0; j < NUM_MARKERS; j++) {
-			in >> m_sequence[i].joints[j];
-		}		
-	}
+	in >> m_sequence;
 	qf.close();
 	cout << "Size of loaded sequence: " << m_sequence.size() << endl;
 }
