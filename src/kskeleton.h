@@ -44,14 +44,14 @@ struct KNode
 
 struct KJoint
 {
-	uint id; // probably not needed
+	uint id; // #! maybe not needed
 	QVector3D position;
-	uint trackingState;  // #! uint defined in qglobal.h
+	uint trackingState;  
 	QQuaternion orientation;
 
 	KJoint()
 		:id(INVALID_JOINT_ID),
-		position(0.f,0.f,0.f),
+		position(0.f, 0.f, 0.f),
 		orientation(1.f, 0.f, 0.f, 0.f),
 		trackingState(0) // #? initial value = 0
 	{
@@ -66,7 +66,7 @@ struct KJoint
 
 	void print() const
 	{
-		qDebug() << "position: " << position << getTrackingState();
+		qDebug() << "position: " << toStringCartesian(position) << getTrackingState();
 	}
 
 	void printOrientation() const
@@ -80,23 +80,28 @@ QDataStream& operator>>(QDataStream& in, const KJoint& joint);
 
 struct KFrame
 {
-	uint serial; // serial number
+	uint serial; // serial number #! maybe not needed
 	double timestamp;
 	array<KJoint, NUM_MARKERS> joints;
 
 	// Interpolates this frame between frames "next" and "previous" at time "interpolationTime"
 	void interpolate(const KFrame& previous, const KFrame& next, double interpolationTime)
 	{
-		cout << "Interpolating between frame " << previous.serial << " and " << next.serial << " at time " << interpolationTime << endl;
-		double percentDistance = (interpolationTime - previous.timestamp) / (next.timestamp - previous.timestamp);
+		if (next.timestamp < previous.timestamp) cout << "Error: next.timestamp < previous.timestamp" << endl;
+		
+		double difference = interpolationTime - previous.timestamp;
+		double percentDifference = difference / (next.timestamp - previous.timestamp);
+		cout << (interpolationTime < next.timestamp ? "Interpolation " : "Extrapolation ");
+		cout << previous.serial << "-" << next.serial << " " << previous.timestamp << " " << next.timestamp;
+		cout << " @" << interpolationTime << " Difference=" << difference << "=" << percentDifference*100 << "%" << endl;
 		/*if (next.timestamp < previous.timestamp) cout << "next frame time < previous frame time !" << endl;
 		if (interpolationTime > next.timestamp) cout << "interpolation time > next frame time " << interpolationTime << " > " << next.timestamp << endl;
 		if (interpolationTime < previous.timestamp) cout << "interpolation time < previous frame time " << interpolationTime << " < " << previous.timestamp << endl;*/
 
 		for (uint i = 0; i < NUM_MARKERS; i++) {
-			joints[i].position.setX(previous.joints[i].position.x() + percentDistance * (next.joints[i].position.x() - previous.joints[i].position.x()));
-			joints[i].position.setY(previous.joints[i].position.y() + percentDistance * (next.joints[i].position.y() - previous.joints[i].position.y()));
-			joints[i].position.setZ(previous.joints[i].position.z() + percentDistance * (next.joints[i].position.z() - previous.joints[i].position.z()));
+			joints[i].position.setX(previous.joints[i].position.x() + percentDifference * (next.joints[i].position.x() - previous.joints[i].position.x()));
+			joints[i].position.setY(previous.joints[i].position.y() + percentDifference * (next.joints[i].position.y() - previous.joints[i].position.y()));
+			joints[i].position.setZ(previous.joints[i].position.z() + percentDifference * (next.joints[i].position.z() - previous.joints[i].position.z()));
 		}
 		timestamp = interpolationTime;
 		serial = next.serial;
@@ -127,15 +132,18 @@ public:
 	void setActiveFrame(uint index);
 	void setActiveFrame(float progressPercent);
 	void nextActiveFrame();
+	void getActiveFrame();
 	double timeStep() const;
 	void setTimestep(double timestep);
 	void saveToBinary() const;
 	void loadFromBinary();
-	void resetRecordVariables();
+	void clearSequences();
 
 	bool m_playOn = false;
 	bool m_recordingOn = false;
-	bool m_filteringOn = true;
+
+	bool m_playbackInterpolated = true;
+	bool m_playbackFiltered = false;
 private:
 	array<KNode, NUM_MARKERS> m_nodes; // these define the kinect skeleton hierarchy
 	array<KJoint, NUM_MARKERS> m_joints;

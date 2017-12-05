@@ -94,7 +94,8 @@ bool KSensor::connect()
 	hr = m_source->get_IsActive(&isActive);
 	if (SUCCEEDED(hr)) {
 		if (!isActive) cout << "Source is not active." << endl;
-	}else {
+	}
+	else {
 		cout << "Could not specify if source is active. hr = " << hr << endl;
 	}
 
@@ -285,7 +286,7 @@ void KSensor::record()
 		m_totalTime = 0;
 		m_averageInterval = 0;
 		m_fps = 0;
-		m_skeleton.resetRecordVariables();
+		m_skeleton.clearSequences();
 
 		m_skeleton.m_recordingOn = true;
 		cout << "Recording started." << endl;

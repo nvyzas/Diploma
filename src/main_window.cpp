@@ -221,7 +221,7 @@ void MainWindow::setupConnections()
 	connect(ui->checkBox_model, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setRenderModel(bool)));
 	
 	// Kinect
-	connect(m_timer, SIGNAL(timeout()), this, SLOT(getKinectData()));
+	//connect(m_timer, SIGNAL(timeout()), this, SLOT(getKinectData()));
 	connect(ui->horizontalSlider_progressPercent, SIGNAL(valueChanged(int)), SLOT(setActiveKinectSkeletonFrame(int)));
 }
 void MainWindow::getKinectData()

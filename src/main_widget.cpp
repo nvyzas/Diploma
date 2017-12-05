@@ -153,7 +153,7 @@ void MainWidget::paintGL()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	if (m_modeOfOperation==Mode::CAPTURE) m_ksensor->getBodyData();
-	else m_ksensor->skeleton()->nextActiveFrame();
+	else m_ksensor->skeleton()->getActiveFrame();
 	/*
 	m_Skin->enable();
 	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
@@ -176,6 +176,7 @@ void MainWidget::paintGL()
 
 	//if (m_renderCameraVectors)		m_Cam->DrawCameraVectors();
 	//*/
+	if (m_modeOfOperation == Mode::PLAYBACK) m_ksensor->skeleton()->nextActiveFrame();
 }
 void MainWidget::keyPressEvent(QKeyEvent *event)
 {
@@ -207,12 +208,12 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		Transform(true);
 		break;*/
 	case Qt::Key_1:
-		m_playbackInterval *= 2;
+		m_playbackInterval *= 4.f/3.f;
 		cout << "Playback interval: " << m_playbackInterval << endl;
 		m_timer.setInterval(m_playbackInterval);
 		break;
 	case Qt::Key_3:
-		m_playbackInterval /=2;
+		m_playbackInterval /= 4.f/3.f;
 		cout << "Playback interval: " << m_playbackInterval << endl;
 		m_timer.setInterval(m_playbackInterval);
 		break;
@@ -220,7 +221,12 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		if (!m_ksensor->connect()) cout << "Could not connect to kinect sensor." << endl;
 		break;
 	case Qt::Key_F:
-		m_ksensor->skeleton()->m_filteringOn = !m_ksensor->skeleton()->m_filteringOn;
+		m_ksensor->skeleton()->m_playbackFiltered = !m_ksensor->skeleton()->m_playbackFiltered;
+		cout << "Filtered data playback " << (m_ksensor->skeleton()->m_playbackFiltered ? "ON" : "OFF") << endl;
+		break;
+	case Qt::Key_I:
+		m_ksensor->skeleton()->m_playbackInterpolated = !m_ksensor->skeleton()->m_playbackInterpolated;
+		cout << "Interpolated data playback " << (m_ksensor->skeleton()->m_playbackInterpolated ? "ON" : "OFF") << endl;
 		break;
 	case Qt::Key_G:
 		if (!m_ksensor->getBodyData()) cout << "Could not update kinect data." << endl;

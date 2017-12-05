@@ -67,7 +67,6 @@ private:
 	const uint m_captureInterval = 10; // milliseconds
 	uint m_playbackInterval;
 
-
 	KSensor *m_ksensor;
 	Camera *m_Cam;
 	Technique *m_Tech;
