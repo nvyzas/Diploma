@@ -87,21 +87,17 @@ struct KFrame
 	// Interpolates this frame between frames "next" and "previous" at time "interpolationTime"
 	void interpolate(const KFrame& previous, const KFrame& next, double interpolationTime)
 	{
-		if (next.timestamp < previous.timestamp) cout << "Error: next.timestamp < previous.timestamp" << endl;
+		if (next.timestamp < previous.timestamp) cout << " Error: next.timestamp < previous.timestamp" << endl;
 		
-		double difference = interpolationTime - previous.timestamp;
-		double percentDifference = difference / (next.timestamp - previous.timestamp);
-		cout << (interpolationTime < next.timestamp ? "Interpolation " : "Extrapolation ");
-		cout << previous.serial << "-" << next.serial << " " << previous.timestamp << " " << next.timestamp;
-		cout << " @" << interpolationTime << " Difference=" << difference << "=" << percentDifference*100 << "%" << endl;
-		/*if (next.timestamp < previous.timestamp) cout << "next frame time < previous frame time !" << endl;
-		if (interpolationTime > next.timestamp) cout << "interpolation time > next frame time " << interpolationTime << " > " << next.timestamp << endl;
-		if (interpolationTime < previous.timestamp) cout << "interpolation time < previous frame time " << interpolationTime << " < " << previous.timestamp << endl;*/
-
+		double percentDistance = (interpolationTime - previous.timestamp) / (next.timestamp - previous.timestamp);
+		cout << (interpolationTime < next.timestamp ? " Interpolation " : " Extrapolation ");
+		cout << previous.serial << "-" << next.serial << " " << previous.timestamp << "-" << next.timestamp;
+		cout << " @" << interpolationTime <<"->" << percentDistance*100 << "% ";
+		
 		for (uint i = 0; i < NUM_MARKERS; i++) {
-			joints[i].position.setX(previous.joints[i].position.x() + percentDifference * (next.joints[i].position.x() - previous.joints[i].position.x()));
-			joints[i].position.setY(previous.joints[i].position.y() + percentDifference * (next.joints[i].position.y() - previous.joints[i].position.y()));
-			joints[i].position.setZ(previous.joints[i].position.z() + percentDifference * (next.joints[i].position.z() - previous.joints[i].position.z()));
+			joints[i].position.setX(previous.joints[i].position.x() + percentDistance * (next.joints[i].position.x() - previous.joints[i].position.x()));
+			joints[i].position.setY(previous.joints[i].position.y() + percentDistance * (next.joints[i].position.y() - previous.joints[i].position.y()));
+			joints[i].position.setZ(previous.joints[i].position.z() + percentDistance * (next.joints[i].position.z() - previous.joints[i].position.z()));
 		}
 		timestamp = interpolationTime;
 		serial = next.serial;
@@ -152,7 +148,7 @@ private:
 	QVector<KFrame> m_filteredInterpolatedSequence;
 	QVector<KFrame> m_filteredSequence;
 
-	uint m_activeFrame;
+	uint m_activeFrame = 0;
 
 	// trc file
 	QFile *m_trcFile;
@@ -162,10 +158,12 @@ private:
 
 	// Savitzky-Golay filter
 	double m_timeStep = 0.0333345;
-	static const int m_numPoints = 5;
-	// Cubic, Symmetric, 5 Points
-	float m_sgCoefficients[m_numPoints] = {-3, 12, 17, 12, -3 };
-	void sgFilter();
+
+	// Cubic, Symmetric, 1st element = 1/commonFactor
+	const array<float, 6> m_sgCoefficients5 = { -3, 12, 17, 12, -3, 35 };
+	const array<float, 8> m_sgCoefficients7 = { -2, 3, 6, 7, 6, 3, -2, 21 };
+	const array<float, 10> m_sgCoefficients9 = { -21, 14, 39, 54, 59, 54, 39, 14, -21, 231 };
+	const array<float, 26> m_sgCoefficients25 = { -253, -138, -33, 62, 147, 222, 287, 343, 387, 422, 447, 462, 467, 462, 447, 422, 387, 343, 278, 222, 147, 62, -33, -138, -253, 5175 };
 };
 
 #endif

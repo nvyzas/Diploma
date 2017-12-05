@@ -250,7 +250,8 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		}
 		break;
 	case Qt::Key_R:
-		m_ksensor->record();
+		if (m_modeOfOperation==Mode::CAPTURE) m_ksensor->record();
+		else cout << "Record does not work in this mode" << endl;
 		break;
 	case Qt::Key_S:
 		m_ksensor->skeleton()->saveToBinary();

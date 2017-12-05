@@ -64,35 +64,35 @@ void KSkeleton::addFrame(const Joint *joints, const JointOrientation *orientatio
 		// Interpolation
 		double interpolationTime = m_timeStep * kframe.serial;
 		if (interpolationTime == time) {
-			cout << " interpolationTime = frameTime = " << time << endl;
+			cout << " interpolationTime = frameTime = " << time;
 		}
 		else if (interpolationTime > time) {
-			/*cout << " interpolationTime > frameTime " << interpolationTime << " > " << time;
-			cout << " Difference = " << interpolationTime - time << endl;*/
+			cout << " Difference=" << interpolationTime - time;
 			kframe.interpolate(m_sequence.end()[-2], m_sequence.back(), interpolationTime);
 		}
 		else {
-			/*cout << " interpolationTime < frameTime " << interpolationTime << " < " << time;
-			cout << " Difference = " << interpolationTime - time << endl;*/
+			cout << " Difference=" << interpolationTime - time;
 			kframe.interpolate(m_sequence.end()[-2], m_sequence.back(), interpolationTime);
 		}
 		m_interpolatedSequence.push_back(kframe);
 
 		// Filtering
-		if (kframe.serial < m_numPoints - 1) {			
+		uint np = m_sgCoefficients25.size() - 1; // number of points used
+		if (kframe.serial < np - 1) {
 			cout << " Not enough frames to start filtering." << endl;
 		}
 		else {
-			uint filteredIndex = kframe.serial - m_numPoints / 2;
-			//cout << "filteredIndex=" << filteredIndex;
+			uint fi = kframe.serial - np / 2; // index of frame to be filtered
 			for (uint i = 0; i < NUM_MARKERS; i++) {
-				for (uint j = 0; j < m_numPoints; j++) {
-					kframe.joints[i].position +=
-						m_interpolatedSequence[filteredIndex + j - m_numPoints / 2].joints[i].position *	m_sgCoefficients[j] * (1.f / 35.f);
+				kframe.joints[i].position = QVector3D(0.f, 0.f, 0.f);
+				for (uint j = 0; j < np; j++) {
+					kframe.joints[i].position += m_interpolatedSequence[fi + j - np / 2].joints[i].position *	m_sgCoefficients25[j] / m_sgCoefficients25.back();
+					if (i == 0) cout << (fi + j - np / 2 == fi ? "F:" : "") << fi + j - np / 2 << ",";
 				}
 			}
+			cout << endl;
 		}
-		//m_filteredInterpolatedSequence.push_back(kframe);
+		m_filteredInterpolatedSequence.push_back(kframe);
 	}
 }
 bool KSkeleton::createTRC()
@@ -447,4 +447,5 @@ void KSkeleton::clearSequences()
 	m_interpolatedSequence.clear();
 	m_filteredInterpolatedSequence.clear();
 	m_filteredSequence.clear();
+	m_activeFrame = 0;
 }
