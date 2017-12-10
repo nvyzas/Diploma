@@ -88,7 +88,7 @@ void MainWindow::printActiveBoneTransforms() const
 {
 	const QString &boneName = ui->comboBox_activeBone->currentText();
 	if (boneName.isEmpty()) return;
-	cout << string(ui->openGLWidget->skinnedMesh()->boneTransformInfo(boneName).toUtf8());
+	cout << ui->openGLWidget->skinnedMesh()->boneTransformInfo(boneName).toStdString() << endl;
 }
 void MainWindow::printActiveBoneRotations() const
 {

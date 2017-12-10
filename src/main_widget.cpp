@@ -24,11 +24,10 @@
 MainWidget::MainWidget(QWidget *parent)
 	: QOpenGLWidget(parent)
 	,m_timer(this)
+	, m_skinnedMesh(new SkinnedMesh())
 {
-	m_Mesh = new SkinnedMesh();
 	m_VAO = 0;
 	ZERO_MEM(m_Buffers);
-
 
 	m_timer.setTimerType(Qt::PreciseTimer);
 	connect(&m_timer, SIGNAL(timeout()), this, SLOT(updateIndirect()));
@@ -42,7 +41,7 @@ MainWidget::~MainWidget()
 	unloadFromGPU();
 	doneCurrent();
 
-	delete m_Mesh;
+	delete m_skinnedMesh;
 	delete m_Cam;
 	delete m_Tech;
 	delete m_Skin;
@@ -51,14 +50,15 @@ MainWidget::~MainWidget()
 // This virtual function is called once before the first call to paintGL() or resizeGL().
 void MainWidget::initializeGL()
 {
-	m_playbackInterval = m_ksensor->skeleton()->timeStep() * 1000;
+	qDebug() << "Obtained format:" << format();
+	initializeOpenGLFunctions();
+
+
 	m_Cam = new Camera();
 	m_Tech = new Technique();
 	m_Skin = new SkinningTechnique();
 	m_Pipe = new Pipeline();
-
-	qDebug() << "Obtained format:" << format();
-	initializeOpenGLFunctions();
+	m_playbackInterval = m_ksensor->skeleton()->timeStep() * 1000;
 	m_ksensor->skeleton()->initOGL();
 	//cout << "GL version: " << glGetString(GL_VERSION) << endl;
 	//cout << "GL renderer: " << glGetString(GL_RENDERER) << endl;
@@ -92,28 +92,19 @@ void MainWidget::MySetup()
 	//m_Sensor->PrintJointHierarchy();
 
 	// 2) Init Mesh
-	//m_Mesh->setKSensor(*m_Sensor);
-	//m_successfullyLoaded = loadToGPU("cmu_test");
+	//m_skinnedMesh->setKSensor(*m_Sensor);
+	m_successfullyLoaded = loadToGPU("cmu_test");
 	//m_Sensor->GetKinectData(); // to successfully acquire frame init sensor before mesh and load mesh before getting data
 
 	// 3) Init Camera
 	//m_Cam->SetCam(); Camera init in its constructor
-	m_Cam->PrintInfo();
+	m_Cam->printInfo();
 
 	// 4) Init Pipeline
 	m_Pipe->Scale(1.f, 1.f, 1.f);
 	m_Pipe->Rotate(0.f, 0.f, 0.f);
 	m_Pipe->WorldPos(0.f, 0.f, 2.f);
-	/*
-	if (mySensor.m_GotFrame) {
-	const Vector3f &fl = mySensor.m_Joints[JointType_FootLeft].Position;
-	const Vector3f &fr = mySensor.m_Joints[JointType_FootRight].Position;
-	const Vector3f &sb = mySensor.m_Joints[JointType_SpineBase].Position;
-	myPipe.WorldPos((fl.x + fr.x) / 2.0f, (fl.y + fr.y) / 2.0f, (fl.z + fr.z) / 2.0f);
-	myPipe.WorldPos(sb.x, sb.y, sb.z);
-	}
-	else myPipe.WorldPos(0, 0, 1);
-	//*/
+	
 	m_Pipe->SetCamera(m_Cam->GetPos(), m_Cam->GetTarget(), m_Cam->GetUp());
 	PersProjInfo persProjInfo;
 	persProjInfo.FOV = 60.0f;
@@ -142,8 +133,8 @@ void MainWidget::MySetup()
 	m_Skin->SetMatSpecularPower(0);
 	m_Skin->setSkinning(true);
 	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
-	for (uint i = 0; i < m_Mesh->numBones(); i++) {
-		m_Skin->setBoneVisibility(i, m_Mesh->boneVisibility(i));
+	for (uint i = 0; i < m_skinnedMesh->numBones(); i++) {
+		m_Skin->setBoneVisibility(i, m_skinnedMesh->boneVisibility(i));
 	}
 	Transform(true);
 }
@@ -152,19 +143,18 @@ void MainWidget::paintGL()
 	glClearColor(0.f, 0.f, 0.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	if (m_modeOfOperation==Mode::CAPTURE) m_ksensor->getBodyData();
-	else m_ksensor->skeleton()->getActiveFrame();
-	/*
+	if (m_modeOfOperation == Mode::CAPTURE) {
+		m_ksensor->getBodyData();
+	}
+	else {
+		m_ksensor->skeleton()->getActiveFrame();
+	}
+	//*
 	m_Skin->enable();
 	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
 	if (m_play) {
-		m_sensor->GetKinectData();
 		Transform(false);
 	}
-	/*if (!m_modelName.isEmpty()) {
-		m_Mesh->LoadMesh(string(m_modelName.toLocal8Bit()));
-		m_modelName.clear();
-	}*/
 	if (m_renderModel && m_successfullyLoaded) {
 		drawSkinnedMesh();
 	}
@@ -186,7 +176,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_Up:
 	case Qt::Key_Left:
 	case Qt::Key_Right:
-		m_Cam->onKeyboardArrow(key, true);
+		m_Cam->onKeyboardArrow(key, false);
 		m_Pipe->SetCamera(m_Cam->GetPos(), m_Cam->GetTarget(), m_Cam->GetUp());
 		m_Skin->enable();
 		m_Skin->SetEyeWorldPos(m_Cam->GetPos());
@@ -194,7 +184,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		m_Tech->enable();
 		m_Tech->SetDefault(m_Pipe->GetVPTrans());
 		break;
-	/*case Qt::Key_0:
+	case Qt::Key_0:
 	case Qt::Key_1:
 	case Qt::Key_2:
 	case Qt::Key_3:
@@ -204,16 +194,16 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_7:
 	case Qt::Key_8:
 	case Qt::Key_9:
-		m_Mesh->flipParameter(key - Qt::Key_0);
+		m_skinnedMesh->flipParameter(key - Qt::Key_0);
 		Transform(true);
-		break;*/
-	case Qt::Key_1:
-		m_playbackInterval *= 4.f/3.f;
+		break;
+	case Qt::Key_Y:
+		m_playbackInterval *= 1.2f; // decrease playback speed
 		cout << "Playback interval: " << m_playbackInterval << endl;
 		m_timer.setInterval(m_playbackInterval);
 		break;
-	case Qt::Key_3:
-		m_playbackInterval /= 4.f/3.f;
+	case Qt::Key_U: 
+		m_playbackInterval /= 1.2f; // increase playback speed
 		cout << "Playback interval: " << m_playbackInterval << endl;
 		m_timer.setInterval(m_playbackInterval);
 		break;
@@ -280,11 +270,17 @@ void MainWidget::mouseMoveEvent(QMouseEvent *event)
 	int dx = event->x() - m_lastPos.x();
 	int dy = event->y() - m_lastPos.y();
 
-	if (event->buttons() & Qt::LeftButton) {
-		m_Cam->rotateRight(dx);
-	}
-	else if (event->buttons() & Qt::RightButton) {
-		m_Cam->rotateUp(dy);
+	if (event->buttons() & Qt::LeftButton){
+		if (event->modifiers() & Qt::ControlModifier) {
+			m_Cam->rotateRight(dx);
+		}
+		else if (event->modifiers() & Qt::ShiftModifier) {
+			m_Cam->rotateUp(-dy);
+		}
+		else {
+			m_Cam->rotateRight(dx);
+			m_Cam->rotateUp(-dy);
+		}
 	}
 	m_lastPos = event->pos();
 
@@ -364,16 +360,16 @@ void MainWidget::NextInfoBlock(int step)
 {
 	activeInfo = Mod(activeInfo, NUM_INFO_BLOCKS, step);
 	cout << "Printing info block " << activeInfo << endl;
-	if (activeInfo == 0) m_Mesh->PrintInfo();
-	else m_Cam->PrintInfo();
+	if (activeInfo == 0) m_skinnedMesh->PrintInfo();
+	else m_Cam->printInfo();
 }
 void MainWidget::Transform(bool print)
 {
 	//if (!print) cout.setstate(std::ios_base::failbit);
-	if (m_Mesh->m_SuccessfullyLoaded) {
+	if (m_skinnedMesh->m_SuccessfullyLoaded) {
 		if (print) cout << "Transforming bones." << endl;
 		vector<Matrix4f> Transforms;
-		m_Mesh->GetBoneTransforms(Transforms); // update bone transforms from kinect
+		m_skinnedMesh->GetBoneTransforms(Transforms); // update bone transforms from kinect
 		m_Skin->enable();
 		for (uint i = 0; i < Transforms.size(); i++) {
 			m_Skin->setBoneTransform(i, Transforms[i]); // send transforms to vertex shader
@@ -415,7 +411,7 @@ bool MainWidget::modelSkinning() const
 QStringList MainWidget::modelBoneList() const
 {
 	QStringList qsl;
-	for (const auto& it : m_Mesh->Bones()) qsl << QString::fromLocal8Bit(it.first.c_str());
+	for (const auto& it : m_skinnedMesh->Bones()) qsl << QString::fromLocal8Bit(it.first.c_str());
 	return qsl;
 }
 void MainWidget::setModelName(const QString &modelName)
@@ -430,7 +426,7 @@ void MainWidget::setModelSkinning(bool state)
 }
 SkinnedMesh *MainWidget::skinnedMesh()
 {
-	return m_Mesh;
+	return m_skinnedMesh;
 }
 
 SkinningTechnique *MainWidget::skinningTechnique()
@@ -445,7 +441,7 @@ bool MainWidget::loadToGPU(const string& basename)
 
 	bool Ret = false;
 	cout << "Loading model to GPU." << endl;
-	for (int i = 0; i < m_Mesh->images().size(); i++) m_textures.push_back(new QOpenGLTexture(m_Mesh->images()[i]));
+	for (int i = 0; i < m_skinnedMesh->images().size(); i++) m_textures.push_back(new QOpenGLTexture(m_skinnedMesh->images()[i]));
 
 	// Create the VAO
 	glGenVertexArrays(1, &m_VAO);
@@ -460,11 +456,11 @@ bool MainWidget::loadToGPU(const string& basename)
 #define BONE_ID_LOCATION     3
 #define BONE_WEIGHT_LOCATION 4
 
-	const auto& Positions = m_Mesh->positions();
-	const auto& TexCoords = m_Mesh->texCoords();
-	const auto& Normals = m_Mesh->normals();
-	const auto& Bones = m_Mesh->vertexBoneData();
-	const auto& Indices = m_Mesh->indices();
+	const auto& Positions = m_skinnedMesh->positions();
+	const auto& TexCoords = m_skinnedMesh->texCoords();
+	const auto& Normals = m_skinnedMesh->normals();
+	const auto& Bones = m_skinnedMesh->vertexBoneData();
+	const auto& Indices = m_skinnedMesh->indices();
 
 	// Generate and populate the buffers with vertex attributes and the indices
 	glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[POS_VB]);
@@ -521,7 +517,7 @@ void MainWidget::drawSkinnedMesh()
 {
 	if (m_successfullyLoaded) {
 		glBindVertexArray(m_VAO);
-		auto Entries = m_Mesh->entries();
+		auto Entries = m_skinnedMesh->entries();
 		for (uint i = 0; i < Entries.size(); i++) {
 			const uint MaterialIndex = Entries[i].MaterialIndex;
 

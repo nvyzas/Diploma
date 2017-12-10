@@ -52,7 +52,7 @@ QString toString(const QQuaternion &q)
 QString toStringEulerAngles(const QQuaternion &q)
 {
 	char buf[64];
-	const QVector3D &v = q.toEulerAngles();
+	const QVector3D &v = q.toEulerAngles(); // z->x->y
 	sprintf(buf, "(%+6.1f, %+6.1f, %+6.1f) ", v.x(), v.y(), v.z());
 	return QString(buf);
 }

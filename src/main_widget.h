@@ -67,11 +67,13 @@ private:
 	const uint m_captureInterval = 10; // milliseconds
 	uint m_playbackInterval;
 
-	KSensor *m_ksensor;
-	Camera *m_Cam;
-	Technique *m_Tech;
-	SkinningTechnique *m_Skin;
-	Pipeline *m_Pipe;
+	KSensor* m_ksensor;
+
+	SkinnedMesh* m_skinnedMesh;
+	Camera* m_Cam;
+	Technique* m_Tech;
+	SkinningTechnique* m_Skin;
+	Pipeline* m_Pipe;
 	OpenSimModel m_osm;
 	
 	QPoint m_lastPos;
@@ -92,7 +94,6 @@ private:
 	void MySetup();
 
 	// Skinned mesh variables
-	SkinnedMesh* m_Mesh;
 	bool m_renderModel = true;
 	bool m_modelSkinning = true;
 	QString m_modelName;

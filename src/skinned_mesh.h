@@ -162,9 +162,9 @@ private:
 	// Textures
 	vector<QImage> m_images;
 
-	map<string, uint> m_boneMap; // maps a model bone name to its index (key = bone name, value = index)
-	map<string, uint> m_kboneMap; // maps a model bone name to its kinect JointType index
-	const KJoint *m_pKBones;
+	map<string, uint> m_boneMap; // maps a mesh's bone name to its index (key = bone name, value = index)
+	map<string, uint> m_kboneMap; // maps a mesh's bone name to its kinect JointType index
+	const KJoint *m_pKBones = NULL;
 
 	vector<Vector3f> m_relVecs; // relative vectors (for hierarchical translation)
 	vector<QQuaternion> m_relQuats; // relative quaternions (for hierarchical rotation)
@@ -172,12 +172,66 @@ private:
 	vector<Vector3f> m_absVecs; 
 	vector<QQuaternion> m_absQuats; 
 	vector<Matrix4f> m_absMats; 	
-	vector<Vector3f> m_conVecs; // control vectors (for controlled translation)
-	vector<QQuaternion> m_conQuats; // control quaternions (for controlled rotation)
-	vector<Matrix4f> m_conMats;
+	vector<Vector3f> m_conVecs; // control vectors 
+	vector<QQuaternion> m_conQuats; // control quaternions 
+	vector<Matrix4f> m_conMats; // control matrices
 	vector<Vector3f> m_corVecs; // correction vectors
 	vector<QQuaternion> m_corQuats; // correction quaternions 
-	vector<Matrix4f> m_corMats;
+	vector<Matrix4f> m_corMats; // correction matrices
+	
+	vector<bool> m_hasCoordinates;
+
+	static const uint m_numCoordinates = 37;
+	enum Coordinates{
+		pelvis_tilt, //z
+		pelvis_list, //x
+		pelvis_rotation, //y
+		pelvis_tx,
+		pelvis_ty,
+		pelvis_tz,
+
+		hip_flexion_r,
+		hip_adduction_r,
+		hip_rotation_r,
+		knee_angle_r,
+		ankle_angle_r,
+		subtalar_angle_r,
+		mtp_angle_r,
+
+		hip_flexion_l,
+		hip_adduction_l,
+		hip_rotation_l,
+		knee_angle_l,
+		ankle_angle_l,
+		subtalar_angle_l,
+		mtp_angle_l,
+
+		lumbar_extension,
+		lumbar_bending,
+		lumbar_rotation,
+
+		arm_flex_r,
+		arm_add_r,
+		arm_rot_r,
+		elbow_flex_r,
+		pro_sup_r,
+		wrist_flex_r,
+		wrist_dev_r,
+
+		arm_flex_l,
+		arm_add_l,
+		arm_rot_l,
+		elbow_flex_l,
+		pro_sup_l,
+		wrist_flex_l,
+		wrist_dev_l
+	};
+	array<float, m_numCoordinates> m_modelCoordinateNames;
+	array<float, m_numCoordinates> m_modelCoordinates;
+	void initCoordinates();
+	QVector3D coordinateAngles(uint i);
+
+
 	uint m_numBones = 0; // crash if not 0
 	uint m_numKBones;
 	uint m_numVertices; // total number of vertices
@@ -189,7 +243,7 @@ private:
 
 	bitset<NUM_PARAMETERS> m_Parameters;
 	const string m_ParametersStringTrue[NUM_PARAMETERS] = { "",  "My local", "My quaternion", "My matrix", "qRel=qAbs*qAbsParInv","qAbs=qAbsPar*qRel", "Bind pose", "Offset pose", "No control", "Isolated control" };
-	const string m_ParametersStringFalse[NUM_PARAMETERS] = { "", "AI local", "AI quaternion", "AI matrix", "qRel=qAbsParInv*qAbs","qAbs=qRel*qAbsPar", "Kinect pose", "Kinect pose", "Control", "Hierarchical control" };
+	const string m_ParametersStringFalse[NUM_PARAMETERS] = { "", "AI local", "AI quaternion", "AI matrix", "qRel=qAbsParInv*qAbs","qAbs=qRel*qAbsPar", "Kinect pose", "Kinect/Bind pose", "Control", "Hierarchical control" };
 	vector<string> m_bonesTransformInfo;
 };
 

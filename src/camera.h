@@ -15,7 +15,7 @@ public:
 	void OnKeyboardNum(unsigned char key, bool print);
 	void onKeyboardArrow(int key, bool print);
 	void onMouseWheel(int degrees, bool print);
-	void PrintInfo();
+	void printInfo();
 	void Setup(const QVector3D& Pos, const QVector3D& Center, const QVector3D& Up);
 
 	void rotateRight(float mult);

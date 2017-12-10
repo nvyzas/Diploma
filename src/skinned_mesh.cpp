@@ -14,9 +14,10 @@ SkinnedMesh::SkinnedMesh()
 	Clear();
 	m_SuccessfullyLoaded = false;
 	m_pScene = NULL;
-	//LoadMesh("cmu_test");
+	LoadMesh("cmu_test");
 	//initBoneMapping();
-	initKBoneMapping();
+	//initKBoneMapping();
+	initCoordinates();
 }
 SkinnedMesh::~SkinnedMesh()
 {
@@ -102,6 +103,7 @@ bool SkinnedMesh::InitFromScene(const aiScene* pScene, const string& Filename)
 	m_conMats.resize(m_numBones);
 	m_boneInfo.resize(m_numBones);
 	m_bonesTransformInfo.resize(m_numBones);
+	m_hasCoordinates.resize(m_numBones);
 	setConMats();
 
 	initImages(m_pScene, Filename);
@@ -150,7 +152,6 @@ void SkinnedMesh::LoadBones(uint MeshIndex, const aiMesh* pMesh, vector<VertexBo
 		uint BoneIndex = 0;
 		string BoneName(pMesh->mBones[i]->mName.data);
 		if (m_boneMap.find(BoneName) == m_boneMap.end()) {
-			// Allocate an index for a new bone
 			BoneIndex = m_numBones;
 			m_numBones++;
 			BoneInfo bi;
@@ -198,9 +199,9 @@ bool SkinnedMesh::initImages(const aiScene* pScene, const string& Filename)
 				if (p.substr(0, 2) == ".\\") {
 					p = p.substr(2, p.size() - 2);
 				}
-				string foolPath(Dir + "/" + p);
+				string foolPath(Dir + "\\" + p);
 				QString fullPath = QString::fromLocal8Bit(foolPath.c_str());
-				cout << "Loading image from: " << foolPath << endl;
+				cout << "Loading image: " << foolPath << endl;
 				m_images.push_back(QImage(QString(fullPath)));
 				ret = true;
 			}
@@ -287,37 +288,29 @@ uint SkinnedMesh::FindPosition(float AnimationTime, const aiNodeAnim* pNodeAnim)
 			return i;
 		}
 	}
-
 	assert(0);
-
 	return 0;
 }
 uint SkinnedMesh::FindRotation(float AnimationTime, const aiNodeAnim* pNodeAnim)
 {
 	assert(pNodeAnim->mNumRotationKeys > 0);
-
 	for (uint i = 0; i < pNodeAnim->mNumRotationKeys - 1; i++) {
 		if (AnimationTime < (float)pNodeAnim->mRotationKeys[i + 1].mTime) {
 			return i;
 		}
 	}
-
 	assert(0);
-
 	return 0;
 }
 uint SkinnedMesh::FindScaling(float AnimationTime, const aiNodeAnim* pNodeAnim)
 {
 	assert(pNodeAnim->mNumScalingKeys > 0);
-
 	for (uint i = 0; i < pNodeAnim->mNumScalingKeys - 1; i++) {
 		if (AnimationTime < (float)pNodeAnim->mScalingKeys[i + 1].mTime) {
 			return i;
 		}
 	}
-
 	assert(0);
-
 	return 0;
 }
 void SkinnedMesh::CalcInterpolatedPosition(aiVector3D& Out, float AnimationTime, const aiNodeAnim* pNodeAnim)
@@ -516,6 +509,61 @@ void SkinnedMesh::GetBoneTransforms(vector<Matrix4f>& Transforms)
 		Transforms[i] = m_boneInfo[i].FinalTransformation;
 	}
 }
+void SkinnedMesh::initBoneMapping()
+{
+	uint counter = 0;
+	// core
+	m_boneMap["Hips"] = counter; counter++;
+	m_boneMap["LowerBack"] = counter; counter++;
+	m_boneMap["Spine"] = counter; counter++;
+	m_boneMap["Spine1"] = counter; counter++;
+	m_boneMap["Neck"] = counter; counter++;
+	m_boneMap["Neck1"] = counter; counter++;
+	m_boneMap["Head"] = counter; counter++;
+	// legs									  
+	m_boneMap["LHipJoint"] = counter; counter++;
+	m_boneMap["RHipJoint"] = counter; counter++;
+	m_boneMap["LeftUpLeg"] = counter; counter++;
+	m_boneMap["RightUpLeg"] = counter; counter++;
+	m_boneMap["LeftLeg"] = counter; counter++;
+	m_boneMap["RightLeg"] = counter; counter++;
+	m_boneMap["LeftFoot"] = counter; counter++;
+	m_boneMap["RightFoot"] = counter; counter++;
+	m_boneMap["LeftToeBase"] = counter; counter++;
+	m_boneMap["RightToeBase"] = counter; counter++;
+	// arms									  
+	m_boneMap["LeftShoulder"] = counter; counter++;
+	m_boneMap["RightShoulder"] = counter; counter++;
+	m_boneMap["LeftArm"] = counter; counter++;
+	m_boneMap["RightArm"] = counter; counter++;
+	m_boneMap["LeftForeArm"] = counter; counter++;
+	m_boneMap["RightForeArm"] = counter; counter++;
+	m_boneMap["LeftHand"] = counter; counter++;
+	m_boneMap["RightHand"] = counter; counter++;
+	m_boneMap["LeftThumb"] = counter; counter++;
+	m_boneMap["RightThumb"] = counter; counter++;
+	m_boneMap["LeftFingerBase"] = counter; counter++;
+	m_boneMap["RightFingerBase"] = counter; counter++;
+	m_boneMap["LeftHandFinger1"] = counter; counter++;
+	m_boneMap["RightHandFinger1"] = counter; counter++;
+	//m_numBones = m_boneMap.size();
+	m_boneInfo.resize(m_numBones);
+}
+void SkinnedMesh::initCoordinates()
+{
+	m_modelCoordinates[hip_flexion_r] = 90.f; // z in opensim = x here?
+	m_modelCoordinates[hip_adduction_r] = 90.f;
+	m_hasCoordinates[m_boneMap.find("RightUpLeg")->second] = true;
+}
+QVector3D SkinnedMesh::coordinateAngles(uint i)
+{
+	if (i == m_boneMap.find("Hips")->second) {
+		return QVector3D(m_modelCoordinates[pelvis_list], m_modelCoordinates[pelvis_rotation], m_modelCoordinates[pelvis_tilt]);
+	}
+	else if (i == m_boneMap.find("RightUpLeg")->second){
+		return QVector3D(0, 0, 0);
+	}
+}
 void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 {
 	QString NodeName(pNode->mName.data);
@@ -530,9 +578,9 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 	QTextStream qts(&qs);
 	qts << endl << "Node " << counter << ": " << NodeName << endl;
 	auto it = m_boneMap.find(NodeName.toStdString());
-	if (m_Parameters[6] || (it == m_boneMap.end())){ // bind pose on	
+	if (m_Parameters[6] || (it == m_boneMap.end())){ // bind pose on or just node
 		qts << "Bind pose on" << endl;
-		if (m_Parameters[1]) {
+		if (m_Parameters[1]) { // bind pose parameter
 			qts << "Decomposing node local transformation:" << endl;
 			q = (m_Parameters[2]) ? L.ExtractQuaternion1() : L.ExtractQuaternion2();
 			qts << "q rel from model: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
@@ -551,10 +599,10 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 		G = P * L;
 		if (it != m_boneMap.end()) {
 			uint i = it->second;
-			if (!m_Parameters[8]) {
+			if (!m_Parameters[8]) { // control parameter
 				C = m_conMats[i];
-				qts << "Control transformation:" << endl << C;
-				if (!m_Parameters[9]) G = P * L * C;
+				qts << "Control transformation:" << endl << C; 
+				if (!m_Parameters[9]) G = P * L * C; // hierarchical control parameter
 			}
 			if (!m_Parameters[9]) {
 				m_boneInfo[i].FinalTransformation = m_Parameters[7] ? C * m_boneInfo[i].BoneOffset : G * m_boneInfo[i].BoneOffset;
@@ -566,27 +614,13 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 		}
 		qts << "Global transformation:" << endl << G;
 	}
-	else { 
+	else { // has opensim coordinate
 		uint i = it->second;
-		auto kit = m_kboneMap.find(NodeName.toStdString());
-		uint c;
-		if (kit != m_kboneMap.end() && (c = kit->second) != INVALID_JOINT_ID) { // model node	
-			q = m_pKBones[c].orientation;
-			qts << "q abs from kinect ( joint name here): " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
-			m_absQuats[i] = q;
-			if (NodeName == "Hips") {
-				m_relQuats[i] = m_absQuats[i];				
-			}
-			else {
-				uint p = m_boneMap[pNode->mParent->mName.data];
-				m_relQuats[i] = m_Parameters[4] ? m_absQuats[i]*m_absQuats[p].inverted(): m_absQuats[p].inverted()*m_absQuats[i];
-				q = m_absQuats[p];
-				qts << "q abs parent: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
-				q = m_absQuats[p].inverted();
-				qts << "q abs parent inverted: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
-			}			
-			qts << "q relative: " << toString(m_relQuats[i]) << toStringEulerAngles(m_relQuats[i]) << toStringAxisAngle(m_relQuats[i]) << endl;
-			qts << "q absolute: " << toString(m_absQuats[i]) << toStringEulerAngles(m_absQuats[i]) << toStringAxisAngle(m_absQuats[i]) << endl;
+		if (m_hasCoordinates[i]) { 
+			QVector3D angles = coordinateAngles(i);
+			qts << "Angles from coordinates: " << toStringCartesian(angles) << endl;
+			m_relQuats[i].fromEulerAngles(angles);
+			qts << "Quaternion from angles (z->x->y): " << toString(m_relQuats[i]) << toStringEulerAngles(m_relQuats[i]) << toStringAxisAngle(m_relQuats[i]) << endl;
 			Matrix4f R = m_Parameters[3] ? Matrix4f(m_relQuats[i], true) : Matrix4f(m_relQuats[i], false);
 			Matrix4f T = L.GetTranslationPart();
 			L = T * R;
@@ -594,39 +628,23 @@ void SkinnedMesh::TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 			qts << "Rotation matrix (local) from q:" << endl << R;
 			qts << "Translation matrix (local) from model:" << endl << T;
 			qts << "Local transformation:" << endl << L;
-			if (it != m_boneMap.end()) {
-				uint i = it->second;
-				if (!m_Parameters[8]) {
-					C = m_conMats[i];
-					qts << "Control transformation:" << endl << C;
-					if (!m_Parameters[9]) G = P * L * C;
-				}
-				if (!m_Parameters[9]) {
-					m_boneInfo[i].FinalTransformation = m_Parameters[7] ? C * m_boneInfo[i].BoneOffset : G * m_boneInfo[i].BoneOffset;
-				}
-				else {
-					m_boneInfo[i].FinalTransformation = m_Parameters[7] ? C * m_boneInfo[i].BoneOffset : G * C * m_boneInfo[i].BoneOffset;
-				}
-				qts << "Final Transformation:" << endl << m_boneInfo[i].FinalTransformation;
+			if (!m_Parameters[8]) { // control Parameter
+				C = m_conMats[i];
+				qts << "Control transformation:" << endl << C;
+				if (!m_Parameters[9]) G = P * L * C;
 			}
-			qts << "Global transformation:" << endl << G;
-		}else{ // kinect node
-			q = (m_Parameters[2]) ? L.ExtractQuaternion1() : L.ExtractQuaternion2();
-			qts << "q rel from model " << ": " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
-			m_relQuats[i] = q;
-			if (NodeName == "Hips") {
-				m_absQuats[i] = m_relQuats[i];
+			if (!m_Parameters[9]) { // hierarchical control parameter
+				m_boneInfo[i].FinalTransformation = m_Parameters[7] ? C * m_boneInfo[i].BoneOffset : G * m_boneInfo[i].BoneOffset;
 			}
 			else {
-				uint p = m_boneMap[pNode->mParent->mName.data];
-				m_absQuats[i] = m_Parameters[5] ? m_absQuats[p] * m_relQuats[i] : m_relQuats[i] * m_absQuats[p];
-				q = m_absQuats[p];
-				qts << "q rel parent: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
-				q = m_absQuats[p].inverted();
-				qts << "q rel parent inverted: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
+				m_boneInfo[i].FinalTransformation = m_Parameters[7] ? C * m_boneInfo[i].BoneOffset : G * C * m_boneInfo[i].BoneOffset;
 			}
-			qts << "q relative: " << toString(m_relQuats[i]) << toStringEulerAngles(m_relQuats[i]) << toStringAxisAngle(m_relQuats[i]) << endl;
-			qts << "q absolute: " << toString(m_absQuats[i]) << toStringEulerAngles(m_absQuats[i]) << toStringAxisAngle(m_absQuats[i]) << endl;
+			qts << "Final Transformation:" << endl << m_boneInfo[i].FinalTransformation;
+			qts << "Global transformation:" << endl << G;
+		}
+		else{ // has not opensim coordinate
+			m_relQuats[i] = m_Parameters[2] ? L.ExtractQuaternion1() : L.ExtractQuaternion2();
+			qts << "Quaternion from skinned mesh: " << toString(m_relQuats[i]) << toStringEulerAngles(m_relQuats[i]) << toStringAxisAngle(m_relQuats[i]) << endl;
 			Matrix4f R = m_Parameters[3] ? Matrix4f(m_relQuats[i], true) : Matrix4f(m_relQuats[i], false);
 			Matrix4f T = L.GetTranslationPart();
 			L = m_Parameters[1] ? Matrix4f(pNode->mTransformation) : T*R;
@@ -700,46 +718,6 @@ void SkinnedMesh::setBoneRotationZ(const QString &boneName, float value)
 	assert(boneId < m_boneInfo.size());
 	BoneInfo &bi = m_boneInfo[boneId];
 	m_conMats[boneId].InitRotateTransform(bi.xRot, bi.yRot, bi.zRot = value);
-}
-void SkinnedMesh::initBoneMapping()
-{
-	uint counter = 0;
-	// core
-	m_boneMap["Hips"]					= counter; counter++;
-	m_boneMap["LowerBack"]				= counter; counter++;
-	m_boneMap["Spine"]					= counter; counter++;
-	m_boneMap["Spine1"]					= counter; counter++;
-	m_boneMap["Neck"]					= counter; counter++;
-	m_boneMap["Neck1"]					= counter; counter++;
-	m_boneMap["Head"]					= counter; counter++;											  
-	// legs									  
-	m_boneMap["LHipJoint"]				= counter; counter++;
-	m_boneMap["RHipJoint"]				= counter; counter++;
-	m_boneMap["LeftUpLeg"]				= counter; counter++;
-	m_boneMap["RightUpLeg"]				= counter; counter++;
-	m_boneMap["LeftLeg"]				= counter; counter++;
-	m_boneMap["RightLeg"]				= counter; counter++;
-	m_boneMap["LeftFoot"]				= counter; counter++;
-	m_boneMap["RightFoot"]				= counter; counter++;
-	m_boneMap["LeftToeBase"]			= counter; counter++;
-	m_boneMap["RightToeBase"]			= counter; counter++;											  
-	// arms									  
-	m_boneMap["LeftShoulder"]			= counter; counter++;
-	m_boneMap["RightShoulder"]			= counter; counter++;
-	m_boneMap["LeftArm"]				= counter; counter++;
-	m_boneMap["RightArm"]				= counter; counter++;
-	m_boneMap["LeftForeArm"]			= counter; counter++;
-	m_boneMap["RightForeArm"]			= counter; counter++;
-	m_boneMap["LeftHand"]				= counter; counter++;
-	m_boneMap["RightHand"]				= counter; counter++;
-	m_boneMap["LeftThumb"]				= counter; counter++;
-	m_boneMap["RightThumb"]				= counter; counter++;
-	m_boneMap["LeftFingerBase"]			= counter; counter++;
-	m_boneMap["RightFingerBase"]	    = counter; counter++;
-	m_boneMap["LeftHandFinger1"]	    = counter; counter++;
-	m_boneMap["RightHandFinger1"]		= counter; counter++;
-	m_numBones = m_boneMap.size();
-	m_boneInfo.resize(m_numBones);
 }
 void SkinnedMesh::initKBoneMapping()
 {
