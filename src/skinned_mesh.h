@@ -62,25 +62,19 @@ struct MeshEntry {
 };
 struct BoneInfo
 {
-	enum RenderPose
-	{
-		Bind,
-		Kinect,
-		Offset
-	};
-	Matrix4f BoneOffset;
-	Matrix4f FinalTransformation;
-	bool Visible;
-	RenderPose Pose;
+	Matrix4f offset;
+	Matrix4f final;
+	Matrix4f local;
+	bool visible;
 	float xRot, yRot, zRot;
 	
 	BoneInfo()
 	{
-		BoneOffset.SetZero();
-		FinalTransformation.SetZero();
-		Visible = true;
-		Pose = Bind;
-		xRot = yRot = zRot = 0;
+		offset.SetZero();
+		final.SetZero();
+		local.SetZero();
+		xRot = yRot = zRot = 0.f;
+		visible = true;
 	}
 };
 
@@ -92,23 +86,18 @@ public:
 	bool LoadMesh(const string& Filename);
 	void BoneTransform(float TimeInSeconds, vector<Matrix4f>& Transforms);
 	void GetBoneTransforms(vector<Matrix4f>& Transforms);
-	void TraverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P);
-	void setConMats();
+	void traverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P);
+	void correctLocalMatrices();
 	void PrintInfo() const;
 	void PrintNodeHierarchy(const aiNode* pNode) const;
 	void PrintNodeMatching(const aiNode* pNode) const;
 	void PrintParameters() const;
 	void PrintSceneInfo() const;
 
-	// TODO: implement skinning on/off
-	void AdjustBones(); 
-	void ToggleSkinning();
 	
 	bool m_SuccessfullyLoaded;
 
-	void setKSkeleton(const KSkeleton &kskeleton);
 	void initBoneMapping();
-	void initKBoneMapping();
 	float boneRotationX(const QString &boneName) const;
 	float boneRotationY(const QString &boneName) const;
 	float boneRotationZ(const QString &boneName) const;
@@ -166,20 +155,19 @@ private:
 	map<string, uint> m_kboneMap; // maps a mesh's bone name to its kinect JointType index
 	const KJoint *m_pKBones = NULL;
 
-	vector<Vector3f> m_relVecs; // relative vectors (for hierarchical translation)
-	vector<QQuaternion> m_relQuats; // relative quaternions (for hierarchical rotation)
-	vector<Matrix4f> m_relMats; // relative matrices (for hierarchical transforms)
-	vector<Vector3f> m_absVecs; 
-	vector<QQuaternion> m_absQuats; 
-	vector<Matrix4f> m_absMats; 	
-	vector<Vector3f> m_conVecs; // control vectors 
-	vector<QQuaternion> m_conQuats; // control quaternions 
-	vector<Matrix4f> m_conMats; // control matrices
-	vector<Vector3f> m_corVecs; // correction vectors
-	vector<QQuaternion> m_corQuats; // correction quaternions 
-	vector<Matrix4f> m_corMats; // correction matrices
-	
-	vector<bool> m_hasCoordinates;
+	// Control pose
+	vector<Vector3f> m_controlVecs; 
+	vector<QQuaternion> m_controlQuats; 
+	vector<Matrix4f> m_controlMats; 
+	// Default pose
+	vector<Vector3f> m_correctionVecs; 
+	vector<QQuaternion> m_correctionQuats;
+	vector<Matrix4f> m_correctionMats; 
+	void initCorrectionQuats();
+	void initLocalMatrices(const aiNode* node);
+
+	vector<QString> m_boneTransformInfo;
+	vector<bool> m_hasCoordinates; // #?
 
 	static const uint m_numCoordinates = 37;
 	enum Coordinates{
@@ -233,7 +221,6 @@ private:
 
 
 	uint m_numBones = 0; // crash if not 0
-	uint m_numKBones;
 	uint m_numVertices; // total number of vertices
 	unsigned long long m_vertexArrayBytes;
 	Matrix4f m_GlobalInverseTransform;
@@ -242,9 +229,9 @@ private:
 	Assimp::Importer m_Importer;
 
 	bitset<NUM_PARAMETERS> m_Parameters;
-	const string m_ParametersStringTrue[NUM_PARAMETERS] = { "",  "My local", "My quaternion", "My matrix", "qRel=qAbs*qAbsParInv","qAbs=qAbsPar*qRel", "Bind pose", "Offset pose", "No control", "Isolated control" };
-	const string m_ParametersStringFalse[NUM_PARAMETERS] = { "", "AI local", "AI quaternion", "AI matrix", "qRel=qAbsParInv*qAbs","qAbs=qRel*qAbsPar", "Kinect pose", "Kinect/Bind pose", "Control", "Hierarchical control" };
-	vector<string> m_bonesTransformInfo;
+	const string m_ParametersStringTrue[NUM_PARAMETERS] = { "Bind Pose",  "My local", "My quaternion", "My matrix", "qRel=qAbs*qAbsParInv","qAbs=qAbsPar*qRel", "Bind pose", "Offset pose", "No control", "Isolated control" };
+	const string m_ParametersStringFalse[NUM_PARAMETERS] = { "Kinect Pose", "AI local", "AI quaternion", "AI matrix", "qRel=qAbsParInv*qAbs","qAbs=qRel*qAbsPar", "Kinect pose", "Kinect/Bind pose", "Control", "Hierarchical control" };
+	
 };
 
 #endif	/* SKINNED_MESH_H */

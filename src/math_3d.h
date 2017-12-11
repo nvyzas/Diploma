@@ -244,7 +244,7 @@ public:
 		m[2][0] = a20; m[2][1] = a21; m[2][2] = a22; m[2][3] = a23;
 		m[3][0] = a30; m[3][1] = a31; m[3][2] = a32; m[3][3] = a33;
 	}
-	// Rotation matrix (different result than InitRotateTransform function!)
+	// Rotation matrix from q
 	Matrix4f(const QQuaternion &q, bool rotateFunction = true)
 	{	
 		if (rotateFunction) InitRotateTransform1(q); else InitRotateTransform2(q);
@@ -319,7 +319,7 @@ public:
 		cout << noshowpos;
     }
 
-	friend ostream &operator<<(ostream &out, const Matrix4f &m);
+	friend ostream& operator<<(ostream& out, const Matrix4f& m);
     
     float Determinant() const;
     

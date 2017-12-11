@@ -304,14 +304,18 @@ Matrix4f Matrix4f::Zero()
 	Ret.SetZero();
 	return Ret;
 }
+// #! does not flush
 ostream &operator<<(ostream &out, const Matrix4f &m)
 {
 	out << showpos << showpoint << fixed;
 	int w = 10;
 	for (int i = 0; i < 4; i++) {
-		out << setw(w) << m.m[i][0] << " " << setw(w) << m.m[i][1] << " "
-			<< setw(w) << m.m[i][2] << " " << setw(w) << m.m[i][3] << " " << endl;
+		out << setw(w) << m.m[i][0] << " "; 
+		out << setw(w) << m.m[i][1] << " ";
+		out	<< setw(w) << m.m[i][2] << " ";
+		out << setw(w) << m.m[i][3] << " ";
 	}
+	out << "\n";
 	out << noshowpos;
 	return out;
 }

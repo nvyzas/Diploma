@@ -1,6 +1,12 @@
 #ifndef UTIL_H
 #define	UTIL_H
 
+// Project
+#include "math_3d.h"
+
+// Assimp
+#include <assimp\matrix4x4.h>
+
 // Qt
 #include <QtGui\QOpenGLFunctions_3_3_Compatibility>
 
@@ -49,10 +55,12 @@ inline bool getBit(int number, int position)
 }
 float wrapAngle(float angle, float limit);
 QString toString(const QQuaternion &q);
+QString toString(const Matrix4f &m);
 QString toStringEulerAngles(const QQuaternion &q);
 QString toStringAxisAngle(const QQuaternion &q);
 QString toStringCartesian(const QVector3D &v);
 QString toStringSpherical(const QVector3D &v);
 double ticksToMilliseconds(clock_t ticks);
+void matrixCopy(QMatrix4x4& qMat, aiMatrix4x4& aiMat); // qMat = aiMat
 
 #endif	/* UTIL_H */
