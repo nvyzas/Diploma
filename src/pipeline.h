@@ -29,45 +29,45 @@ public:
         m_rotateInfo = QVector3D(0.0f, 0.0f, 0.0f);
     }
 
-    void Scale(float s)
+    void worldScale(float s)
     {
-        Scale(s, s, s);
+        worldScale(s, s, s);
     }
     
-    void Scale(const QVector3D& scale)
+    void worldScale(const QVector3D& scale)
     {
-        Scale(scale.x(), scale.y(), scale.z());
+        worldScale(scale.x(), scale.y(), scale.z());
     }
     
-    void Scale(float ScaleX, float ScaleY, float ScaleZ)
+    void worldScale(float ScaleX, float ScaleY, float ScaleZ)
     {
         m_scale.setX(ScaleX);
         m_scale.setY(ScaleY);
         m_scale.setZ(ScaleZ);
     }
 
-    void WorldPos(float x, float y, float z)
+    void worldTranslate(float x, float y, float z)
     {
         m_worldPos.setX(x);
         m_worldPos.setY(y);
         m_worldPos.setZ(z);
     }
     
-    void WorldPos(const QVector3D& Pos)
+    void worldTranslate(const QVector3D& Pos)
     {
         m_worldPos = Pos;
     }
 
-    void Rotate(float RotateX, float RotateY, float RotateZ)
+    void worldRotate(float RotateX, float RotateY, float RotateZ)
     {
         m_rotateInfo.setX(RotateX);
         m_rotateInfo.setY(RotateY);
         m_rotateInfo.setZ(RotateZ);
     }
     
-    void Rotate(const QVector3D& r)
+    void worldRotate(const QVector3D& r)
     {
-        Rotate(r.x(), r.y(), r.z());
+        worldRotate(r.x(), r.y(), r.z());
     }
 
     void SetPerspectiveProj(const PersProjInfo& p)

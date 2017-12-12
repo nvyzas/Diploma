@@ -118,16 +118,17 @@ void Matrix4f::InitCameraTransform(const QVector3D& Target, const QVector3D& Up)
     m[2][0] = N.x();   m[2][1] = N.y();   m[2][2] = N.z();   m[2][3] = 0.f;
     m[3][0] = 0.f;  m[3][1] = 0.f;  m[3][2] = 0.f;  m[3][3] = 1.f;
 }
+// change from original code: multiplied m[0][0] by -1
 void Matrix4f::InitPersProjTransform(const PersProjInfo& p)
 {
     const float ar         = p.Width / p.Height;
     const float zRange     = p.zNear - p.zFar;
     const float tanHalfFOV = tanf(ToRadian(p.FOV / 2.0f));
 
-    m[0][0] = 1.0f/(tanHalfFOV * ar); m[0][1] = 0.0f;            m[0][2] = 0.0f;            m[0][3] = 0.0;
-    m[1][0] = 0.0f;                   m[1][1] = 1.0f/tanHalfFOV; m[1][2] = 0.0f;            m[1][3] = 0.0;
-    m[2][0] = 0.0f;                   m[2][1] = 0.0f;            m[2][2] = (-p.zNear - p.zFar)/zRange ; m[2][3] = 2.0f*p.zFar*p.zNear/zRange;
-    m[3][0] = 0.0f;                   m[3][1] = 0.0f;            m[3][2] = 1.0f;            m[3][3] = 0.0;    
+    m[0][0] = -1.0f/(tanHalfFOV * ar); m[0][1] = 0.0f;            m[0][2] = 0.0f;						m[0][3] = 0.0;
+    m[1][0] = 0.0f;                    m[1][1] = 1.0f/tanHalfFOV; m[1][2] = 0.0f;						m[1][3] = 0.0;
+    m[2][0] = 0.0f;                    m[2][1] = 0.0f;            m[2][2] = (-p.zNear - p.zFar)/zRange ; m[2][3] = 2.0f*p.zFar*p.zNear/zRange;
+    m[3][0] = 0.0f;                    m[3][1] = 0.0f;            m[3][2] = 1.0f;						m[3][3] = 0.0;    
 }
 void Matrix4f::InitOrthoProjTransform(const OrthoProjInfo& p)
 {

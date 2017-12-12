@@ -15,11 +15,11 @@ Camera::Camera()
     m_windowWidth  = 512;
     m_windowHeight = 424;
 	m_rho		   = 2.0f;
-	m_theta		   = 90.0f;
+	m_theta		   = 0.0f;
 	m_phi		   = 90.0f;
 	UpdateCartesian();
-	m_offset	   = QVector3D(0.0f, 0.0f, 2.0f);
-	m_center       = QVector3D(0.0f, 0.0f, 2.0f); // focus point of camera
+	m_offset	   = QVector3D(0.0f, 0.0f, 0.0f);
+	m_center       = QVector3D(0.0f, 0.0f, 0.0f); // focus point of camera
     m_up           = QVector3D(0.0f, 1.0f, 0.0f); // direction of up vector
 	UpdateCamera();
 }
@@ -123,12 +123,12 @@ void Camera::onKeyboardArrow(int key, bool print)
 		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " RTF=" << GetRTF().GetString() << " XYZ=" << GetXYZ().GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
 		return;
 	case Qt::Key_Left:
-		rotateRight(+rotateStep);
+		rotateRight(-rotateStep);
 		if (print) printInfo();
 		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " RTF=" << GetRTF().GetString() << " XYZ=" << GetXYZ().GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
 		return;
 	case Qt::Key_Right:
-		rotateRight(-rotateStep);
+		rotateRight(+rotateStep);
 		if (print) printInfo();
 		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " RTF=" << GetRTF().GetString() << " XYZ=" << GetXYZ().GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
 		return;

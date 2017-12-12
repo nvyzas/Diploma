@@ -141,9 +141,7 @@ bool Technique::InitDefault()
 		return false;
 	}
 
-	//printf("Getting WVP location\n");
 	m_Location = GetUniformLocation("gWVP");
-	//printf("Got it?\n");
 
 	return true;
 }

@@ -87,9 +87,6 @@ void MainWidget::initializeGL()
 }
 void MainWidget::MySetup()
 {
-	// 1) Init KSensor
-	//m_Sensor->init();
-	//m_Sensor->PrintJointHierarchy();
 
 	// 2) Init Mesh
 	//m_skinnedMesh->setKSensor(*m_Sensor);
@@ -101,11 +98,12 @@ void MainWidget::MySetup()
 	m_Cam->printInfo();
 
 	// 4) Init Pipeline
-	m_Pipe->Scale(1.f, 1.f, 1.f);
-	m_Pipe->Rotate(0.f, 0.f, 0.f);
-	m_Pipe->WorldPos(0.f, 0.f, 2.f);
+	m_Pipe->worldScale(1.f, 1.f, 1.f);
+	m_Pipe->worldRotate(0.f, -90.f, 0.f);
+	m_Pipe->worldTranslate(0.f, 0.f, 0.f);
 	
 	m_Pipe->SetCamera(m_Cam->GetPos(), m_Cam->GetTarget(), m_Cam->GetUp());
+
 	PersProjInfo persProjInfo;
 	persProjInfo.FOV = 60.0f;
 	persProjInfo.Height = m_Cam->GetHeight();
@@ -272,13 +270,13 @@ void MainWidget::mouseMoveEvent(QMouseEvent *event)
 
 	if (event->buttons() & Qt::LeftButton){
 		if (event->modifiers() & Qt::ControlModifier) {
-			m_Cam->rotateRight(dx);
+			m_Cam->rotateRight(-dx);
 		}
 		else if (event->modifiers() & Qt::ShiftModifier) {
 			m_Cam->rotateUp(-dy);
 		}
 		else {
-			m_Cam->rotateRight(dx);
+			m_Cam->rotateRight(-dx);
 			m_Cam->rotateUp(-dy);
 		}
 	}

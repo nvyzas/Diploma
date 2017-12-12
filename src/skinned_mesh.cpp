@@ -546,8 +546,8 @@ void SkinnedMesh::correctLocalMatrices()
 }
 void SkinnedMesh::initCoordinates()
 {
-	m_modelCoordinates[hip_flexion_r] = 90.f; // z in opensim = x here?
-	m_modelCoordinates[hip_adduction_r] = 90.f;
+	m_modelCoordinates[hip_flexion_r] = 90.f; // z in opensim = x here?    ->y
+	m_modelCoordinates[hip_adduction_r] = 90.f; 
 	m_hasCoordinates[m_boneMap.find("RightUpLeg")->second] = true;
 }
 QVector3D SkinnedMesh::coordinateAngles(uint i)
@@ -555,7 +555,7 @@ QVector3D SkinnedMesh::coordinateAngles(uint i)
 	if (i == m_boneMap.find("Hips")->second) {
 		return QVector3D(0, 0, 0);
 	}
-	else if (i == m_boneMap.find("RightUpLeg")->second){
+	else if (i == m_boneMap.find("LeftUpLeg")->second){
 		return QVector3D(0, 0, 0);
 	}
 	else {
@@ -585,18 +585,13 @@ void SkinnedMesh::traverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 		QVector3D angles = coordinateAngles(i);
 		qts << "Angles from coordinates: " << toStringCartesian(angles) << endl;
 		q = QQuaternion::fromEulerAngles(angles); // z->x->y
-		qts << "Quaternion from angles: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
-		
-		/*Matrix4f R = m_Parameters[3] ? Matrix4f(q, true) : Matrix4f(q, false);
-		Matrix4f T = L.GetTranslationPart();
-		L = T * R;
-		qts << "Local rotation matrix:\n" << toString(R);
-		qts << "Local translation matrix:\n" << toString(T);
-		*/
+		qts << "Quaternion from angles: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;		
+		Matrix4f R = Matrix4f(q, false);
+
 		qts << "Local transformation:\n" << toString(L);
 		qts << "Corrected transformation:\n" << toString(m_boneInfo[i].local);
 		qts << "Control transformation:\n" << toString(m_controlMats[i]);
-		G = P * L;
+		G = P * m_controlMats[i] * R * m_boneInfo[i].local;
 		m_boneInfo[i].final = G * m_boneInfo[i].offset;
 		qts << "Bone Offset:\n" << toString(m_boneInfo[i].offset);
 		qts << "Global transformation:\n" << toString(G);
