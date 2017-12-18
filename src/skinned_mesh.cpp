@@ -99,10 +99,11 @@ bool SkinnedMesh::InitFromScene(const aiScene* pScene, const string& Filename)
 
 	m_hasCoordinates.resize(m_numBones);
 	m_boneInfo.resize(m_numBones);
-	initLocalMatrices(m_pScene->mRootNode);
-	correctLocalMatrices();
-	initCoordinates();
 
+	initLocalMatrices(m_pScene->mRootNode);
+	initCorrectionQuats();
+	initCorrectedMatrices();
+	initCoordinates();
 	initImages(m_pScene, Filename);
 
 	return true;
@@ -528,26 +529,57 @@ void SkinnedMesh::initLocalMatrices(const aiNode* node)
 		initLocalMatrices(node->mChildren[i]);
 	}
 }
-void SkinnedMesh::initCorrectionQuats()
+void SkinnedMesh::initCorrectedMatrices()
+{
+	for (int i = 0; i < m_numBones; i++) {
+		m_correctionMats[i].InitRotateTransform2(m_correctionQuats[i]);
+		m_boneInfo[i].corrected = m_correctionMats[i] * m_boneInfo[i].local;
+	}
+}
+void SkinnedMesh::initCorrectionQuats() // OpenSim crash if calling fromEulerAngles from instance
 {
 	QQuaternion q; // identity quaternion
 	for (auto& p: m_boneMap) {
 		m_correctionQuats[p.second] = q;
 	}
-	m_correctionQuats[findBoneId("Hips")] = q.fromEulerAngles(0, 0, 0);
-}
-void SkinnedMesh::correctLocalMatrices()
-{
-	for (int i = 0; i < m_numBones; i++) {
-		m_controlMats[i] = Matrix4f::Identity();
-		m_correctionMats[i].InitRotateTransform2(m_correctionQuats[i]);
-		m_boneInfo[i].local = m_correctionMats[i] * m_boneInfo[i].local;
-	}
+	m_correctionQuats[findBoneId("Hips")            ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("LowerBack")       ] = QQuaternion::fromEulerAngles(0, 0, 0); 
+	m_correctionQuats[findBoneId("Spine")           ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("Spine1")          ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("Neck")            ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("Neck1")           ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("Head")            ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("LHipJoint")       ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("RHipJoint")       ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("LeftUpLeg")       ] = QQuaternion::fromEulerAngles(0, 0, 0); // all 10 ?
+	m_correctionQuats[findBoneId("RightUpLeg")      ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("LeftLeg")         ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("RightLeg")        ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("LeftFoot")        ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("RightFoot")       ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("LeftToeBase")     ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("RightToeBase")    ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("LeftShoulder")    ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("RightShoulder")   ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("LeftArm")         ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("RightArm")        ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("LeftForeArm")     ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("RightForeArm")    ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("LeftHand")        ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("RightHand")       ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("LeftThumb")       ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("RightThumb")      ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("LeftFingerBase")  ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("RightFingerBase") ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("LeftHandFinger1") ] = QQuaternion::fromEulerAngles(0, 0, 0);
+	m_correctionQuats[findBoneId("RightHandFinger1")] = QQuaternion::fromEulerAngles(0, 0, 0);
 }
 void SkinnedMesh::initCoordinates()
 {
-	m_modelCoordinates[hip_flexion_r] = 90.f; // z in opensim = x here?    ->y
-	m_modelCoordinates[hip_adduction_r] = 90.f; 
+	m_modelCoordinates[hip_flexion_l] = 0.f; 
+	m_modelCoordinates[hip_adduction_l] = 0.f; // LHipJoint -z or LeftUpLeg -x 
+	m_modelCoordinates[hip_rotation_l] = 0.f;
+	m_modelCoordinates[knee_angle_l] = 0.f;
 	m_hasCoordinates[m_boneMap.find("RightUpLeg")->second] = true;
 }
 QVector3D SkinnedMesh::coordinateAngles(uint i)
@@ -555,8 +587,14 @@ QVector3D SkinnedMesh::coordinateAngles(uint i)
 	if (i == m_boneMap.find("Hips")->second) {
 		return QVector3D(0, 0, 0);
 	}
+	else if (i == m_boneMap.find("LHipJoint")->second) {
+		return QVector3D(0, m_modelCoordinates[hip_flexion_l], m_modelCoordinates[hip_adduction_l]);
+	}
 	else if (i == m_boneMap.find("LeftUpLeg")->second){
 		return QVector3D(0, 0, 0);
+	}
+	else if (i == m_boneMap.find("LeftLeg")->second) {
+		return QVector3D(0, m_modelCoordinates[hip_rotation_l], 0);
 	}
 	else {
 		return QVector3D(0, 0, 0);
@@ -573,25 +611,40 @@ void SkinnedMesh::traverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 	}
 	else { // is a bone
 		uint i = it->second;
+		// #opt make the following static?
 		QString qs;
 		QTextStream qts(&qs);
 		QQuaternion q;
 		qts << "\n" << nodeName << " Index=" << i << endl;
-		q = m_boneInfo[i].local.ExtractQuaternion2();
-		qts << "Local quaternion: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
-		q = L.ExtractQuaternion2();
-		qts << "Corrected quaternion: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
 
+		q = L.ExtractQuaternion2();
+		qts << "Local quaternion: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
+		qts << "Local transformation:\n" << toString(L);
+		
+		q = m_correctionQuats[i];
+		qts << "Correction quaternion: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
+		qts << "Correction transformation\n" << toString(m_correctionMats[i]);
+		
+		q = m_boneInfo[i].local.ExtractQuaternion2();
+		qts << "Corrected quaternion: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
+		qts << "Corrected transformation:\n" << toString(m_boneInfo[i].local);
+		
+		q = m_controlQuats[i];
+		qts << "Control quaternion: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
+		qts << "Control transformation:\n" << toString(m_controlMats[i]);
+		
 		QVector3D angles = coordinateAngles(i);
 		qts << "Angles from coordinates: " << toStringCartesian(angles) << endl;
 		q = QQuaternion::fromEulerAngles(angles); // z->x->y
 		qts << "Quaternion from angles: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;		
-		Matrix4f R = Matrix4f(q, false);
+		
+		Matrix4f opensimRot, controlRot, correctedLocal; // initialized as identity
+		if (m_parameters[1]) correctedLocal = m_boneInfo[i].corrected; else correctedLocal = m_boneInfo[i].local;
+		if (m_parameters[2]) opensimRot = Matrix4f(q, false);
+		if (m_parameters[3]) controlRot = m_controlMats[i];
 
-		qts << "Local transformation:\n" << toString(L);
-		qts << "Corrected transformation:\n" << toString(m_boneInfo[i].local);
-		qts << "Control transformation:\n" << toString(m_controlMats[i]);
-		G = P * m_controlMats[i] * R * m_boneInfo[i].local;
+		if (m_parameters[4]) G = P * correctedLocal * opensimRot * controlRot;
+		else G = P * controlRot * opensimRot * correctedLocal;
 		m_boneInfo[i].final = G * m_boneInfo[i].offset;
 		qts << "Bone Offset:\n" << toString(m_boneInfo[i].offset);
 		qts << "Global transformation:\n" << toString(G);
@@ -621,21 +674,27 @@ void SkinnedMesh::setBoneRotationX(const QString &boneName, float value)
 	uint boneId = findBoneId(boneName);
 	assert(boneId < m_boneInfo.size());
 	BoneInfo &bi = m_boneInfo[boneId];
-	m_controlMats[boneId].InitRotateTransform(bi.xRot = value, bi.yRot, bi.zRot);
+	QQuaternion q = QQuaternion::fromEulerAngles(bi.xRot = value, bi.yRot, bi.zRot);
+	m_controlMats[boneId].InitRotateTransform2(q);
+	//m_controlMats[boneId].InitRotateTransform(bi.xRot = value, bi.yRot, bi.zRot);
 }
 void SkinnedMesh::setBoneRotationY(const QString &boneName, float value)
 {
 	uint boneId = findBoneId(boneName);
 	assert(boneId < m_boneInfo.size());
 	BoneInfo &bi = m_boneInfo[boneId];
-	m_controlMats[boneId].InitRotateTransform(bi.xRot, bi.yRot = value, bi.zRot);
+	QQuaternion q = QQuaternion::fromEulerAngles(bi.xRot, bi.yRot = value, bi.zRot);
+	m_controlMats[boneId].InitRotateTransform2(q);
+	//m_controlMats[boneId].InitRotateTransform(bi.xRot, bi.yRot = value, bi.zRot);
 }
 void SkinnedMesh::setBoneRotationZ(const QString &boneName, float value)
 {
 	uint boneId = findBoneId(boneName);
 	assert(boneId < m_boneInfo.size());
 	BoneInfo &bi = m_boneInfo[boneId];
-	m_controlMats[boneId].InitRotateTransform(bi.xRot, bi.yRot, bi.zRot = value);
+	QQuaternion q = QQuaternion::fromEulerAngles(bi.xRot, bi.yRot, bi.zRot = value);
+	m_controlMats[boneId].InitRotateTransform2(q);
+	//m_controlMats[boneId].InitRotateTransform(bi.xRot, bi.yRot, bi.zRot = value);
 }
 const aiNodeAnim* SkinnedMesh::FindNodeAnim(const aiAnimation* pAnimation, const string NodeName)
 {
@@ -650,15 +709,13 @@ const aiNodeAnim* SkinnedMesh::FindNodeAnim(const aiAnimation* pAnimation, const
 }
 void SkinnedMesh::flipParameter(uint i)
 {
-	m_Parameters[i].flip();
-	cout << "Parameter " << i << (m_Parameters[i] ? " ON: " : " OFF: ");
-	cout << (m_Parameters[i] ? m_ParametersStringTrue[i] : m_ParametersStringFalse[i]) << endl;
+	m_parameters[i].flip();
+	cout << "Parameter " << i << ": " << m_parameterInfo[i] << (m_parameters[i] ? " ON" : " OFF") << endl;
 }
 void SkinnedMesh::PrintParameters() const
 {
 	for (uint i = 0; i < NUM_PARAMETERS; i++) {
-		cout << "Parameter " << i << (m_Parameters[i] ? " ON: " : " OFF: ");
-		cout <<(m_Parameters[i] ? m_ParametersStringTrue[i] : m_ParametersStringFalse[i]) << endl;
+		cout << "Parameter " << i << ": " << m_parameterInfo[i] << (m_parameters[i] ? " ON" : " OFF") << endl;
 	}
 }
 uint SkinnedMesh::findBoneId(const QString &boneName) const

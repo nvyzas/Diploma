@@ -65,6 +65,7 @@ struct BoneInfo
 	Matrix4f offset;
 	Matrix4f final;
 	Matrix4f local;
+	Matrix4f corrected;
 	bool visible;
 	float xRot, yRot, zRot;
 	
@@ -87,7 +88,7 @@ public:
 	void BoneTransform(float TimeInSeconds, vector<Matrix4f>& Transforms);
 	void GetBoneTransforms(vector<Matrix4f>& Transforms);
 	void traverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P);
-	void correctLocalMatrices();
+	void initCorrectedMatrices();
 	void PrintInfo() const;
 	void PrintNodeHierarchy(const aiNode* pNode) const;
 	void PrintNodeMatching(const aiNode* pNode) const;
@@ -161,7 +162,7 @@ private:
 	vector<Matrix4f> m_controlMats; 
 	// Default pose
 	vector<Vector3f> m_correctionVecs; 
-	vector<QQuaternion> m_correctionQuats;
+	QVector<QQuaternion> m_correctionQuats;
 	vector<Matrix4f> m_correctionMats; 
 	void initCorrectionQuats();
 	void initLocalMatrices(const aiNode* node);
@@ -228,10 +229,8 @@ private:
 	const aiScene* m_pScene;
 	Assimp::Importer m_Importer;
 
-	bitset<NUM_PARAMETERS> m_Parameters;
-	const string m_ParametersStringTrue[NUM_PARAMETERS] = { "Bind Pose",  "My local", "My quaternion", "My matrix", "qRel=qAbs*qAbsParInv","qAbs=qAbsPar*qRel", "Bind pose", "Offset pose", "No control", "Isolated control" };
-	const string m_ParametersStringFalse[NUM_PARAMETERS] = { "Kinect Pose", "AI local", "AI quaternion", "AI matrix", "qRel=qAbsParInv*qAbs","qAbs=qRel*qAbsPar", "Kinect pose", "Kinect/Bind pose", "Control", "Hierarchical control" };
-	
+	bitset<NUM_PARAMETERS> m_parameters = bitset<NUM_PARAMETERS>().set();
+	const string m_parameterInfo[NUM_PARAMETERS] = { "",  "Corrected Pose", "OpenSim Pose", "Controlled Pose" };	
 };
 
 #endif	/* SKINNED_MESH_H */
