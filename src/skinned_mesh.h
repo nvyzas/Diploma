@@ -62,24 +62,26 @@ struct MeshEntry {
 };
 struct BoneInfo
 {
-	Matrix4f offset;
-	Matrix4f final;
 	Matrix4f local;
 	Matrix4f corrected;
+	Matrix4f offset;
+	Matrix4f global;
+	Matrix4f combined;
+
 	bool visible;
 	float xRot, yRot, zRot;
 	
 	BoneInfo()
 	{
 		offset.SetZero();
-		final.SetZero();
+		combined.SetZero();
 		local.SetZero();
 		xRot = yRot = zRot = 0.f;
 		visible = true;
 	}
 };
 
-class SkinnedMesh
+class SkinnedMesh: protected QOpenGLFunctions_3_3_Core
 {
 public:
 	SkinnedMesh();
@@ -105,6 +107,7 @@ public:
 	void setBoneRotationX(const QString &boneName, float value);
 	void setBoneRotationY(const QString &boneName, float value);
 	void setBoneRotationZ(const QString &boneName, float value);
+	
 
 	uint numBones() const;
 	const map<string, uint>& Bones() const;
@@ -124,6 +127,12 @@ public:
 	vector<VertexBoneData>& vertexBoneData();
 	vector<uint>& indices();	
 	vector<QImage>& images();
+
+	void loadAxesToGPU();
+	void drawBoneAxis();
+	bool initOGL();
+	const Matrix4f& boneFinal(uint boneIndex) const;
+
 private:
 	void Clear();
 	void InitMesh(uint MeshIndex, const aiMesh* paiMesh);
@@ -231,6 +240,10 @@ private:
 
 	bitset<NUM_PARAMETERS> m_parameters = bitset<NUM_PARAMETERS>().set();
 	const string m_parameterInfo[NUM_PARAMETERS] = { "",  "Corrected Pose", "OpenSim Pose", "Controlled Pose" };	
+
+	GLuint m_axesVAO;
+	GLuint m_axesVBO;
+	GLuint m_axesIBO; 
 };
 
 #endif	/* SKINNED_MESH_H */

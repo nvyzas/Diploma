@@ -15,12 +15,13 @@ class Pipeline;
 // Qt
 #include <QtCore\QTimer>
 #include <QtWidgets\QOpenGLWidget>
+#include <QtGui\QOpenGLShaderProgram>
 QT_FORWARD_DECLARE_CLASS(QOpenGLTexture);
 
 // Standard C/C++
 //#include <vector>
 
-class MainWidget : public QOpenGLWidget, protected OPENGL_FUNCTIONS
+class MainWidget : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core
 {
 	Q_OBJECT
 public:
@@ -29,24 +30,27 @@ public:
 	
 	bool renderAxes() const;
 
-	// skinned mesh related
-	SkinnedMesh *skinnedMesh();
-	SkinningTechnique *skinningTechnique();
-	bool modelSkinning() const;
-	QStringList modelBoneList() const;	
-	void Transform(bool print);
+	// get functions
+	SkinnedMesh* skinnedMesh();
+	SkinningTechnique* skinningTechnique();
+	Technique* technique();
 	bool renderModel() const;
-	void setKSensor(KSensor &ksensor);
+	bool modelSkinning() const;
+	QStringList modelBoneList() const;
+
+	void Transform(bool print);
 
 public slots:
 	void setRenderAxes(bool state);
 	void setRenderModel(bool state);
-	void setModelName(const QString &modelName);
+	void setModelName(const QString& modelName);
 	void setModelSkinning(bool state);
-
+	void setBoneAxes(const QString& boneName);
+	void setKSensor(KSensor& ksensor);
 	void changeMode();
 	void updateIndirect();
-	
+	void setActiveBone(const QString& modelName);
+
 protected:
 	void initializeGL();
 	void paintGL();
@@ -75,6 +79,7 @@ private:
 	SkinningTechnique* m_Skin;
 	Pipeline* m_Pipe;
 	OpenSimModel m_osm;
+	QOpenGLShaderProgram m_linesProgram;
 	
 	QPoint m_lastPos;
 
@@ -84,13 +89,9 @@ private:
 	bool m_play = true;	
 
 	#define NUM_INFO_BLOCKS 3
-	uint activeJoint = 0;
 	
 	uint activeInfo = 0;
 	void NextInfoBlock(int step);
-	void DrawAxes();
-	void DrawAxes(Vector3f center, Vector3f vx, Vector3f vy, Vector3f vz, float length);
-	void DrawTestAxes();
 	void MySetup();
 
 	// Skinned mesh variables
@@ -112,6 +113,8 @@ private:
 	vector<QOpenGLTexture*> m_textures;
 	void drawSkinnedMesh();
 	bool m_successfullyLoaded = false;
+
+	uint m_activeBone = 0;
 };
 
 #endif /* MAIN_WIDGET_H */

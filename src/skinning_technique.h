@@ -77,8 +77,8 @@ public:
     void setBoneTransform(uint Index, const Matrix4f& Transform);
 	void setSkinning(int value);
 	void setBoneVisibility(uint Index, const bool& Visibility);
-private:
-    
+
+private:   
     GLuint m_WVPLocation;
     GLuint m_WorldMatrixLocation;
     GLuint m_colorTextureLocation;

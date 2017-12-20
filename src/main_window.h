@@ -20,6 +20,7 @@ public:
 
 private slots:
 	void loadActiveBoneInfo();
+	void setActiveBoneAxes();
 	void setActiveBoneVisible(bool state);
 	void setActiveBoneFocused(bool state);
 	void setActiveBoneRotationX(int value);

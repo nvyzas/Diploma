@@ -5,7 +5,7 @@
 #include "util.h"
 #include <list>
 
-class Technique : protected OPENGL_FUNCTIONS
+class Technique : protected QOpenGLFunctions_3_3_Core
 {
 public:
 
@@ -18,21 +18,23 @@ public:
     void enable();
 
 	bool InitDefault();
-	void SetDefault(const Matrix4f& mat);
-	
+	void setMVP(const Matrix4f& MVP);
+	void setSpecific(const Matrix4f& MVP);
+
 protected:
 
-	bool AddShader(GLenum ShaderType, const char* pFilename); // was protected
+	bool AddShader(GLenum ShaderType, const char* pFilename); 
 	
-	GLint GetUniformLocation(const char* pUniformName); // was protected
+	GLint GetUniformLocation(const char* pUniformName); 
 
     bool Finalize();
   
     GLint GetProgramParam(GLint param);
     
     GLuint m_shaderProg;    
-	GLuint m_Location;
-    
+	GLuint m_locationMVP;
+	GLuint m_locationSpecific;
+
 private:
 
     typedef std::list<GLuint> ShaderObjList;

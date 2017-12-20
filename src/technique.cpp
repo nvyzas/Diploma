@@ -5,7 +5,6 @@
 
 Technique::Technique()
 {
-	//initializeOpenGLFunctions();
     m_shaderProg = 0;	
 }
 Technique::~Technique()
@@ -77,7 +76,7 @@ bool Technique::AddShader(GLenum ShaderType, const char* pFilename)
     }
 
     glAttachShader(m_shaderProg, ShaderObj);
-
+	printf("Added %s to shader program %d\n", pFilename, m_shaderProg);
     return true;
 }
 // After all the shaders have been added to the program call this function
@@ -126,13 +125,13 @@ bool Technique::InitDefault()
 		return false;
 	}
 
-	if (!AddShader(GL_VERTEX_SHADER, "shaders/test.vs")) {
-		printf("Cannot add default vertex shader\n");
+	if (!AddShader(GL_VERTEX_SHADER, "shaders/axes.vs")) {
+		printf("Cannot add axes vertex shader\n");
 		return false;
 	}
 
-	if (!AddShader(GL_FRAGMENT_SHADER, "shaders/test.fs")) {
-		printf("Cannot add default fragment shader\n");
+	if (!AddShader(GL_FRAGMENT_SHADER, "shaders/axes.fs")) {
+		printf("Cannot add axes fragment shader\n");
 		return false;
 	}
 	
@@ -141,28 +140,33 @@ bool Technique::InitDefault()
 		return false;
 	}
 
-	m_Location = GetUniformLocation("gWVP");
+	m_locationMVP = GetUniformLocation("gMVP");
+	m_locationSpecific = GetUniformLocation("gSpecific");
 
 	return true;
 }
-void Technique::SetDefault(const Matrix4f& WVP)
+void Technique::setMVP(const Matrix4f& MVP)
 {
-	glUniformMatrix4fv(m_Location, 1, GL_TRUE, (const GLfloat*)WVP);
+	glUniformMatrix4fv(m_locationMVP, 1, GL_TRUE, (const GLfloat*)MVP);
 }
 GLint Technique::GetUniformLocation(const char* pUniformName)
 {
-    GLuint Location = glGetUniformLocation(m_shaderProg, pUniformName);
+    GLuint location = glGetUniformLocation(m_shaderProg, pUniformName);
 
-    if (Location == INVALID_UNIFORM_LOCATION) {
+    if (location == INVALID_UNIFORM_LOCATION) {
 		printf("Warning! Unable to get the location of uniform '%s' (Shader program: %d)\n", pUniformName, m_shaderProg);
         //fprintf(stderr, "Warning! Unable to get the location of uniform '%s'\n", pUniformName);
     }
 
-    return Location;
+    return location;
 }
 GLint Technique::GetProgramParam(GLint param)
 {
     GLint ret;
     glGetProgramiv(m_shaderProg, param, &ret);
     return ret;
+}
+void Technique::setSpecific(const Matrix4f& MVP)
+{
+	glUniformMatrix4fv(m_locationSpecific, 1, GL_TRUE, (const GLfloat*)MVP);
 }

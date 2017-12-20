@@ -166,47 +166,6 @@ bool KSkeleton::readTRC()
 	}
 	file.close();
 }
-void KSkeleton::drawSkeleton(uint parentId)
-{
-	const KJoint &parent = m_joints[parentId];
-	const KNode& n = m_nodes[parentId];
-	for (uint i = 0; i < n.childrenId.size(); i++) {
-		uint childId = n.childrenId[i];
-		const KJoint &child = m_joints[childId];
-		glBegin(GL_LINES);
-		glColor3f(0xFF, 0xFF, 0xFF);
-		glVertex3f(parent.position.x(), parent.position.y(), parent.position.z());
-		glVertex3f(child.position.x(), child.position.y(), child.position.z());
-		glEnd();
-		drawSkeleton(childId);
-	}
-}
-
-void KSkeleton::drawActiveJoint()
-{
-	glBegin(GL_LINES);
-	const QVector3D &p = m_joints[m_activeJoint].position;
-	QVector3D qp(p.x(), p.y(), p.z());
-	const QQuaternion &q = m_joints[m_activeJoint].orientation;
-	QVector3D v;
-
-	v = q.rotatedVector(QVector3D(1.f, 0.f, 0.f)) + qp;
-	glColor3f(0xFF, 0xFF, 0);
-	glVertex3f(p.x(), p.y(), p.z());
-	glVertex3f(v.x(), v.y(), v.z());
-
-	v = q.rotatedVector(QVector3D(0.f, 1.f, 0.f)) + qp;
-	glColor3f(0, 0xFF, 0xFF);
-	glVertex3f(p.x(), p.y(), p.z());
-	glVertex3f(v.x(), v.y(), v.z());
-
-	v = q.rotatedVector(QVector3D(0.f, 0.f, 1.f)) + qp;
-	glColor3f(0xFF, 0, 0xFF);
-	glVertex3f(p.x(), p.y(), p.z());
-	glVertex3f(v.x(), v.y(), v.z());
-	glEnd();
-}
-
 void KSkeleton::initJointHierarchy()
 {
 	// Set parents

@@ -60,6 +60,9 @@ void MainWidget::initializeGL()
 	m_Pipe = new Pipeline();
 	m_playbackInterval = m_ksensor->skeleton()->timeStep() * 1000;
 	m_ksensor->skeleton()->initOGL();
+	m_skinnedMesh->initOGL();
+	m_skinnedMesh->loadAxesToGPU();
+
 	//cout << "GL version: " << glGetString(GL_VERSION) << endl;
 	//cout << "GL renderer: " << glGetString(GL_RENDERER) << endl;
 	//cout << "GLSL version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << endl;	
@@ -67,10 +70,9 @@ void MainWidget::initializeGL()
 	glGetIntegerv(GL_CONTEXT_FLAGS, &i);
 	
 	glEnable(GL_TEXTURE_2D);
-	glShadeModel(GL_SMOOTH);                            // Enable Smooth Shading
-	glClearColor(0.0f, 0.0f, 0.0f, 0.5f);               // Black Background
-	glClearDepth(1.0f);									// Depth Buffer Setup
-	glEnable(GL_POINT_SMOOTH);							// Points represented as circles
+	glClearColor(0.0f, 0.0f, 0.0f, 0.5f);               
+	glClearDepth(1.0f);									
+	glEnable(GL_POINT_SMOOTH);							
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
 	glDepthFunc(GL_LEQUAL);
@@ -87,17 +89,10 @@ void MainWidget::initializeGL()
 }
 void MainWidget::MySetup()
 {
-
-	// 2) Init Mesh
-	//m_skinnedMesh->setKSensor(*m_Sensor);
 	m_successfullyLoaded = loadToGPU("cmu_test");
-	//m_Sensor->GetKinectData(); // to successfully acquire frame init sensor before mesh and load mesh before getting data
-
-	// 3) Init Camera
-	//m_Cam->SetCam(); Camera init in its constructor
 	m_Cam->printInfo();
 
-	// 4) Init Pipeline
+	// Init Pipeline
 	m_Pipe->worldScale(1.f, 1.f, 1.f);
 	m_Pipe->worldRotate(0.f, -90.f, 0.f);
 	m_Pipe->worldTranslate(0.f, 0.f, 0.f);
@@ -112,10 +107,18 @@ void MainWidget::MySetup()
 	persProjInfo.zFar = 1000.0f;
 	m_Pipe->SetPerspectiveProj(persProjInfo);
 
+	/*m_linesProgram.addShaderFromSourceFile(QOpenGLShader::Vertex, "shaders/axes.vs");
+	qDebug() << m_linesProgram.log();
+	m_linesProgram.addShaderFromSourceFile(QOpenGLShader::Fragment, "shaders/axes.fs");
+	qDebug() << m_linesProgram.log();
+	if (!m_linesProgram.link()) cout << "Could not link axes shader program" << endl;
+	m_linesProgram.bind();*/
+
 	// 5) Init Technique
 	if (!m_Tech->InitDefault()) cout << "Could not initialize default shaders" << endl;
 	m_Tech->enable();
-	m_Tech->SetDefault(m_Pipe->GetWVPTrans());
+	m_Tech->setMVP(m_Pipe->GetWVPTrans());
+	m_Tech->setSpecific(Matrix4f::Identity());
 
 	// 6) Init SkinningTechnique
 	if (!m_Skin->Init()) cout << "Could not initialize skinning shaders" << endl;
@@ -158,9 +161,11 @@ void MainWidget::paintGL()
 	}
 
 	m_Tech->enable();
-	m_Tech->SetDefault(m_Pipe->GetVPTrans());
-	if (m_renderSkeleton) m_ksensor->skeleton()->drawSkeleton(0);
-	if (m_renderAxes)	DrawAxes();
+	m_Tech->setMVP(m_Pipe->GetWVPTrans());
+	m_Tech->setSpecific(m_skinnedMesh->boneFinal(m_activeBone));
+	m_skinnedMesh->drawBoneAxis();
+
+	//if (m_renderSkeleton) m_ksensor->skeleton()->drawSkeleton(0);
 
 	//if (m_renderCameraVectors)		m_Cam->DrawCameraVectors();
 	//*/
@@ -180,7 +185,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		m_Skin->SetEyeWorldPos(m_Cam->GetPos());
 		m_Skin->SetWVP(m_Pipe->GetWVPTrans());
 		m_Tech->enable();
-		m_Tech->SetDefault(m_Pipe->GetVPTrans());
+		m_Tech->setMVP(m_Pipe->GetVPTrans());
 		break;
 	case Qt::Key_0:
 	case Qt::Key_1:
@@ -287,7 +292,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent *event)
 	m_Skin->SetEyeWorldPos(m_Cam->GetPos());
 	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
 	m_Tech->enable();
-	m_Tech->SetDefault(m_Pipe->GetVPTrans());
+	m_Tech->setMVP(m_Pipe->GetVPTrans());
 	update();
 }
 void MainWidget::wheelEvent(QWheelEvent *event)
@@ -301,58 +306,8 @@ void MainWidget::wheelEvent(QWheelEvent *event)
 	m_Skin->SetEyeWorldPos(m_Cam->GetPos());
 	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
 	m_Tech->enable();
-	m_Tech->SetDefault(m_Pipe->GetVPTrans());
+	m_Tech->setMVP(m_Pipe->GetVPTrans());
 	update();
-}
-void MainWidget::DrawAxes()
-{
-	//*
-	glBegin(GL_LINES);
-	Vector3f origin(0.0f, 0.0f, 0.0f);
-	float length = 1;
-	//[X]
-	glColor3f(0xFF, 0, 0);
-	glVertex3f(origin.x, origin.y, origin.z);
-	glVertex3f(length, 0, 0);
-	//[Y]
-	glColor3f(0, 0xFF, 0);
-	glVertex3f(origin.x, origin.y, origin.z);
-	glVertex3f(0, length, 0);
-	//[Z]
-	glColor3f(0, 0, 0xFF);
-	glVertex3f(origin.x, origin.y, origin.z);
-	glVertex3f(0, 0, length);
-	glEnd();
-	//*/
-}
-void MainWidget::DrawAxes(Vector3f origin, Vector3f vx, Vector3f vy, Vector3f vz, float length)
-{
-	//*
-	glBegin(GL_LINES);
-	//[X]
-	glColor3f(0xFF, 0, 0);
-	glVertex3f(origin.x, origin.y, origin.z);
-	glVertex3f((vx.x)*length, (vx.y)*length, (vx.z)*length);
-	//[Y]
-	glColor3f(0, 0xFF, 0);
-	glVertex3f(origin.x, origin.y, origin.z);
-	glVertex3f((vy.x)*length, (vy.y)*length, (vy.z)*length);
-	//[Z]
-	glColor3f(0, 0, 0xFF);
-	glVertex3f(origin.x, origin.y, origin.z);
-	glVertex3f((vz.x)*length, (vz.y)*length, (vz.z)*length);
-	glEnd();
-	//*/
-}
-void MainWidget::DrawTestAxes()
-{
-	Vector3f origin(0.0f, 0.0f, 0.0f);
-	Vector3f vx = Vector3f::UnitX;
-	Vector3f vy = Vector3f::UnitY;
-	Vector3f vz = Vector3f::UnitZ;
-	DrawAxes(origin, vx, vy, vz, 1);
-	Matrix4f R;
-	R.InitRotateTransform(45, 0, 0);
 }
 void MainWidget::NextInfoBlock(int step)
 {
@@ -431,7 +386,10 @@ SkinningTechnique *MainWidget::skinningTechnique()
 {
 	return m_Skin;
 }
-
+Technique* MainWidget::technique()
+{
+	return m_Tech;
+}
 bool MainWidget::loadToGPU(const string& basename)
 {
 	// Release the previously loaded mesh (if it exists)
@@ -535,10 +493,6 @@ void MainWidget::drawSkinnedMesh()
 		glBindVertexArray(0);
 	}
 }
-void MainWidget::setKSensor(KSensor &ksensor)
-{
-	m_ksensor = &ksensor;
-}
 void MainWidget::updateIndirect()
 {
 	update();
@@ -556,4 +510,19 @@ void MainWidget::changeMode()
 			cout << "Mode: CAPTURE" << endl;
 		}
 		m_timer.start();
+}
+void MainWidget::setKSensor(KSensor& ksensor)
+{
+	m_ksensor = &ksensor;
+}
+void MainWidget::setBoneAxes(const QString &boneName)
+{
+	uint boneId = m_skinnedMesh->findBoneId(boneName);
+	assert(boneId < m_boneInfo.size());
+	m_Tech->enable();
+	m_Tech->setSpecific(m_skinnedMesh->boneFinal(boneId));
+}
+void MainWidget::setActiveBone(const QString& boneName)
+{
+	m_activeBone = m_skinnedMesh->findBoneId(boneName);
 }

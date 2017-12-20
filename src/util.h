@@ -8,6 +8,7 @@
 #include <assimp\matrix4x4.h>
 
 // Qt
+#include <QtGui\QOpenGLFunctions_3_3_Core>
 #include <QtGui\QOpenGLFunctions_3_3_Compatibility>
 
 // Standard C/C++
@@ -41,6 +42,7 @@ using namespace std;
         exit(0);                                                                \
     }                                                                           \
 }
+#define BUFFER_OFFSET(i) ((char *)NULL + (i))
 
 #define SNPRINTF _snprintf_s
 #define VSNPRINTF vsnprintf_s

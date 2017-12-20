@@ -32,6 +32,7 @@ void MainWindow::loadActiveBoneInfo()
 	loadActiveBoneRotationX();
 	loadActiveBoneRotationY();
 	loadActiveBoneRotationZ();
+	ui->openGLWidget->setActiveBone(boneName);
 }
 void MainWindow::setActiveBoneVisible(bool state)
 {
@@ -195,6 +196,11 @@ void MainWindow::setupObjects()
 	m_timer->setInterval(1000. / 30.);
 	m_timer->start();*/
 }
+void MainWindow::setActiveBoneAxes() {
+	const QString &boneName = ui->comboBox_activeBone->currentText();
+	if (boneName.isEmpty()) return;
+	ui->openGLWidget->setBoneAxes(boneName);
+}
 void MainWindow::setupConnections()
 {
 	// active model
@@ -204,6 +210,7 @@ void MainWindow::setupConnections()
 	// Active bone related
 	// combo box
 	connect(ui->comboBox_activeBone, SIGNAL(currentIndexChanged(QString)), SLOT(loadActiveBoneInfo()));
+	connect(ui->comboBox_activeBone, SIGNAL(currentIndexChanged(QString)), ui->openGLWidget, SLOT(setActiveBone(QString)));
 	// check box
 	connect(ui->checkBox_boneVisible, SIGNAL(clicked(bool)), SLOT(setActiveBoneVisible(bool)));
 	connect(ui->checkBox_boneFocused, SIGNAL(clicked(bool)), SLOT(setActiveBoneFocused(bool)));

@@ -107,13 +107,11 @@ struct KFrame
 QDataStream& operator<<(QDataStream& out, const KFrame& frame);
 QDataStream& operator>>(QDataStream& in, const KFrame& frame);
 
-class KSkeleton: protected OPENGL_FUNCTIONS
+class KSkeleton: protected QOpenGLFunctions_3_3_Core
 {
 public:
 	KSkeleton();
 	void addFrame(const Joint *joints, const JointOrientation *orientations, const double &time);
-	void drawActiveJoint();
-	void drawSkeleton(uint id);
 	void initJointHierarchy();
 	bool initOGL();
 	void nextJoint(int step);

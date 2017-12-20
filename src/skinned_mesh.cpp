@@ -87,7 +87,6 @@ bool SkinnedMesh::InitFromScene(const aiScene* pScene, const string& Filename)
 		const aiMesh* paiMesh = pScene->mMeshes[i];
 		InitMesh(i, paiMesh);
 	}
-	// TODO: check that mesh is correctly skinned
 
 	m_boneTransformInfo.resize(m_numBones);
 	m_controlVecs.resize(m_numBones);
@@ -375,7 +374,7 @@ void SkinnedMesh::ReadNodeHierarchy(float AnimationTime, const aiNode* pNode, co
 
 	if (m_boneMap.find(NodeName) != m_boneMap.end()) {
 		uint BoneIndex = m_boneMap[NodeName];
-		m_boneInfo[BoneIndex].final = m_GlobalInverseTransform * GlobalTransformation * m_boneInfo[BoneIndex].offset;
+		m_boneInfo[BoneIndex].combined = m_GlobalInverseTransform * GlobalTransformation * m_boneInfo[BoneIndex].offset;
 	}
 
 	for (uint i = 0; i < pNode->mNumChildren; i++) {
@@ -396,7 +395,7 @@ void SkinnedMesh::BoneTransform(float TimeInSeconds, vector<Matrix4f>& Transform
 	Transforms.resize(m_numBones);
 
 	for (uint i = 0; i < m_numBones; i++) {
-		Transforms[i] = m_boneInfo[i].final;
+		Transforms[i] = m_boneInfo[i].combined;
 	}
 }
 void SkinnedMesh::PrintInfo() const
@@ -476,7 +475,7 @@ void SkinnedMesh::GetBoneTransforms(vector<Matrix4f>& Transforms)
 	traverseNodeHierarchy(m_pScene->mRootNode, Matrix4f::Identity());
 	Transforms.resize(m_numBones);
 	for (uint i = 0; i < m_numBones; i++) {
-		Transforms[i] = m_boneInfo[i].final;
+		Transforms[i] = m_boneInfo[i].combined;
 	}
 }
 void SkinnedMesh::initBoneMapping()
@@ -510,8 +509,8 @@ void SkinnedMesh::initBoneMapping()
 	m_boneMap["RightForeArm"] = counter; counter++;
 	m_boneMap["LeftHand"] = counter; counter++;
 	m_boneMap["RightHand"] = counter; counter++;
-	m_boneMap["LeftThumb"] = counter; counter++;
-	m_boneMap["RightThumb"] = counter; counter++;
+	m_boneMap["LThumb"] = counter; counter++;
+	m_boneMap["RThumb"] = counter; counter++;
 	m_boneMap["LeftFingerBase"] = counter; counter++;
 	m_boneMap["RightFingerBase"] = counter; counter++;
 	m_boneMap["LeftHandFinger1"] = counter; counter++;
@@ -533,7 +532,7 @@ void SkinnedMesh::initCorrectedMatrices()
 {
 	for (int i = 0; i < m_numBones; i++) {
 		m_correctionMats[i].InitRotateTransform2(m_correctionQuats[i]);
-		m_boneInfo[i].corrected = m_correctionMats[i] * m_boneInfo[i].local;
+		m_boneInfo[i].corrected = m_correctionMats[i] * m_boneInfo[i].local; // #? maybe opposite order of multiplication
 	}
 }
 void SkinnedMesh::initCorrectionQuats() // OpenSim crash if calling fromEulerAngles from instance
@@ -645,10 +644,11 @@ void SkinnedMesh::traverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 
 		if (m_parameters[4]) G = P * correctedLocal * opensimRot * controlRot;
 		else G = P * controlRot * opensimRot * correctedLocal;
-		m_boneInfo[i].final = G * m_boneInfo[i].offset;
+		m_boneInfo[i].global = G;
+		m_boneInfo[i].combined = G * m_boneInfo[i].offset;
 		qts << "Bone Offset:\n" << toString(m_boneInfo[i].offset);
 		qts << "Global transformation:\n" << toString(G);
-		qts << "Final Transformation:\n" << toString(m_boneInfo[i].final);
+		qts << "Final Transformation:\n" << toString(m_boneInfo[i].combined);
 		qts << flush;
 		m_boneTransformInfo[findBoneId(nodeName)] = qs;
 	}
@@ -784,5 +784,46 @@ const map<string, uint>& SkinnedMesh::Bones() const
 {
 	return m_boneMap;
 }
+void SkinnedMesh::loadAxesToGPU()
+{
+	GLfloat vertices[] =
+	{
+		// positionX, positionY, positionZ, colorRed, colorGreen, ColorBlue
+		0.f, 0.f, 0.f, 0.f  , 0.f  , 0.f, // origin
+		1.f, 0.f, 0.f, 255.f, 0.f  , 0.f, // x axis
+		0.f, 1.f, 0.f, 0.f  , 255.f, 0.f, // y axis
+		0.f, 0.f, 1.f, 0.f  , 0.f  , 255.f // z axis
+	};
 
+	GLushort indices[] = { 0, 1, 0, 2, 0, 3 };
 
+	glGenVertexArrays(1, &m_axesVAO);
+	glBindVertexArray(m_axesVAO);
+
+	glGenBuffers(1, &m_axesIBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_axesIBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices[0])*ARRAY_SIZE_IN_ELEMENTS(indices), &indices[0], GL_STATIC_DRAW);
+
+	glGenBuffers(1, &m_axesVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_axesVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0])*ARRAY_SIZE_IN_ELEMENTS(vertices), &vertices[0], GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat)*6, 0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat)*6, BUFFER_OFFSET(sizeof(float) * 3));
+
+	glBindVertexArray(0); // break the existing vertex array object binding
+}
+void SkinnedMesh::drawBoneAxis()
+{ 
+	glBindVertexArray(m_axesVAO);
+	glDrawElements(GL_LINES, 6, GL_UNSIGNED_SHORT, 0);
+	glBindVertexArray(0);
+}
+bool SkinnedMesh::initOGL() {
+	return initializeOpenGLFunctions();
+}
+const Matrix4f& SkinnedMesh::boneFinal(uint boneIndex) const
+{
+	return m_boneInfo[boneIndex].combined;
+}
