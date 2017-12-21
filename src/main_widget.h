@@ -85,7 +85,8 @@ private:
 
 	bool m_renderAxes = true;
 	bool m_renderSkeleton = true;
-	bool m_renderCameraVectors = false;	
+	bool m_renderSkinnedMesh = true;
+
 	bool m_play = true;	
 
 	#define NUM_INFO_BLOCKS 3
@@ -95,7 +96,6 @@ private:
 	void MySetup();
 
 	// Skinned mesh variables
-	bool m_renderModel = true;
 	bool m_modelSkinning = true;
 	QString m_modelName;
 	bool loadToGPU(const string& basename);

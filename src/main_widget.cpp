@@ -156,15 +156,16 @@ void MainWidget::paintGL()
 	if (m_play) {
 		Transform(false);
 	}
-	if (m_renderModel && m_successfullyLoaded) {
+	if (m_renderSkinnedMesh && m_successfullyLoaded) {
 		drawSkinnedMesh();
 	}
 
 	m_Tech->enable();
 	m_Tech->setMVP(m_Pipe->GetWVPTrans());
-	m_Tech->setSpecific(m_skinnedMesh->boneFinal(m_activeBone));
+	m_Tech->setSpecific(m_skinnedMesh->boneGlobal(m_activeBone));
 	m_skinnedMesh->drawBoneAxis();
-
+	m_Tech->setSpecific(Matrix4f::Identity());
+	if (m_renderAxes) m_skinnedMesh->drawBoneAxis();
 	//if (m_renderSkeleton) m_ksensor->skeleton()->drawSkeleton(0);
 
 	//if (m_renderCameraVectors)		m_Cam->DrawCameraVectors();
@@ -348,14 +349,14 @@ bool MainWidget::renderAxes() const
 }
 void MainWidget::setRenderModel(bool state)
 {
-	if (m_renderModel != state) {
-		m_renderModel = state;
+	if (m_renderSkinnedMesh != state) {
+		m_renderSkinnedMesh = state;
 		update();
 	}
 }
 bool MainWidget::renderModel() const
 {
-	return m_renderModel;
+	return m_renderSkinnedMesh;
 }
 bool MainWidget::modelSkinning() const
 {
@@ -520,7 +521,7 @@ void MainWidget::setBoneAxes(const QString &boneName)
 	uint boneId = m_skinnedMesh->findBoneId(boneName);
 	assert(boneId < m_boneInfo.size());
 	m_Tech->enable();
-	m_Tech->setSpecific(m_skinnedMesh->boneFinal(boneId));
+	m_Tech->setSpecific(m_skinnedMesh->boneGlobal(boneId));
 }
 void MainWidget::setActiveBone(const QString& boneName)
 {

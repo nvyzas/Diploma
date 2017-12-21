@@ -131,7 +131,7 @@ public:
 	void loadAxesToGPU();
 	void drawBoneAxis();
 	bool initOGL();
-	const Matrix4f& boneFinal(uint boneIndex) const;
+	const Matrix4f& boneGlobal(uint boneIndex) const;
 
 private:
 	void Clear();

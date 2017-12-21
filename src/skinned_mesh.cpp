@@ -575,9 +575,9 @@ void SkinnedMesh::initCorrectionQuats() // OpenSim crash if calling fromEulerAng
 }
 void SkinnedMesh::initCoordinates()
 {
-	m_modelCoordinates[hip_flexion_l] = 0.f; 
-	m_modelCoordinates[hip_adduction_l] = 0.f; // LHipJoint -z or LeftUpLeg -x 
-	m_modelCoordinates[hip_rotation_l] = 0.f;
+	m_modelCoordinates[hip_flexion_l] = 0.f; // LeftUpLeg -x / LHipJoint -y (worse)
+	m_modelCoordinates[hip_adduction_l] = 0.f; // LeftUpLeg -x / LHipJoint x (worse)
+	m_modelCoordinates[hip_rotation_l] = 0.f; // LeftUpLeg y / LHipJoint z (worse)
 	m_modelCoordinates[knee_angle_l] = 0.f;
 	m_hasCoordinates[m_boneMap.find("RightUpLeg")->second] = true;
 }
@@ -587,13 +587,13 @@ QVector3D SkinnedMesh::coordinateAngles(uint i)
 		return QVector3D(0, 0, 0);
 	}
 	else if (i == m_boneMap.find("LHipJoint")->second) {
-		return QVector3D(0, m_modelCoordinates[hip_flexion_l], m_modelCoordinates[hip_adduction_l]);
-	}
-	else if (i == m_boneMap.find("LeftUpLeg")->second){
 		return QVector3D(0, 0, 0);
 	}
+	else if (i == m_boneMap.find("LeftUpLeg")->second){
+		return QVector3D(-m_modelCoordinates[hip_flexion_l], m_modelCoordinates[hip_rotation_l], m_modelCoordinates[hip_adduction_l]);
+	}
 	else if (i == m_boneMap.find("LeftLeg")->second) {
-		return QVector3D(0, m_modelCoordinates[hip_rotation_l], 0);
+		return QVector3D(0, 0, 0);
 	}
 	else {
 		return QVector3D(0, 0, 0);
@@ -820,10 +820,11 @@ void SkinnedMesh::drawBoneAxis()
 	glDrawElements(GL_LINES, 6, GL_UNSIGNED_SHORT, 0);
 	glBindVertexArray(0);
 }
-bool SkinnedMesh::initOGL() {
+bool SkinnedMesh::initOGL() 
+{
 	return initializeOpenGLFunctions();
 }
-const Matrix4f& SkinnedMesh::boneFinal(uint boneIndex) const
+const Matrix4f& SkinnedMesh::boneGlobal(uint boneIndex) const
 {
-	return m_boneInfo[boneIndex].combined;
+	return m_boneInfo[boneIndex].global;
 }
