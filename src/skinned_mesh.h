@@ -227,7 +227,7 @@ private:
 	array<float, m_numCoordinates> m_modelCoordinateNames;
 	array<float, m_numCoordinates> m_modelCoordinates;
 	void initCoordinates();
-	QVector3D coordinateAngles(uint i);
+	QQuaternion coordinateAngles(uint i);
 
 
 	uint m_numBones = 0; // crash if not 0

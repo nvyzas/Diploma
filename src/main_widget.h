@@ -28,12 +28,12 @@ public:
 	MainWidget(QWidget *parent = Q_NULLPTR);
 	~MainWidget();
 	
-	bool renderAxes() const;
 
 	// get functions
 	SkinnedMesh* skinnedMesh();
 	SkinningTechnique* skinningTechnique();
 	Technique* technique();
+	bool renderAxes() const;
 	bool renderModel() const;
 	bool modelSkinning() const;
 	QStringList modelBoneList() const;
@@ -83,7 +83,7 @@ private:
 	
 	QPoint m_lastPos;
 
-	bool m_renderAxes = true;
+	bool m_renderAxes = false;
 	bool m_renderSkeleton = true;
 	bool m_renderSkinnedMesh = true;
 

@@ -183,8 +183,8 @@ void MainWindow::setupObjects()
 	ui->openGLWidget->setModelName(ui->comboBox_activeModel->currentText());
 	ui->openGLWidget->setKSensor(m_ksensor);
 
-	ui->checkBox_axes->setChecked(ui->openGLWidget->renderModel());
-	ui->checkBox_model->setChecked(ui->openGLWidget->renderAxes());
+	ui->checkBox_axes->setChecked(ui->openGLWidget->renderAxes());
+	ui->checkBox_model->setChecked(ui->openGLWidget->renderModel());
 
 	QMenu *menuInfo = new QMenu(ui->pushButton_info);
 	menuInfo->addAction("Bone Transforms", this, SLOT(printActiveBoneTransforms()));

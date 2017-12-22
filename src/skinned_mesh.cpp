@@ -532,7 +532,7 @@ void SkinnedMesh::initCorrectedMatrices()
 {
 	for (int i = 0; i < m_numBones; i++) {
 		m_correctionMats[i].InitRotateTransform2(m_correctionQuats[i]);
-		m_boneInfo[i].corrected = m_correctionMats[i] * m_boneInfo[i].local; // #? maybe opposite order of multiplication
+		m_boneInfo[i].corrected =  m_boneInfo[i].local * m_correctionMats[i]; // #? maybe opposite order of multiplication
 	}
 }
 void SkinnedMesh::initCorrectionQuats() // OpenSim crash if calling fromEulerAngles from instance
@@ -560,10 +560,6 @@ void SkinnedMesh::initCorrectionQuats() // OpenSim crash if calling fromEulerAng
 	m_correctionQuats[findBoneId("RightToeBase")    ] = QQuaternion::fromEulerAngles(0, 0, 0);
 	m_correctionQuats[findBoneId("LeftShoulder")    ] = QQuaternion::fromEulerAngles(0, 0, 0);
 	m_correctionQuats[findBoneId("RightShoulder")   ] = QQuaternion::fromEulerAngles(0, 0, 0);
-	m_correctionQuats[findBoneId("LeftArm")         ] = QQuaternion::fromEulerAngles(0, 0, 0);
-	m_correctionQuats[findBoneId("RightArm")        ] = QQuaternion::fromEulerAngles(0, 0, 0);
-	m_correctionQuats[findBoneId("LeftForeArm")     ] = QQuaternion::fromEulerAngles(0, 0, 0);
-	m_correctionQuats[findBoneId("RightForeArm")    ] = QQuaternion::fromEulerAngles(0, 0, 0);
 	m_correctionQuats[findBoneId("LeftHand")        ] = QQuaternion::fromEulerAngles(0, 0, 0);
 	m_correctionQuats[findBoneId("RightHand")       ] = QQuaternion::fromEulerAngles(0, 0, 0);
 	m_correctionQuats[findBoneId("LeftThumb")       ] = QQuaternion::fromEulerAngles(0, 0, 0);
@@ -572,32 +568,59 @@ void SkinnedMesh::initCorrectionQuats() // OpenSim crash if calling fromEulerAng
 	m_correctionQuats[findBoneId("RightFingerBase") ] = QQuaternion::fromEulerAngles(0, 0, 0);
 	m_correctionQuats[findBoneId("LeftHandFinger1") ] = QQuaternion::fromEulerAngles(0, 0, 0);
 	m_correctionQuats[findBoneId("RightHandFinger1")] = QQuaternion::fromEulerAngles(0, 0, 0);
+	//m_correctionQuats[findBoneId("RightArm")]     = QQuaternion::fromEulerAngles(0, 0, 20);
+	//m_correctionQuats[findBoneId("RightForeArm")] = QQuaternion::fromEulerAngles(0, 100, -50);
+	// try 1
+	//m_correctionQuats[findBoneId("LeftArm")]      = QQuaternion::fromEulerAngles(0, 0, -30);
+	//m_correctionQuats[findBoneId("LeftForeArm")]  = QQuaternion::fromEulerAngles(0, -110, 50);
+	m_correctionQuats[findBoneId("LeftArm")]        = QQuaternion::fromEulerAngles(0, -30, 0);
+	m_correctionQuats[findBoneId("LeftArm")]	   *= QQuaternion::fromEulerAngles(0, 0, -30);
+	m_correctionQuats[findBoneId("LeftForeArm")]    = QQuaternion::fromEulerAngles(0, -30, 0);
+	m_correctionQuats[findBoneId("LeftForeArm")]   *= QQuaternion::fromEulerAngles(0, 0, 50);
+	m_correctionQuats[findBoneId("LeftHand")]       = QQuaternion::fromEulerAngles(0, 0, 0);
+
 }
 void SkinnedMesh::initCoordinates()
 {
-	m_modelCoordinates[hip_flexion_l] = 0.f; // LeftUpLeg -x / LHipJoint -y (worse)
-	m_modelCoordinates[hip_adduction_l] = 0.f; // LeftUpLeg -x / LHipJoint x (worse)
-	m_modelCoordinates[hip_rotation_l] = 0.f; // LeftUpLeg y / LHipJoint z (worse)
-	m_modelCoordinates[knee_angle_l] = 0.f;
-	m_hasCoordinates[m_boneMap.find("RightUpLeg")->second] = true;
+	// core
+	m_modelCoordinates[lumbar_extension] = 0.f; // LowerBack -x
+	m_modelCoordinates[lumbar_bending] = 0.f; // LowerBack z
+	m_modelCoordinates[lumbar_rotation] = 0.f; // LowerBack y
+	// left
+	m_modelCoordinates[hip_flexion_l]    = 0.f; // LeftUpLeg -x / LHipJoint -y (worse)
+	m_modelCoordinates[hip_adduction_l]  = 0.f; // LeftUpLeg -x / LHipJoint x (worse)
+	m_modelCoordinates[hip_rotation_l]   = 0.f; // LeftUpLeg y / LHipJoint z (worse)
+	m_modelCoordinates[knee_angle_l]     = 0.f;
+	m_modelCoordinates[arm_flex_l]       = 90.f; // LeftArm x
+	m_modelCoordinates[arm_add_l]        = 0.f; // LeftArm -z
+	m_modelCoordinates[arm_rot_l]        = 0.f; // LeftArm y
 }
-QVector3D SkinnedMesh::coordinateAngles(uint i)
+QQuaternion SkinnedMesh::coordinateAngles(uint i)
 {
+	QQuaternion q;
 	if (i == m_boneMap.find("Hips")->second) {
-		return QVector3D(0, 0, 0);
 	}
 	else if (i == m_boneMap.find("LHipJoint")->second) {
-		return QVector3D(0, 0, 0);
 	}
-	else if (i == m_boneMap.find("LeftUpLeg")->second){
-		return QVector3D(-m_modelCoordinates[hip_flexion_l], m_modelCoordinates[hip_rotation_l], m_modelCoordinates[hip_adduction_l]);
+	else if (i == m_boneMap.find("LeftUpLeg")->second) {
+		q = QQuaternion::fromEulerAngles(-m_modelCoordinates[hip_flexion_l], 0, 0);
+		q *= QQuaternion::fromEulerAngles(0, 0, m_modelCoordinates[hip_adduction_l]);
+		q *= QQuaternion::fromEulerAngles(0, m_modelCoordinates[hip_rotation_l], 0);
 	}
 	else if (i == m_boneMap.find("LeftLeg")->second) {
-		return QVector3D(0, 0, 0);
+		q = QQuaternion::fromEulerAngles(-m_modelCoordinates[knee_angle_l], 0, 0);
 	}
-	else {
-		return QVector3D(0, 0, 0);
+	else if (i == m_boneMap.find("LowerBack")->second) {
+		q = QQuaternion::fromEulerAngles(-m_modelCoordinates[lumbar_extension], 0, 0);
+		q *= QQuaternion::fromEulerAngles(0, 0, m_modelCoordinates[lumbar_bending]);
+		q *= QQuaternion::fromEulerAngles(0, m_modelCoordinates[lumbar_rotation], 0);
 	}
+	else if (i == m_boneMap.find("LeftArm")->second) {
+		q = QQuaternion::fromEulerAngles(m_modelCoordinates[arm_flex_l], 0, 0);
+		q *= QQuaternion::fromEulerAngles(0, 0, -m_modelCoordinates[arm_add_l]);
+		q *= QQuaternion::fromEulerAngles(0, m_modelCoordinates[arm_rot_l], 0);
+	}
+	return q;
 }
 void SkinnedMesh::traverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 {
@@ -632,9 +655,7 @@ void SkinnedMesh::traverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P)
 		qts << "Control quaternion: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
 		qts << "Control transformation:\n" << toString(m_controlMats[i]);
 		
-		QVector3D angles = coordinateAngles(i);
-		qts << "Angles from coordinates: " << toStringCartesian(angles) << endl;
-		q = QQuaternion::fromEulerAngles(angles); // z->x->y
+		q = coordinateAngles(i);
 		qts << "Quaternion from angles: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;		
 		
 		Matrix4f opensimRot, controlRot, correctedLocal; // initialized as identity
