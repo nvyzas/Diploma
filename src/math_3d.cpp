@@ -104,6 +104,11 @@ void Matrix4f::InitTranslateTransform(float x, float y, float z)
     m[2][0] = 0.0f; m[2][1] = 0.0f; m[2][2] = 1.0f; m[2][3] = z;
     m[3][0] = 0.0f; m[3][1] = 0.0f; m[3][2] = 0.0f; m[3][3] = 1.0f;
 }
+void Matrix4f::InitTranslateTransform(QVector3D v)
+{
+	InitTranslateTransform(v.x(), v.y(), v.z());
+}
+
 void Matrix4f::InitCameraTransform(const QVector3D& Target, const QVector3D& Up)
 {
 	QVector3D N = Target;

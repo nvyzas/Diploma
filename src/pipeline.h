@@ -24,52 +24,54 @@ class Pipeline
 public:
     Pipeline()
     {
-        m_scale      = QVector3D(1.0f, 1.0f, 1.0f);
-        m_worldPos   = QVector3D(0.0f, 0.0f, 0.0f);
-        m_rotateInfo = QVector3D(0.0f, 0.0f, 0.0f);
+        m_worldScale      = QVector3D(1.0f, 1.0f, 1.0f);
+        m_worldPosition   = QVector3D(0.0f, 0.0f, 0.0f);
+        m_worldRotation   = QQuaternion::fromEulerAngles(0.0f, 0.0f, 0.0f);
     }
 
-    void worldScale(float s)
+    void setWorldScale(float s)
     {
-        worldScale(s, s, s);
+        setWorldScale(s, s, s);
     }
     
-    void worldScale(const QVector3D& scale)
+    void setWorldScale(const QVector3D& scale)
     {
-        worldScale(scale.x(), scale.y(), scale.z());
+        setWorldScale(scale.x(), scale.y(), scale.z());
     }
     
-    void worldScale(float ScaleX, float ScaleY, float ScaleZ)
+    void setWorldScale(float ScaleX, float ScaleY, float ScaleZ)
     {
-        m_scale.setX(ScaleX);
-        m_scale.setY(ScaleY);
-        m_scale.setZ(ScaleZ);
+        m_worldScale.setX(ScaleX);
+        m_worldScale.setY(ScaleY);
+        m_worldScale.setZ(ScaleZ);
     }
 
-    void worldTranslate(float x, float y, float z)
+    void setWorldPosition(float x, float y, float z)
     {
-        m_worldPos.setX(x);
-        m_worldPos.setY(y);
-        m_worldPos.setZ(z);
+        m_worldPosition.setX(x);
+        m_worldPosition.setY(y);
+        m_worldPosition.setZ(z);
     }
     
-    void worldTranslate(const QVector3D& Pos)
+    void setWorldPosition(const QVector3D& Pos)
     {
-        m_worldPos = Pos;
+        m_worldPosition = Pos;
     }
 
-    void worldRotate(float RotateX, float RotateY, float RotateZ)
+    void setWorldRotation(float RotateX, float RotateY, float RotateZ)
     {
-        m_rotateInfo.setX(RotateX);
-        m_rotateInfo.setY(RotateY);
-        m_rotateInfo.setZ(RotateZ);
+        m_worldRotation.setX(RotateX);
+        m_worldRotation.setY(RotateY);
+        m_worldRotation.setZ(RotateZ);
     }
-    
-    void worldRotate(const QVector3D& r)
+    void setWorldRotation(const QVector3D& r)
     {
-        worldRotate(r.x(), r.y(), r.z());
+        setWorldRotation(r.x(), r.y(), r.z());
     }
-
+	void setWorldRotation(const QQuaternion& q)
+	{
+		m_worldRotation = q;
+	}
     void SetPerspectiveProj(const PersProjInfo& p)
     {
         m_persProjInfo = p;
@@ -94,9 +96,9 @@ public:
     
     void Orient(const Orientation& o)
     {
-        m_scale      = o.m_scale;
-        m_worldPos   = o.m_pos;
-        m_rotateInfo = o.m_rotation;
+        m_worldScale      = o.m_scale;
+        m_worldPosition   = o.m_pos;
+        //m_worldRotation	  = o.m_rotation; #todo fix
     }
 
     const Matrix4f& GetWPTrans();
@@ -109,9 +111,9 @@ public:
     const Matrix4f& GetProjTrans();
 
 private:
-	QVector3D m_scale;
-	QVector3D m_worldPos;
-	QVector3D m_rotateInfo;
+	QVector3D m_worldScale;
+	QQuaternion m_worldRotation;
+	QVector3D m_worldPosition;
 
     PersProjInfo m_persProjInfo;
     OrthoProjInfo m_orthoProjInfo;

@@ -93,10 +93,6 @@ void MainWidget::MySetup()
 	m_Cam->printInfo();
 
 	// Init Pipeline
-	m_Pipe->worldScale(1.f, 1.f, 1.f);
-	m_Pipe->worldRotate(0.f, -90.f, 0.f);
-	m_Pipe->worldTranslate(0.f, 0.f, 0.f);
-	
 	m_Pipe->SetCamera(m_Cam->GetPos(), m_Cam->GetTarget(), m_Cam->GetUp());
 
 	PersProjInfo persProjInfo;
@@ -150,8 +146,13 @@ void MainWidget::paintGL()
 	else {
 		m_ksensor->skeleton()->getActiveFrame();
 	}
-	//*
+	
+	// draw skinned mesh
 	m_Skin->enable();
+	QQuaternion& q = m_skinnedMesh->worldRotation();
+	m_Pipe->setWorldRotation(q);
+	QVector3D& p = m_skinnedMesh->worldPosition();
+	m_Pipe->setWorldPosition(p);
 	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
 	if (m_play) {
 		Transform(false);
@@ -160,11 +161,15 @@ void MainWidget::paintGL()
 		drawSkinnedMesh();
 	}
 
+	// draw skinned mesh bone axis
 	m_Tech->enable();
 	m_Tech->setMVP(m_Pipe->GetWVPTrans());
 	m_Tech->setSpecific(m_skinnedMesh->boneGlobal(m_activeBone));
 	m_skinnedMesh->drawBoneAxis();
+	
+	// draw axis
 	m_Tech->setSpecific(Matrix4f::Identity());
+	m_Tech->setMVP(m_Pipe->GetVPTrans()); // only VP transformation!
 	if (m_renderAxes) m_skinnedMesh->drawBoneAxis();
 	//if (m_renderSkeleton) m_ksensor->skeleton()->drawSkeleton(0);
 

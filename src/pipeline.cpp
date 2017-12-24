@@ -20,9 +20,9 @@ const Matrix4f& Pipeline::GetWorldTrans()
 {
     Matrix4f ScaleTrans, RotateTrans, TranslationTrans;
 
-    ScaleTrans.InitScaleTransform(m_scale.x(), m_scale.y(), m_scale.z());
-    RotateTrans.InitRotateTransform(m_rotateInfo.x(), m_rotateInfo.y(), m_rotateInfo.z());
-    TranslationTrans.InitTranslateTransform(m_worldPos.x(), m_worldPos.y(), m_worldPos.z());
+    ScaleTrans.InitScaleTransform(m_worldScale.x(), m_worldScale.y(), m_worldScale.z());
+	RotateTrans.InitRotateTransform2(m_worldRotation);
+    TranslationTrans.InitTranslateTransform(m_worldPosition.x(), m_worldPosition.y(), m_worldPosition.z());
 
     m_Wtransformation = TranslationTrans * RotateTrans * ScaleTrans;
     return m_Wtransformation;

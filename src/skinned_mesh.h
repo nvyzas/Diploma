@@ -133,6 +133,8 @@ public:
 	bool initOGL();
 	const Matrix4f& boneGlobal(uint boneIndex) const;
 
+	QQuaternion worldRotation();
+	QVector3D worldPosition();
 private:
 	void Clear();
 	void InitMesh(uint MeshIndex, const aiMesh* paiMesh);

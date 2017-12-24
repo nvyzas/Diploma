@@ -83,7 +83,7 @@ private:
 	
 	QPoint m_lastPos;
 
-	bool m_renderAxes = false;
+	bool m_renderAxes = true;
 	bool m_renderSkeleton = true;
 	bool m_renderSkinnedMesh = true;
 
