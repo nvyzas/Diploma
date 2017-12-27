@@ -296,7 +296,7 @@ void KSensor::record()
 		cout << "Recording stopped." << endl;
 		cout << "Average frame interval (milliseconds) = " << m_averageInterval << endl;
 		m_skeleton.setTimestep(m_averageInterval);
-		m_skeleton.createTRC();
+		m_skeleton.writeTRC();
 		m_skeleton.saveToBinary();
 		m_skeleton.printSequence();
 	}

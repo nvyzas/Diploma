@@ -100,7 +100,6 @@ public:
 	
 	bool m_SuccessfullyLoaded;
 
-	void initBoneMapping();
 	float boneRotationX(const QString &boneName) const;
 	float boneRotationY(const QString &boneName) const;
 	float boneRotationZ(const QString &boneName) const;
@@ -135,6 +134,8 @@ public:
 
 	QQuaternion worldRotation();
 	QVector3D worldPosition();
+	bool readMOT();
+
 private:
 	void Clear();
 	void InitMesh(uint MeshIndex, const aiMesh* paiMesh);
@@ -226,8 +227,10 @@ private:
 		wrist_flex_l,
 		wrist_dev_l
 	};
-	array<float, m_numCoordinates> m_modelCoordinateNames;
 	array<float, m_numCoordinates> m_modelCoordinates;
+	QVector <array<float, m_numCoordinates>> m_modelCoordinateSequence;
+	QVector<double> m_timestamps;
+
 	void initCoordinates();
 	QQuaternion coordinateAngles(uint i);
 

@@ -119,8 +119,11 @@ public:
 	void printJointHierarchy() const;
 	void printJoints() const;
 	void printSequence() const;
-	bool createTRC();
+	// files
+	bool writeTRC();
 	bool readTRC();
+	void saveToBinary() const;
+	void loadFromBinary();
 
 	uint activeFrame() const;
 	void setActiveFrame(uint index);
@@ -129,8 +132,6 @@ public:
 	void getActiveFrame();
 	double timeStep() const;
 	void setTimestep(double timestep);
-	void saveToBinary() const;
-	void loadFromBinary();
 	void clearSequences();
 
 	bool m_playOn = false;
@@ -138,6 +139,9 @@ public:
 
 	bool m_playbackInterpolated = true;
 	bool m_playbackFiltered = false;
+	void drawSkeleton();
+	void loadSkeletonToGPU();
+
 private:
 	array<KNode, NUM_MARKERS> m_nodes; // these define the kinect skeleton hierarchy
 	array<KJoint, NUM_MARKERS> m_joints;
@@ -162,6 +166,9 @@ private:
 	const array<float, 8> m_sgCoefficients7 = { -2, 3, 6, 7, 6, 3, -2, 21 };
 	const array<float, 10> m_sgCoefficients9 = { -21, 14, 39, 54, 59, 54, 39, 14, -21, 231 };
 	const array<float, 26> m_sgCoefficients25 = { -253, -138, -33, 62, 147, 222, 287, 343, 387, 422, 447, 462, 467, 462, 447, 422, 387, 343, 278, 222, 147, 62, -33, -138, -253, 5175 };
+	
+	uint m_skeletonVAO;
+	float m_jointBufferData[2 * 3 * JointType_Count]; // 2 attributes x 3 components x JointType_Count joints
 };
 
 #endif

@@ -185,6 +185,7 @@ void MainWindow::setupObjects()
 
 	ui->checkBox_axes->setChecked(ui->openGLWidget->renderAxes());
 	ui->checkBox_model->setChecked(ui->openGLWidget->renderModel());
+	ui->checkBox_skeleton->setChecked(ui->openGLWidget->renderSkeleton());
 
 	QMenu *menuInfo = new QMenu(ui->pushButton_info);
 	menuInfo->addAction("Bone Transforms", this, SLOT(printActiveBoneTransforms()));
@@ -226,7 +227,8 @@ void MainWindow::setupConnections()
 	connect(ui->checkBox_axes, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setRenderAxes(bool)));
 	// render model
 	connect(ui->checkBox_model, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setRenderModel(bool)));
-	
+	// render skeleton
+	connect(ui->checkBox_skeleton, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setRenderSkeleton(bool)));
 	// Kinect
 	//connect(m_timer, SIGNAL(timeout()), this, SLOT(getKinectData()));
 	connect(ui->horizontalSlider_progressPercent, SIGNAL(valueChanged(int)), SLOT(setActiveKinectSkeletonFrame(int)));

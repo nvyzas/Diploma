@@ -171,7 +171,7 @@ void MainWidget::paintGL()
 	m_Tech->setSpecific(Matrix4f::Identity());
 	m_Tech->setMVP(m_Pipe->GetVPTrans()); // only VP transformation!
 	if (m_renderAxes) m_skinnedMesh->drawBoneAxis();
-	//if (m_renderSkeleton) m_ksensor->skeleton()->drawSkeleton(0);
+	if (m_renderSkeleton) m_ksensor->skeleton()->drawSkeleton();
 
 	//if (m_renderCameraVectors)		m_Cam->DrawCameraVectors();
 	//*/
@@ -219,6 +219,9 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_C:
 		if (!m_ksensor->connect()) cout << "Could not connect to kinect sensor." << endl;
 		break;
+	case Qt::Key_J:
+		m_ksensor->skeleton()->printJoints();
+		break;
 	case Qt::Key_F:
 		m_ksensor->skeleton()->m_playbackFiltered = !m_ksensor->skeleton()->m_playbackFiltered;
 		cout << "Filtered data playback " << (m_ksensor->skeleton()->m_playbackFiltered ? "ON" : "OFF") << endl;
@@ -259,7 +262,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		m_ksensor->skeleton()->printSequence();
 		break;
 	case Qt::Key_T:
-		m_ksensor->skeleton()->createTRC();
+		m_ksensor->skeleton()->writeTRC();
 		break;
 	case Qt::Key_Escape:
 		event->ignore();	// event passed to MainWidget's parent (MainWindow)
@@ -348,10 +351,6 @@ void MainWidget::setRenderAxes(bool state)
 		update();
 	}
 }
-bool MainWidget::renderAxes() const
-{
-	return m_renderAxes;
-}
 void MainWidget::setRenderModel(bool state)
 {
 	if (m_renderSkinnedMesh != state) {
@@ -359,9 +358,24 @@ void MainWidget::setRenderModel(bool state)
 		update();
 	}
 }
+void MainWidget::setRenderSkeleton(bool state)
+{
+	if (m_renderSkeleton != state) {
+		m_renderSkeleton = state;
+		update();
+	}
+}
+bool MainWidget::renderAxes() const
+{
+	return m_renderAxes;
+}
 bool MainWidget::renderModel() const
 {
 	return m_renderSkinnedMesh;
+}
+bool MainWidget::renderSkeleton() const
+{
+	return m_renderSkeleton;
 }
 bool MainWidget::modelSkinning() const
 {

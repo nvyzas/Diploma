@@ -49,8 +49,6 @@ private:
 	// Kinect
 	KSensor m_ksensor;	
 	QTimer *m_timer;
-	bool m_renderSkeleton = false;
-	bool m_renderActiveJoint = false;
 };
 
 #endif /* MAIN_WINDOW_H */

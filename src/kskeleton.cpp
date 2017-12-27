@@ -95,7 +95,7 @@ void KSkeleton::addFrame(const Joint *joints, const JointOrientation *orientatio
 		m_filteredInterpolatedSequence.push_back(kframe);
 	}
 }
-bool KSkeleton::createTRC()
+bool KSkeleton::writeTRC()
 {
 	QFile qf("joint_positions.trc");
 	if (!qf.open(QIODevice::WriteOnly | QIODevice::Text)) {
@@ -207,10 +207,6 @@ void KSkeleton::initJointHierarchy()
 	}
 }
 
-bool KSkeleton::initOGL() {
-	return initializeOpenGLFunctions();
-}
-
 void KSkeleton::nextJoint(int step)
 {
 	m_activeJoint = Mod(m_activeJoint, JointType_Count, step);
@@ -299,19 +295,19 @@ void KSkeleton::nextActiveFrame()
 void KSkeleton::getActiveFrame()
 {
 	if (m_playbackFiltered && m_playbackInterpolated) {
-		cout << "Both " << m_activeFrame << endl;
+		cout << "Playing back filteredInterpolated " << m_activeFrame << endl;
 		m_joints = m_filteredInterpolatedSequence[m_activeFrame].joints;
 	}
 	else if (m_playbackInterpolated) {
-		cout << "Just interpolated " << m_activeFrame << endl;
+		cout << "Playing back interpolated " << m_activeFrame << endl;
 		m_joints = m_interpolatedSequence[m_activeFrame].joints;
 	}
 	else if (m_playbackFiltered) {
-		cout << "Deinterpolated filtered " << m_activeFrame << endl;
+		cout << "Playing back filtered " << m_activeFrame << endl;
 		m_joints = m_filteredSequence[m_activeFrame].joints;
 	}
 	else {
-		cout << "Raw " << m_activeFrame << endl;
+		cout << "Playing back raw " << m_activeFrame << endl;
 		m_joints = m_sequence[m_activeFrame].joints;
 	}
 	//cout << "Active frame = " << m_activeFrame << endl;
@@ -398,7 +394,6 @@ void KSkeleton::loadFromBinary()
 	cout << "Size of loaded filtered sequence: " << m_filteredSequence.size() << endl;
 	if (m_filteredSequence.size() != 0) cout << "Duration: " << m_filteredSequence.back().timestamp << endl;
 }
-
 void KSkeleton::clearSequences()
 {
 	// #todo: clear may be expensive so add if for each clear
@@ -407,4 +402,83 @@ void KSkeleton::clearSequences()
 	m_filteredInterpolatedSequence.clear();
 	m_filteredSequence.clear();
 	m_activeFrame = 0;
+}
+bool KSkeleton::initOGL() {
+	bool success = initializeOpenGLFunctions();
+
+	GLushort indices[] =
+	{
+		// core
+		6 * JointType_SpineBase    , 6 * JointType_SpineMid,
+		6 * JointType_SpineMid     , 6 * JointType_SpineShoulder,
+		6 * JointType_SpineShoulder, 6 * JointType_Neck,
+		6 * JointType_Neck         , 6 * JointType_Head,
+		// left side			   
+		6 * JointType_SpineShoulder, 6 * JointType_ShoulderLeft,
+		6 * JointType_ShoulderLeft , 6 * JointType_ElbowLeft,
+		6 * JointType_ElbowLeft    , 6 * JointType_WristLeft,
+		6 * JointType_WristLeft    , 6 * JointType_HandLeft,
+		6 * JointType_HandLeft     , 6 * JointType_ThumbLeft,
+		6 * JointType_HandLeft     , 6 * JointType_HandTipLeft,
+		6 * JointType_SpineBase    , 6 * JointType_HipLeft,
+		6 * JointType_HipLeft      , 6 * JointType_KneeLeft,
+		6 * JointType_KneeLeft     , 6 * JointType_AnkleLeft,
+		6 * JointType_AnkleLeft    , 6 * JointType_FootLeft,
+		// Right side			 
+		6 * JointType_SpineShoulder, 6 * JointType_ShoulderRight,
+		6 * JointType_ShoulderRight, 6 * JointType_ElbowRight,
+		6 * JointType_ElbowRight   , 6 * JointType_WristRight,
+		6 * JointType_WristRight   , 6 * JointType_HandRight,
+		6 * JointType_HandRight    , 6 * JointType_ThumbRight,
+		6 * JointType_HandRight    , 6 * JointType_HandTipRight,
+		6 * JointType_SpineBase    , 6 * JointType_HipRight,
+		6 * JointType_HipRight     , 6 * JointType_KneeRight,
+		6 * JointType_KneeRight    , 6 * JointType_AnkleRight,
+		6 * JointType_AnkleRight   , 6 * JointType_FootRight
+	};
+
+	glGenVertexArrays(1, &m_skeletonVAO);
+	glBindVertexArray(m_skeletonVAO);
+
+	GLuint idIBO;
+	glGenBuffers(1, &idIBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, idIBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
+
+	GLuint idVBO;
+	glGenBuffers(1, &idVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, idVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 2 * 3 * JointType_Count, NULL, GL_STREAM_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, BUFFER_OFFSET(sizeof(float) * 3));
+
+	glBindVertexArray(0);
+
+	return success;
+}
+void KSkeleton::loadSkeletonToGPU()
+{
+}
+void KSkeleton::drawSkeleton()
+{
+	for (uint i = 0; i < JointType_Count; i++) {
+		m_jointBufferData[6 * i] = m_joints[i].position.x();
+		m_jointBufferData[6 * i + 1] = m_joints[i].position.y();
+		m_jointBufferData[6 * i + 2] = m_joints[i].position.z();
+		m_jointBufferData[6 * i + 3] = (m_joints[i].trackingState == TrackingState_NotTracked ? 255.f : 0.f);
+		m_jointBufferData[6 * i + 4] = (m_joints[i].trackingState == TrackingState_Tracked ? 255.f : 0.f);
+		m_jointBufferData[6 * i + 5] = (m_joints[i].trackingState == TrackingState_Inferred ? 255.f : 0.f);
+	}
+
+	glBindVertexArray(m_skeletonVAO);
+	void* ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+	memcpy(ptr, m_jointBufferData, sizeof(m_jointBufferData));
+	glUnmapBuffer(GL_ARRAY_BUFFER);
+
+	glBindVertexArray(m_skeletonVAO);
+	glDrawElements(GL_LINES, 6, GL_UNSIGNED_SHORT, 0);
+
+	glBindVertexArray(0);
 }

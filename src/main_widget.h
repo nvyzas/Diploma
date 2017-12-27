@@ -35,6 +35,7 @@ public:
 	Technique* technique();
 	bool renderAxes() const;
 	bool renderModel() const;
+	bool renderSkeleton() const;
 	bool modelSkinning() const;
 	QStringList modelBoneList() const;
 
@@ -43,6 +44,7 @@ public:
 public slots:
 	void setRenderAxes(bool state);
 	void setRenderModel(bool state);
+	void setRenderSkeleton(bool state);
 	void setModelName(const QString& modelName);
 	void setModelSkinning(bool state);
 	void setBoneAxes(const QString& boneName);
