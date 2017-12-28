@@ -134,6 +134,7 @@ void MainWidget::MySetup()
 		m_Skin->setBoneVisibility(i, m_skinnedMesh->boneVisibility(i));
 	}
 	Transform(true);
+	m_ksensor->skeleton()->printJointBufferData();
 }
 void MainWidget::paintGL()
 {
@@ -168,8 +169,8 @@ void MainWidget::paintGL()
 	m_skinnedMesh->drawBoneAxis();
 	
 	// draw axis
-	m_Tech->setSpecific(Matrix4f::Identity());
 	m_Tech->setMVP(m_Pipe->GetVPTrans()); // only VP transformation!
+	m_Tech->setSpecific(Matrix4f::Identity());
 	if (m_renderAxes) m_skinnedMesh->drawBoneAxis();
 	if (m_renderSkeleton) m_ksensor->skeleton()->drawSkeleton();
 
@@ -221,6 +222,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		break;
 	case Qt::Key_J:
 		m_ksensor->skeleton()->printJoints();
+		m_ksensor->skeleton()->printJointBufferData();
 		break;
 	case Qt::Key_F:
 		m_ksensor->skeleton()->m_playbackFiltered = !m_ksensor->skeleton()->m_playbackFiltered;

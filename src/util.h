@@ -10,6 +10,7 @@
 // Qt
 #include <QtGui\QOpenGLFunctions_3_3_Core>
 #include <QtGui\QOpenGLFunctions_3_3_Compatibility>
+#include <QVector3D>
 
 // Standard C/C++
 using namespace std;
@@ -63,6 +64,7 @@ QString toStringAxisAngle(const QQuaternion &q);
 QString toStringCartesian(const QVector3D &v);
 QString toStringSpherical(const QVector3D &v);
 double ticksToMilliseconds(clock_t ticks);
-void matrixCopy(QMatrix4x4& qMat, aiMatrix4x4& aiMat); // qMat = aiMat
+
+std::ostream& operator<<(std::ostream& out, const QVector3D& v);
 
 #endif	/* UTIL_H */

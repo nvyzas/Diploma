@@ -850,15 +850,15 @@ void SkinnedMesh::loadAxesToGPU()
 
 	glGenBuffers(1, &m_axesIBO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_axesIBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices[0])*ARRAY_SIZE_IN_ELEMENTS(indices), &indices[0], GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
 
 	glGenBuffers(1, &m_axesVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, m_axesVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices[0])*ARRAY_SIZE_IN_ELEMENTS(vertices), &vertices[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0], GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat)*6, 0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat)*6, BUFFER_OFFSET(sizeof(float) * 3));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, BUFFER_OFFSET(sizeof(float) * 3));
 
 	glBindVertexArray(0); // break the existing vertex array object binding
 }
@@ -911,12 +911,12 @@ bool SkinnedMesh::readMOT()
 	} 
 	while (!line.isNull());
 
-	cout << "Lines in .mot file: " << lineCounter << endl;
+	/*cout << "Lines in .mot file: " << lineCounter << endl;
 	cout << "Timestamp = " << m_timestamps[0] << endl;
 	cout << "Coordinates: " << list.size() << endl;
 	for (const auto& p : m_modelCoordinateSequence[0]) {
 		cout << p << " ";
 	}
-	cout << endl;
+	cout << endl;*/
 	return true;
 }
