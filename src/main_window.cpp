@@ -14,10 +14,12 @@
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
+	cout << "MainWindow constructor start." << endl;
 	ui = new Ui::MainWindow;
 	ui->setupUi(this);
 	setupObjects();
 	setupConnections();
+	cout << "MainWindow constructor end." << endl;
 }
 MainWindow::~MainWindow()
 {
@@ -63,7 +65,7 @@ void MainWindow::setActiveBoneRotationX(int value)
 	const QString &boneName = ui->comboBox_activeBone->currentText();
 	if (boneName.isEmpty()) return;
 	ui->openGLWidget->skinnedMesh()->setBoneRotationX(boneName, value);
-	ui->openGLWidget->Transform(false);
+	ui->openGLWidget->transformSkinnedMesh(false);
 	ui->openGLWidget->update();
 	loadActiveBoneRotationX();
 }
@@ -72,7 +74,7 @@ void MainWindow::setActiveBoneRotationY(int value)
 	const QString &boneName = ui->comboBox_activeBone->currentText();
 	if (boneName.isEmpty()) return;
 	ui->openGLWidget->skinnedMesh()->setBoneRotationY(boneName, value);
-	ui->openGLWidget->Transform(false);
+	ui->openGLWidget->transformSkinnedMesh(false);
 	ui->openGLWidget->update();
 	loadActiveBoneRotationY();
 }
@@ -81,7 +83,7 @@ void MainWindow::setActiveBoneRotationZ(int value)
 	const QString &boneName = ui->comboBox_activeBone->currentText();
 	if (boneName.isEmpty()) return;
 	ui->openGLWidget->skinnedMesh()->setBoneRotationZ(boneName, value);
-	ui->openGLWidget->Transform(false);
+	ui->openGLWidget->transformSkinnedMesh(false);
 	ui->openGLWidget->update();
 	loadActiveBoneRotationZ();
 }

@@ -133,8 +133,6 @@ public:
 	void drawSkeleton();
 	void printJointBufferData();
 
-	void loadSkeletonData2();
-
 	void loadSkeletonData();
 
 private:

@@ -86,7 +86,9 @@ class SkinnedMesh: protected QOpenGLFunctions_3_3_Core
 public:
 	SkinnedMesh();
 	~SkinnedMesh();	
-	bool LoadMesh(const string& Filename);
+	bool loadMesh(const string& basename);
+	bool loadMotion(const QString& filename);
+
 	void BoneTransform(float TimeInSeconds, vector<Matrix4f>& Transforms);
 	void GetBoneTransforms(vector<Matrix4f>& Transforms);
 	void traverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P);
@@ -134,7 +136,7 @@ public:
 
 	QQuaternion worldRotation();
 	QVector3D worldPosition();
-	bool readMOT();
+	void nextActiveFrame();
 
 private:
 	void Clear();
@@ -149,9 +151,9 @@ private:
 	uint FindPosition(float AnimationTime, const aiNodeAnim* pNodeAnim);
 	const aiNodeAnim* FindNodeAnim(const aiAnimation* pAnimation, const string NodeName);
 	void ReadNodeHierarchy(float AnimationTime, const aiNode* pNode, const Matrix4f& ParentTransform);
-	bool InitFromScene(const aiScene* pScene, const string& Filename);
+	bool initFromScene(const aiScene* pScene, const string& Filename);
 
-	// Data loaded in CPU by LoadMesh		
+	// Data loaded in CPU by loadMesh		
 	vector<MeshEntry> m_entries;
 	// Vertex Attributes
 	vector<Vector3f> m_positions;
@@ -232,7 +234,7 @@ private:
 	QVector<double> m_timestamps;
 
 	void initCoordinates();
-	QQuaternion coordinateAngles(uint i);
+	QQuaternion boneOrientation(uint boneIndex);
 
 
 	uint m_numBones = 0; // crash if not 0
@@ -249,6 +251,9 @@ private:
 	GLuint m_axesVAO;
 	GLuint m_axesVBO;
 	GLuint m_axesIBO; 
+
+	uint m_activeFrame = 0;
+	void updateCoordinates();
 };
 
 #endif	/* SKINNED_MESH_H */

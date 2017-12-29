@@ -139,7 +139,8 @@ void Camera::onKeyboardArrow(int key, bool print)
 }
 void Camera::onMouseWheel(int degrees, bool print)
 {
-	m_rho -= (float)degrees/30.f;
+	float deltaDistance = degrees / 60.f;
+	if (m_rho - deltaDistance > 0.1) m_rho -= deltaDistance;
 	UpdateCartesian();
 	UpdateCamera();
 	if (print) printInfo();

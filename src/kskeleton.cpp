@@ -38,9 +38,10 @@ QDataStream& operator>>(QDataStream& in, KFrame& frame)
 
 KSkeleton::KSkeleton()
 {
+	cout << "KSkeleton constructor start." << endl;
 	initJointHierarchy();
-	printJointHierarchy();
 	loadFromBinary();
+	cout << "KSkeleton constructor end." << endl;
 }
 
 void KSkeleton::addFrame(const Joint *joints, const JointOrientation *orientations, const double &time)
@@ -102,6 +103,9 @@ bool KSkeleton::writeTRC()
 		cout << "Could not create .trc file" << endl;
 		return false;
 	}
+
+	QVector<KFrame> sequenceToWrite = m_filteredInterpolatedSequence;
+
 	QTextStream out(&qf);
 	// Line 1
 	out << "PathFileType\t";
@@ -120,12 +124,12 @@ bool KSkeleton::writeTRC()
 	// Line 3
 	out << "30\t";
 	out << "30\t";
-	out << m_sequence.size() << "\t";
+	out << sequenceToWrite.size() << "\t";
 	out << NUM_MARKERS << "\t";
 	out << "mm\t";
 	out << "30\t";
 	out << "1\t";
-	out << m_sequence.size() << "\n";
+	out << sequenceToWrite.size() << "\n";
 	// Line 4
 	out << "Frame#\t";
 	out << "Time";
@@ -141,16 +145,18 @@ bool KSkeleton::writeTRC()
 	out << "\n";
 	// Lines 6+
 	out.setFieldWidth(12);
-	for (uint i = 0; i < m_sequence.size(); i++) {
-		out << "\n" << i << "\t" << m_sequence[i].timestamp;
+	for (uint i = 0; i < sequenceToWrite.size(); i++) {
+		out << "\n" << i << "\t" << sequenceToWrite[i].timestamp;
 		for (int j = 0; j < NUM_MARKERS; j++) {
-			out << "\t" << m_sequence[i].joints[j].position.x()*1000.f;
-			out << "\t" << m_sequence[i].joints[j].position.y()*1000.f;
-			out << "\t" << m_sequence[i].joints[j].position.z()*1000.f;
+			out << "\t" << sequenceToWrite[i].joints[j].position.x()*1000.f;
+			out << "\t" << sequenceToWrite[i].joints[j].position.y()*1000.f;
+			out << "\t" << sequenceToWrite[i].joints[j].position.z()*1000.f;
 		}
 	}
 	out << flush;
 	qf.close();
+
+	cout << "Successfully created .trc file." << endl;
 	return true;
 }
 bool KSkeleton::readTRC()
@@ -386,6 +392,7 @@ void KSkeleton::loadFromBinary()
 	in >> m_filteredInterpolatedSequence;
 	in >> m_filteredSequence;
 	qf.close();
+
 	cout << "Size of loaded sequence: " << m_sequence.size() << endl;
 	if (m_sequence.size() != 0) cout << "Duration: " << m_sequence.back().timestamp << endl;
 	cout << "Size of loaded interpolated sequence: " << m_interpolatedSequence.size() << endl;
@@ -470,15 +477,6 @@ void KSkeleton::printJointBufferData()
 		cout << setw(15) << m_jointBufferData[6 * i + 5]  << " ";
 		cout << endl;
 	}
-}
-void KSkeleton::loadSkeletonData2()
-{
-	glBindBuffer(GL_ARRAY_BUFFER, m_skeletonVBO);
-	GLvoid* ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-	if (ptr) {
-		memcpy(ptr, m_jointBufferData, sizeof(m_jointBufferData));
-	}
-	glUnmapBuffer(GL_ARRAY_BUFFER);
 }
 void KSkeleton::loadSkeletonData()
 {

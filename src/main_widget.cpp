@@ -26,6 +26,7 @@ MainWidget::MainWidget(QWidget *parent)
 	,m_timer(this)
 	, m_skinnedMesh(new SkinnedMesh())
 {
+	cout << "MainWidget constructor start." << endl;
 	m_VAO = 0;
 	ZERO_MEM(m_Buffers);
 
@@ -34,11 +35,12 @@ MainWidget::MainWidget(QWidget *parent)
 	m_modeOfOperation = Mode::CAPTURE;
 	m_timer.setInterval(m_captureInterval);
 	m_timer.start();
+	cout << "MainWidget constructor end." << endl;
 }
 MainWidget::~MainWidget()
 {
 	makeCurrent();
-	unloadFromGPU();
+	unloadSkinnedMesh();
 	doneCurrent();
 
 	delete m_skinnedMesh;
@@ -50,6 +52,8 @@ MainWidget::~MainWidget()
 // This virtual function is called once before the first call to paintGL() or resizeGL().
 void MainWidget::initializeGL()
 {
+	cout << "MainWidget initializeGL start." << endl;
+
 	qDebug() << "Obtained format:" << format();
 	initializeOpenGLFunctions();
 
@@ -85,12 +89,14 @@ void MainWidget::initializeGL()
 	glCullFace(GL_BACK);
 	glDisable(GL_CULL_FACE);
 	
+	// glShadeModel(GL_SMOOTH); // #? deprecated
 	MySetup();
+	cout << "MainWidget initializeGL end." << endl;
 }
 void MainWidget::MySetup()
 {
-	m_successfullyLoaded = loadToGPU("cmu_test");
-	m_Cam->printInfo();
+	cout << "MainWidget setup start." << endl;
+	m_successfullyLoaded = loadSkinnedMesh("cmu_test");
 
 	// Init Pipeline
 	m_Pipe->SetCamera(m_Cam->GetPos(), m_Cam->GetTarget(), m_Cam->GetUp());
@@ -133,8 +139,9 @@ void MainWidget::MySetup()
 	for (uint i = 0; i < m_skinnedMesh->numBones(); i++) {
 		m_Skin->setBoneVisibility(i, m_skinnedMesh->boneVisibility(i));
 	}
-	Transform(true);
-	m_ksensor->skeleton()->printJointBufferData();
+	updateSkinnedMeshCoords();
+	transformSkinnedMesh(true);
+	cout << "MainWidget setup end." << endl;
 }
 void MainWidget::paintGL()
 {
@@ -156,7 +163,8 @@ void MainWidget::paintGL()
 	m_Pipe->setWorldPosition(p);
 	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
 	if (m_play) {
-		Transform(false);
+		m_skinnedMesh->nextActiveFrame();
+		transformSkinnedMesh(false);
 	}
 	if (m_renderSkinnedMesh && m_successfullyLoaded) {
 		drawSkinnedMesh();
@@ -205,7 +213,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_8:
 	case Qt::Key_9:
 		m_skinnedMesh->flipParameter(key - Qt::Key_0);
-		Transform(true);
+		transformSkinnedMesh(true);
 		break;
 	case Qt::Key_Y:
 		m_playbackInterval *= 1.2f; // decrease playback speed
@@ -277,12 +285,12 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 }
 void MainWidget::mousePressEvent(QMouseEvent *event)
 {
-	m_lastPos = event->pos();
+	m_lastMousePosition = event->pos();
 }
 void MainWidget::mouseMoveEvent(QMouseEvent *event)
 {
-	int dx = event->x() - m_lastPos.x();
-	int dy = event->y() - m_lastPos.y();
+	int dx = event->x() - m_lastMousePosition.x();
+	int dy = event->y() - m_lastMousePosition.y();
 
 	if (event->buttons() & Qt::LeftButton){
 		if (event->modifiers() & Qt::ControlModifier) {
@@ -296,7 +304,7 @@ void MainWidget::mouseMoveEvent(QMouseEvent *event)
 			m_Cam->rotateUp(-dy);
 		}
 	}
-	m_lastPos = event->pos();
+	m_lastMousePosition = event->pos();
 
 	m_Pipe->SetCamera(m_Cam->GetPos(), m_Cam->GetTarget(), m_Cam->GetUp());
 	m_Skin->enable();
@@ -327,7 +335,12 @@ void MainWidget::NextInfoBlock(int step)
 	if (activeInfo == 0) m_skinnedMesh->PrintInfo();
 	else m_Cam->printInfo();
 }
-void MainWidget::Transform(bool print)
+void MainWidget::updateSkinnedMeshCoords()
+{
+
+}
+
+void MainWidget::transformSkinnedMesh(bool print)
 {
 	//if (!print) cout.setstate(std::ios_base::failbit);
 	if (m_skinnedMesh->m_SuccessfullyLoaded) {
@@ -412,13 +425,12 @@ Technique* MainWidget::technique()
 {
 	return m_Tech;
 }
-bool MainWidget::loadToGPU(const string& basename)
+bool MainWidget::loadSkinnedMesh(const string& basename)
 {
 	// Release the previously loaded mesh (if it exists)
-	unloadFromGPU();
+	unloadSkinnedMesh();
 
 	bool Ret = false;
-	cout << "Loading model to GPU." << endl;
 	for (int i = 0; i < m_skinnedMesh->images().size(); i++) m_textures.push_back(new QOpenGLTexture(m_skinnedMesh->images()[i]));
 
 	// Create the VAO
@@ -472,10 +484,11 @@ bool MainWidget::loadToGPU(const string& basename)
 	// Make sure the VAO is not changed from the outside
 	glBindVertexArray(0);
 
-	cout << "SkinnedMesh::InitFromScene: "; GLPrintError();
-	return GLCheckError();
+	Ret = GLCheckError();
+	if (Ret) cout << "Successfully loaded SkinnedMesh to GPU (MainWidget)" << endl;
+	return Ret;
 }
-void MainWidget::unloadFromGPU()
+void MainWidget::unloadSkinnedMesh()
 {
 	for (uint i = 0; i < m_textures.size(); i++) {
 		SAFE_DELETE(m_textures[i]);

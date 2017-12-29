@@ -39,7 +39,7 @@ public:
 	bool modelSkinning() const;
 	QStringList modelBoneList() const;
 
-	void Transform(bool print);
+	void transformSkinnedMesh(bool print);
 
 public slots:
 	void setRenderAxes(bool state);
@@ -81,9 +81,8 @@ private:
 	SkinningTechnique* m_Skin;
 	Pipeline* m_Pipe;
 	OpenSimModel m_osm;
-	QOpenGLShaderProgram m_linesProgram;
 	
-	QPoint m_lastPos;
+	QPoint m_lastMousePosition;
 
 	bool m_renderAxes = true;
 	bool m_renderSkeleton = true;
@@ -95,13 +94,14 @@ private:
 	
 	uint activeInfo = 0;
 	void NextInfoBlock(int step);
+	void updateSkinnedMeshCoords();
 	void MySetup();
 
 	// Skinned mesh variables
 	bool m_modelSkinning = true;
 	QString m_modelName;
-	bool loadToGPU(const string& basename);
-	void unloadFromGPU();
+	bool loadSkinnedMesh(const string& basename);
+	void unloadSkinnedMesh();
 	enum VB_TYPES {
 		INDEX_BUFFER,
 		POS_VB,

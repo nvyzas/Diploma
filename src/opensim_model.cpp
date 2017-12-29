@@ -9,8 +9,9 @@ using namespace OpenSim;
 
 OpenSimModel::OpenSimModel()
 {
-	std::cout << "OpenSim constructor." << std::endl;
+	std::cout << "OpenSim constructor start." << std::endl;
 	init();
+	std::cout << "OpenSim constructor end." << std::endl;
 }
 
 void OpenSimModel::init()

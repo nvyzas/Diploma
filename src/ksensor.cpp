@@ -23,7 +23,8 @@ template <class T> void safeRelease(T **ppT)
 
 KSensor::KSensor()
 {
-	init(); 
+	cout << "KSensor constructor start." << endl;
+	init();
 	connect();
 
 	m_captureLog.setFileName("capture_log.txt");
@@ -34,6 +35,7 @@ KSensor::KSensor()
 	m_forLog.setFieldAlignment(QTextStream::AlignLeft);
 	m_forLog.setRealNumberPrecision(8);
 	m_forLog.setDevice(&m_captureLog);
+	cout << "KSensor constructor end." << endl;
 }
 KSensor::~KSensor()
 {
@@ -296,7 +298,6 @@ void KSensor::record()
 		cout << "Recording stopped." << endl;
 		cout << "Average frame interval (milliseconds) = " << m_averageInterval << endl;
 		m_skeleton.setTimestep(m_averageInterval);
-		m_skeleton.writeTRC();
 		m_skeleton.saveToBinary();
 		m_skeleton.printSequence();
 	}
