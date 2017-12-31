@@ -17,6 +17,7 @@ SkinnedMesh::SkinnedMesh()
 	m_SuccessfullyLoaded = false;
 	m_pScene = NULL;
 	loadMesh("cmu_test");
+	PrintInfo();
 	loadMotion("motion.mot");
 	cout << "SkinnedMesh constructor end." << endl;
 }
@@ -160,8 +161,8 @@ void SkinnedMesh::LoadBones(uint MeshIndex, const aiMesh* pMesh, vector<VertexBo
 			BoneIndex = m_boneMap[BoneName];
 		}
 
-		m_boneInfo[BoneIndex].offset = pMesh->mBones[i]->mOffsetMatrix;
 		m_boneMap[BoneName] = BoneIndex;
+		m_boneInfo[BoneIndex].offset = pMesh->mBones[i]->mOffsetMatrix;
 
 		for (uint j = 0; j < pMesh->mBones[i]->mNumWeights; j++) {
 			uint VertexID = m_entries[MeshIndex].BaseVertex + pMesh->mBones[i]->mWeights[j].mVertexId;
@@ -569,15 +570,16 @@ void SkinnedMesh::initCoordinates()
 	m_modelCoordinates[wrist_flex_r]	 = 0.f;
 	m_modelCoordinates[wrist_dev_r]		 = 0.f;
 }
-void SkinnedMesh::nextActiveFrame()
+void SkinnedMesh::setActiveCoordinates(uint frameIndex)
 {
-	m_activeFrame++;
-	if (m_activeFrame == m_modelCoordinateSequence.size()) m_activeFrame=0;
-	updateCoordinates();
+	m_modelCoordinates = m_modelCoordinateSequence[frameIndex];
+}
+uint SkinnedMesh::sequenceSize()
+{
+	return m_modelCoordinateSequence.size();
 }
 void SkinnedMesh::updateCoordinates()
 {
-	m_modelCoordinates = m_modelCoordinateSequence[m_activeFrame];
 }
 QQuaternion SkinnedMesh::boneOrientation(uint boneIndex)
 {
@@ -872,7 +874,7 @@ void SkinnedMesh::loadAxesToGPU()
 
 	glBindVertexArray(0); // break the existing vertex array object binding
 }
-void SkinnedMesh::drawBoneAxis()
+void SkinnedMesh::drawBoneAxes()
 { 
 	glBindVertexArray(m_axesVAO);
 	glDrawElements(GL_LINES, 6, GL_UNSIGNED_SHORT, 0);

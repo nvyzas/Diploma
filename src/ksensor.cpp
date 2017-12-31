@@ -25,7 +25,7 @@ KSensor::KSensor()
 {
 	cout << "KSensor constructor start." << endl;
 	init();
-	connect();
+	open();
 
 	m_captureLog.setFileName("capture_log.txt");
 	if (!m_captureLog.open(QIODevice::WriteOnly | QIODevice::Text)) {
@@ -64,7 +64,7 @@ bool KSensor::init() {
 
 	return true;	
 }
-bool KSensor::connect()
+bool KSensor::open()
 {
 	if (m_sensor == NULL) {
 		cout << "m_sensor = NULL" << endl;
@@ -297,7 +297,7 @@ void KSensor::record()
 		m_skeleton.m_recordingOn = false;
 		cout << "Recording stopped." << endl;
 		cout << "Average frame interval (milliseconds) = " << m_averageInterval << endl;
-		m_skeleton.setTimestep(m_averageInterval);
+		m_skeleton.setTimeStep(m_averageInterval);
 		m_skeleton.saveToBinary();
 		m_skeleton.printSequence();
 	}

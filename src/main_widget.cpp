@@ -23,18 +23,12 @@
 
 MainWidget::MainWidget(QWidget *parent)
 	: QOpenGLWidget(parent)
-	,m_timer(this)
 	, m_skinnedMesh(new SkinnedMesh())
 {
 	cout << "MainWidget constructor start." << endl;
 	m_VAO = 0;
 	ZERO_MEM(m_Buffers);
 
-	m_timer.setTimerType(Qt::PreciseTimer);
-	connect(&m_timer, SIGNAL(timeout()), this, SLOT(updateIndirect()));
-	m_modeOfOperation = Mode::CAPTURE;
-	m_timer.setInterval(m_captureInterval);
-	m_timer.start();
 	cout << "MainWidget constructor end." << endl;
 }
 MainWidget::~MainWidget()
@@ -62,7 +56,6 @@ void MainWidget::initializeGL()
 	m_Tech = new Technique();
 	m_Skin = new SkinningTechnique();
 	m_Pipe = new Pipeline();
-	m_playbackInterval = m_ksensor->skeleton()->timeStep() * 1000;
 	m_ksensor->skeleton()->initOGL();
 	m_skinnedMesh->initOGL();
 	m_skinnedMesh->loadAxesToGPU();
@@ -91,6 +84,14 @@ void MainWidget::initializeGL()
 	
 	// glShadeModel(GL_SMOOTH); // #? deprecated
 	MySetup();
+
+	m_timer.setTimerType(Qt::PreciseTimer);
+	connect(&m_timer, SIGNAL(timeout()), this, SLOT(updateIndirect()));
+	m_modeOfOperation = Mode::PLAYBACK;
+	m_playbackInterval = m_ksensor->skeleton()->timeStep() * 1000;
+	m_timer.setInterval(m_playbackInterval);
+	m_timer.start();
+
 	cout << "MainWidget initializeGL end." << endl;
 }
 void MainWidget::MySetup()
@@ -139,8 +140,8 @@ void MainWidget::MySetup()
 	for (uint i = 0; i < m_skinnedMesh->numBones(); i++) {
 		m_Skin->setBoneVisibility(i, m_skinnedMesh->boneVisibility(i));
 	}
-	updateSkinnedMeshCoords();
 	transformSkinnedMesh(true);
+
 	cout << "MainWidget setup end." << endl;
 }
 void MainWidget::paintGL()
@@ -151,40 +152,59 @@ void MainWidget::paintGL()
 	if (m_modeOfOperation == Mode::CAPTURE) {
 		m_ksensor->getBodyData();
 	}
-	else {
-		m_ksensor->skeleton()->getActiveFrame();
+	else if (m_modeOfOperation == Mode::PLAYBACK && m_play){
+		m_ksensor->skeleton()->setActiveJoints(m_activeFrame);
+		m_skinnedMesh->setActiveCoordinates(m_activeFrame);
 	}
 	
 	// draw skinned mesh
 	m_Skin->enable();
 	QQuaternion& q = m_skinnedMesh->worldRotation();
-	m_Pipe->setWorldRotation(q);
+	if (m_defaultPose) m_Pipe->setWorldRotation(QQuaternion()); else m_Pipe->setWorldRotation(q);
 	QVector3D& p = m_skinnedMesh->worldPosition();
-	m_Pipe->setWorldPosition(p);
+	if (m_defaultPose) m_Pipe->setWorldPosition(QVector3D()); else m_Pipe->setWorldPosition(p);
 	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
-	if (m_play) {
-		m_skinnedMesh->nextActiveFrame();
+	if (m_modeOfOperation == Mode::PLAYBACK && m_play) {
 		transformSkinnedMesh(false);
 	}
 	if (m_renderSkinnedMesh && m_successfullyLoaded) {
 		drawSkinnedMesh();
 	}
 
-	// draw skinned mesh bone axis
+	// draw skinned mesh bone axes
 	m_Tech->enable();
 	m_Tech->setMVP(m_Pipe->GetWVPTrans());
 	m_Tech->setSpecific(m_skinnedMesh->boneGlobal(m_activeBone));
-	m_skinnedMesh->drawBoneAxis();
+	//if (m_renderAxes) m_skinnedMesh->drawBoneAxes();
 	
-	// draw axis
+	// draw basic axes
 	m_Tech->setMVP(m_Pipe->GetVPTrans()); // only VP transformation!
 	m_Tech->setSpecific(Matrix4f::Identity());
-	if (m_renderAxes) m_skinnedMesh->drawBoneAxis();
+	if (m_renderAxes) m_skinnedMesh->drawBoneAxes();
 	if (m_renderSkeleton) m_ksensor->skeleton()->drawSkeleton();
 
 	//if (m_renderCameraVectors)		m_Cam->DrawCameraVectors();
-	//*/
-	if (m_modeOfOperation == Mode::PLAYBACK) m_ksensor->skeleton()->nextActiveFrame();
+
+	if (++m_activeFrame > m_ksensor->skeleton()->sequenceSize())  m_activeFrame = 0;
+
+	calculateFPS();
+}
+void MainWidget::calculateFPS()
+{
+	static clock_t ticksThisTime;
+	static clock_t ticksLastTime = clock();
+	static uint framesPassed = 0;
+
+	ticksThisTime = clock();
+	clock_t ticksPassed = ticksThisTime - ticksLastTime;
+	double millisecondsPassed = ticksToMilliseconds(ticksPassed);
+
+	framesPassed++;
+	if (millisecondsPassed > 1000.) {
+		m_fpsCount = framesPassed / (millisecondsPassed / 1000.);
+		framesPassed = 0;
+		ticksLastTime = ticksThisTime;
+	}
 }
 void MainWidget::keyPressEvent(QKeyEvent *event)
 {
@@ -226,7 +246,11 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		m_timer.setInterval(m_playbackInterval);
 		break;
 	case Qt::Key_C:
-		if (!m_ksensor->connect()) cout << "Could not connect to kinect sensor." << endl;
+		if (!m_ksensor->open()) cout << "Could not open kinect sensor." << endl;
+		break;
+	case Qt::Key_D:
+		m_defaultPose = !m_defaultPose;
+		cout << "Default pause " << (m_defaultPose ? "ON" : "OFF") << endl;
 		break;
 	case Qt::Key_J:
 		m_ksensor->skeleton()->printJoints();
@@ -269,7 +293,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		m_ksensor->skeleton()->saveToBinary();
 		break;
 	case Qt::Key_Q:
-		m_ksensor->skeleton()->printSequence();
+		m_skinnedMesh->PrintInfo();
 		break;
 	case Qt::Key_T:
 		m_ksensor->skeleton()->writeTRC();
@@ -335,11 +359,6 @@ void MainWidget::NextInfoBlock(int step)
 	if (activeInfo == 0) m_skinnedMesh->PrintInfo();
 	else m_Cam->printInfo();
 }
-void MainWidget::updateSkinnedMeshCoords()
-{
-
-}
-
 void MainWidget::transformSkinnedMesh(bool print)
 {
 	//if (!print) cout.setstate(std::ios_base::failbit);
@@ -412,12 +431,11 @@ void MainWidget::setModelSkinning(bool state)
 	m_Skin->setSkinning(state);
 	update();
 }
-SkinnedMesh *MainWidget::skinnedMesh()
+SkinnedMesh* MainWidget::skinnedMesh()
 {
 	return m_skinnedMesh;
 }
-
-SkinningTechnique *MainWidget::skinningTechnique()
+SkinningTechnique* MainWidget::skinningTechnique()
 {
 	return m_Skin;
 }

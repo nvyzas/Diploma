@@ -22,7 +22,7 @@ public:
 	KSensor();
 	~KSensor();
 	bool init();
-	bool connect();
+	bool open();
 	KSkeleton *skeleton();
 	bool getBodyData();
 	void processBodyFrameData(IBody** bodies);

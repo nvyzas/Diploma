@@ -11,6 +11,7 @@
 #include <QtCore\QTimer>
 #include <QtWidgets\QAction>
 #include <QtWidgets\QMenu>
+#include <QtWidgets\QLCDNumber>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
@@ -100,10 +101,11 @@ void MainWindow::printActiveBoneRotations() const
 	float xRot = ui->openGLWidget->skinnedMesh()->boneRotationX(boneName);
 	float yRot = ui->openGLWidget->skinnedMesh()->boneRotationY(boneName);
 	float zRot = ui->openGLWidget->skinnedMesh()->boneRotationZ(boneName);
-	cout << setw(20) << string(boneName.toUtf8()) << " " 
-							   << setw(5) << xRot << " " 
-							   << setw(5) << yRot << " " 
-		                       << setw(5) << zRot << endl;
+	cout << setw(20) << string(boneName.toUtf8());
+	cout << " " << setw(5) << xRot;
+	cout << " " << setw(5) << yRot;
+	cout << " " << setw(5) << zRot;
+	cout << endl;
 }
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
@@ -119,22 +121,6 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
 		break;
 	}	
 }
-void MainWindow::recordKinectData()
-{
-
-}
-//const QString &MainWindow::activeBone() const
-//{
-//	const QString &boneName = ui->comboBox_activeBone->currentText();
-//	if (boneName.isEmpty()) {
-//		cout << "Active bone is empty" << endl;
-//		return;
-//	}
-//	else {
-//		return boneName;
-//	}
-//}
-
 void MainWindow::loadActiveBoneRotationX()
 {
 	const QString &boneName = ui->comboBox_activeBone->currentText();
@@ -193,11 +179,23 @@ void MainWindow::setupObjects()
 	menuInfo->addAction("Bone Transforms", this, SLOT(printActiveBoneTransforms()));
 	menuInfo->addAction("Bone Rotations", this, SLOT(printActiveBoneRotations()));
 	ui->pushButton_info->setMenu(menuInfo);
+	
+	//*
+	// Status Bar
+	statusLabel = new QLabel(this);
+	statusLabel->setText("FPS: ");
+	ui->statusBar->addPermanentWidget(statusLabel);
 
-	/*m_timer = new QTimer(this);
-	m_timer->setTimerType(Qt::CoarseTimer);
-	m_timer->setInterval(1000. / 30.);
-	m_timer->start();*/
+	fps = new QLCDNumber(this);
+	ui->statusBar->addPermanentWidget(fps);
+	
+	m_guiTimer = new QTimer(this);
+	m_guiTimer->setTimerType(Qt::CoarseTimer);
+	connect(m_guiTimer, SIGNAL(timeout()), this, SLOT(updateStatusBar()));
+
+	m_guiTimer->setInterval(500);
+	m_guiTimer->start();
+	//*/
 }
 void MainWindow::setActiveBoneAxes() {
 	const QString &boneName = ui->comboBox_activeBone->currentText();
@@ -232,12 +230,8 @@ void MainWindow::setupConnections()
 	// render skeleton
 	connect(ui->checkBox_skeleton, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setRenderSkeleton(bool)));
 	// Kinect
-	//connect(m_timer, SIGNAL(timeout()), this, SLOT(getKinectData()));
+	//open(m_timer, SIGNAL(timeout()), this, SLOT(getKinectData()));
 	connect(ui->horizontalSlider_progressPercent, SIGNAL(valueChanged(int)), SLOT(setActiveKinectSkeletonFrame(int)));
-}
-void MainWindow::getKinectData()
-{
-	if (m_ksensor.getBodyData()) ui->openGLWidget->update();
 }
 void MainWindow::setActiveKinectSkeletonFrame(int progressPercent)
 {
@@ -248,4 +242,9 @@ void MainWindow::setActiveKinectSkeletonFrame(int progressPercent)
 	else {
 		m_ksensor.setSkeletonActiveFrame(progressPercent);
 	}
+}
+
+void MainWindow::updateStatusBar()
+{
+	fps->display((int)ui->openGLWidget->m_fpsCount);
 }

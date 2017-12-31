@@ -10,6 +10,8 @@ namespace Ui {
 // Qt
 #include <QtWidgets\QMainWindow>
 class QTimer;
+class QLabel;
+class QLCDNumber;
 
 class MainWindow : public QMainWindow
 {
@@ -28,17 +30,15 @@ private slots:
 	void setActiveBoneRotationZ(int value);
 	void printActiveBoneTransforms() const;
 	void printActiveBoneRotations() const;
-	void getKinectData();
-	void recordKinectData();
 
 	// Kinect
 	void setActiveKinectSkeletonFrame(int progressPercent);
+	void updateStatusBar();
 
 protected:
 	void keyPressEvent(QKeyEvent *event) override;
 
 private:
-	const QString &activeBone() const;
 	void loadActiveBoneRotationX();
 	void loadActiveBoneRotationY();
 	void loadActiveBoneRotationZ();
@@ -48,7 +48,11 @@ private:
 
 	// Kinect
 	KSensor m_ksensor;	
-	QTimer *m_timer;
+	QTimer* m_guiTimer;
+
+	// Status Bar
+	QLabel *statusLabel;
+	QLCDNumber *fps;
 };
 
 #endif /* MAIN_WINDOW_H */

@@ -119,21 +119,21 @@ public:
 	uint activeFrame() const;
 	void setActiveFrame(uint index);
 	void setActiveFrame(float progressPercent);
-	void nextActiveFrame();
-	void getActiveFrame();
 	double timeStep() const;
-	void setTimestep(double timestep);
+	void setTimeStep(double timestep);
 	void clearSequences();
 
 	bool m_playOn = false;
 	bool m_recordingOn = false;
 
 	bool m_playbackInterpolated = true;
-	bool m_playbackFiltered = false;
+	bool m_playbackFiltered = true;
 	void drawSkeleton();
 	void printJointBufferData();
 
 	void loadSkeletonData();
+	uint sequenceSize();
+	void setActiveJoints(uint frameIndex);
 
 private:
 	array<KNode, NUM_MARKERS> m_nodes; // these define the kinect skeleton hierarchy
@@ -152,7 +152,7 @@ private:
 	uint m_activeJoint = JointType_SpineBase;
 
 	// Savitzky-Golay filter
-	double m_timeStep = 0.0333345;
+	double m_timeStep;
 
 	// Cubic, Symmetric, 1st element = 1/commonFactor
 	const array<float, 6> m_sgCoefficients5 = { -3, 12, 17, 12, -3, 35 };

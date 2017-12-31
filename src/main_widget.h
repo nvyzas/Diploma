@@ -41,6 +41,11 @@ public:
 
 	void transformSkinnedMesh(bool print);
 
+	// #todo #? make private and create get/set functions
+	const uint m_captureInterval = 10; // in milliseconds
+	uint m_playbackInterval; // in milliseconds
+	uint m_fpsCount = 0; // for counting fps
+
 public slots:
 	void setRenderAxes(bool state);
 	void setRenderModel(bool state);
@@ -56,6 +61,7 @@ public slots:
 protected:
 	void initializeGL();
 	void paintGL();
+	void calculateFPS();
 	void keyPressEvent(QKeyEvent *event) override;
 	void mousePressEvent(QMouseEvent *event) override;
 	void mouseMoveEvent(QMouseEvent *event) override;
@@ -67,11 +73,8 @@ private:
 		CAPTURE,
 		PLAYBACK
 	};
-	QTimer m_timer;
 
 	Mode m_modeOfOperation;
-	const uint m_captureInterval = 10; // milliseconds
-	uint m_playbackInterval;
 
 	KSensor* m_ksensor;
 
@@ -94,7 +97,6 @@ private:
 	
 	uint activeInfo = 0;
 	void NextInfoBlock(int step);
-	void updateSkinnedMeshCoords();
 	void MySetup();
 
 	// Skinned mesh variables
@@ -117,6 +119,10 @@ private:
 	bool m_successfullyLoaded = false;
 
 	uint m_activeBone = 0;
+	uint m_activeFrame = 0;
+
+	QTimer m_timer;
+	bool m_defaultPose = false;
 };
 
 #endif /* MAIN_WIDGET_H */

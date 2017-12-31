@@ -130,13 +130,14 @@ public:
 	vector<QImage>& images();
 
 	void loadAxesToGPU();
-	void drawBoneAxis();
+	void drawBoneAxes();
 	bool initOGL();
 	const Matrix4f& boneGlobal(uint boneIndex) const;
 
 	QQuaternion worldRotation();
 	QVector3D worldPosition();
-	void nextActiveFrame();
+	void setActiveCoordinates(uint frameIndex);
+	uint sequenceSize();
 
 private:
 	void Clear();
@@ -230,7 +231,7 @@ private:
 		wrist_dev_l
 	};
 	array<float, m_numCoordinates> m_modelCoordinates;
-	QVector <array<float, m_numCoordinates>> m_modelCoordinateSequence;
+	QVector<array<float, m_numCoordinates>> m_modelCoordinateSequence;
 	QVector<double> m_timestamps;
 
 	void initCoordinates();

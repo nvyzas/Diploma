@@ -62,5 +62,4 @@ void OpenSimModel::init()
 		"elbow_angle");
 	model.addComponent(reporter);
 	//*/
-	std::cout << "init ended" << std::endl;
 }

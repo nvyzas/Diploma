@@ -39,6 +39,7 @@ QDataStream& operator>>(QDataStream& in, KFrame& frame)
 KSkeleton::KSkeleton()
 {
 	cout << "KSkeleton constructor start." << endl;
+	m_timeStep = 0.0333345;
 	initJointHierarchy();
 	loadFromBinary();
 	cout << "KSkeleton constructor end." << endl;
@@ -278,7 +279,7 @@ double KSkeleton::timeStep() const
 {
 	return m_timeStep;
 }
-void KSkeleton::setTimestep(double timestep)
+void KSkeleton::setTimeStep(double timestep)
 {
 	m_timeStep = timestep;
 }
@@ -286,38 +287,19 @@ uint KSkeleton::activeFrame() const
 {
 	return m_activeFrame;
 }
-void KSkeleton::nextActiveFrame()
+void KSkeleton::setActiveJoints(uint frameIndex)
 {
 	if (m_playbackFiltered && m_playbackInterpolated) {
-		if (++m_activeFrame >= m_filteredInterpolatedSequence.size()) m_activeFrame = 0;
+		m_joints = m_filteredInterpolatedSequence[frameIndex].joints;
 	}
 	else if (m_playbackInterpolated) {
-		if (++m_activeFrame >= m_interpolatedSequence.size()) m_activeFrame = 0;
+		m_joints = m_interpolatedSequence[frameIndex].joints;
 	}
-	else if (m_playbackFiltered) {
-		if (++m_activeFrame >= m_interpolatedSequence.size()) m_activeFrame = 0;
-	}
-	else {
-		if (++m_activeFrame > m_sequence.size()) m_activeFrame = 0;
-	}
-}
-void KSkeleton::getActiveFrame()
-{
-	if (m_playbackFiltered && m_playbackInterpolated) {
-		cout << "Playing back filteredInterpolated: " << m_activeFrame << "/" << m_filteredInterpolatedSequence.size() << endl;
-		m_joints = m_filteredInterpolatedSequence[m_activeFrame].joints;
-	}
-	else if (m_playbackInterpolated) {
-		cout << "Playing back interpolated " << m_activeFrame << "/" << m_interpolatedSequence.size() << endl;
-		m_joints = m_interpolatedSequence[m_activeFrame].joints;
-	}
-	else if (m_playbackFiltered) {
-		cout << "Playing back filtered " << m_activeFrame << "/" << m_filteredSequence.size() << endl;
-		m_joints = m_filteredSequence[m_activeFrame].joints;
+	else if (m_playbackFiltered) { // #todo make just filtered sequence
+		m_joints = m_filteredInterpolatedSequence[frameIndex].joints; 
 	}
 	else {
-		cout << "Playing back raw " << m_activeFrame << "/" << m_sequence.size() << endl;
-		m_joints = m_sequence[m_activeFrame].joints;
+		m_joints = m_sequence[frameIndex].joints;
 	}
 }
 
@@ -482,6 +464,10 @@ void KSkeleton::loadSkeletonData()
 {
 	glBindBuffer(GL_ARRAY_BUFFER, m_skeletonVBO);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(m_jointBufferData), m_jointBufferData);
+}
+uint KSkeleton::sequenceSize()
+{
+	return m_filteredInterpolatedSequence.size();
 }
 void KSkeleton::drawSkeleton()
 {
