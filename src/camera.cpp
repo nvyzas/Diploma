@@ -11,7 +11,6 @@ static const float rotateStep = 15.f;
 
 Camera::Camera()
 {
-	//initializeOpenGLFunctions();
     m_windowWidth  = 512;
     m_windowHeight = 424;
 	m_rho		   = 2.0f;
@@ -64,51 +63,6 @@ void Camera::UpdateCartesian()
 	m_y = rho*cos(phi);
 	m_z = -rho*sin(phi)*sin(theta);
 }
-//void Camera::OnKeyboardNum(int key, bool print)
-//{
-//	bool Ret = false;
-//	switch (key) {
-//	case '-':
-//		m_rho -= m_step;
-//		UpdateCartesian();
-//		UpdateCamera();
-//		printInfo();
-//		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
-//		Ret = true;
-//		break;
-//	case '+':
-//		m_rho += m_step;
-//		UpdateCartesian();
-//		UpdateCamera();
-//		printInfo();
-//		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
-//		Ret = true;
-//		break;
-//	case '[':
-//		m_angleStep = (m_angleStep > 5 ? m_angleStep-5 : m_angleStep);
-//		if (print) cout << "Camera: AngleStep(degrees)=" << m_angleStep << endl;
-//		Ret = true;
-//		break;
-//	case ']':
-//		m_angleStep = (m_angleStep < 355 ? m_angleStep + 5 : m_angleStep);
-//		if (print) cout << "Camera: AngleStep(degrees)=" << m_angleStep << endl;
-//		Ret = true;
-//		break;
-//	case ',':
-//		m_step = (m_step > 0.1 ? m_step - 0.1 : m_step);
-//		if (print) cout << "Camera: Step=" << m_step << endl;
-//		Ret = true;
-//		break;
-//	case '.':
-//		m_step += 0.1;
-//		if (print) cout << "Camera: Step=" << m_step << endl;
-//		Ret = true;
-//		break;
-//	default:
-//		break;
-//	}
-//	return Ret;
-//}
 void Camera::onKeyboardArrow(int key, bool print)
 {	
 	switch (key) {
@@ -163,27 +117,4 @@ void Camera::printInfo()
 	qDebug() << "Target   = " << toStringCartesian(m_target) << " Up     = " << toStringCartesian(m_up)     << " Right    = " << toStringCartesian(m_right);
 	//cout << "Step=" << m_Step << " AngleStep(degrees)=" << m_angleStep << endl;
 }
-//void Camera::DrawCameraVectors()
-//{
-//	//*
-//	glBegin(GL_LINES);
-//	const Vector3f &c = GetCenter();
-//	Vector3f v;
-//	float f = 2;
-//	v = c + (GetTarget()*f);
-//	glColor3f(0, 0, 0xFF);
-//	glVertex3f(c.x, c.y, c.z);
-//	glVertex3f(v.x, v.y, v.z);
-//
-//	v = c + (GetUp()*f);
-//	glColor3f(0, 0xFF, 0);
-//	glVertex3f(c.x, c.y, c.z);
-//	glVertex3f(v.x, v.y, v.z);
-//
-//	v = c + (GetRight()*f);
-//	glColor3f(0xFF, 0, 0);
-//	glVertex3f(c.x, c.y, c.z);
-//	glVertex3f(v.x, v.y, v.z);
-//	glEnd();
-//	//*/
-//}
+

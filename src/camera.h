@@ -12,7 +12,6 @@ class Camera
 {
 public:
     Camera();
-	void OnKeyboardNum(unsigned char key, bool print);
 	void onKeyboardArrow(int key, bool print);
 	void onMouseWheel(int degrees, bool print);
 	void printInfo();

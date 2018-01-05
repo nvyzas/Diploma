@@ -59,6 +59,7 @@ void MainWidget::initializeGL()
 	m_ksensor->skeleton()->initOGL();
 	m_skinnedMesh->initOGL();
 	m_skinnedMesh->loadAxesToGPU();
+	loadArrow();
 
 	//cout << "GL version: " << glGetString(GL_VERSION) << endl;
 	//cout << "GL renderer: " << glGetString(GL_RENDERER) << endl;
@@ -144,6 +145,7 @@ void MainWidget::MySetup()
 
 	cout << "MainWidget setup end." << endl;
 }
+// #? must enable corresponding shading technique before using each drawing function. bad design?
 void MainWidget::paintGL()
 {
 	glClearColor(0.f, 0.f, 0.f, 1.f);
@@ -161,8 +163,8 @@ void MainWidget::paintGL()
 	m_Skin->enable();
 	QQuaternion& q = m_skinnedMesh->worldRotation();
 	if (m_defaultPose) m_Pipe->setWorldRotation(QQuaternion()); else m_Pipe->setWorldRotation(q);
-	QVector3D& p = m_skinnedMesh->worldPosition();
-	if (m_defaultPose) m_Pipe->setWorldPosition(QVector3D()); else m_Pipe->setWorldPosition(p);
+	QVector3D& v = m_skinnedMesh->worldPosition();
+	if (m_defaultPose) m_Pipe->setWorldPosition(QVector3D()); else m_Pipe->setWorldPosition(v);
 	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
 	if (m_modeOfOperation == Mode::PLAYBACK && m_play) {
 		transformSkinnedMesh(false);
@@ -170,9 +172,9 @@ void MainWidget::paintGL()
 	if (m_renderSkinnedMesh && m_successfullyLoaded) {
 		drawSkinnedMesh();
 	}
+	m_Tech->enable();
 
 	// draw skinned mesh bone axes
-	m_Tech->enable();
 	m_Tech->setMVP(m_Pipe->GetWVPTrans());
 	m_Tech->setSpecific(m_skinnedMesh->boneGlobal(m_activeBone));
 	//if (m_renderAxes) m_skinnedMesh->drawBoneAxes();
@@ -183,7 +185,25 @@ void MainWidget::paintGL()
 	if (m_renderAxes) m_skinnedMesh->drawBoneAxes();
 	if (m_renderSkeleton) m_ksensor->skeleton()->drawSkeleton();
 
-	//if (m_renderCameraVectors)		m_Cam->DrawCameraVectors();
+	// draw arrow
+
+	QVector3D leftHand = (m_ksensor->skeleton()->joints())[JointType_HandLeft].position;
+	QVector3D rightHand = (m_ksensor->skeleton()->joints())[JointType_HandRight].position;
+	QVector3D barDirection = rightHand - leftHand;
+	m_barAngle = ToDegree(atan2(barDirection.y(), sqrt(pow(barDirection.x(), 2) + pow(barDirection.z(), 2))));
+	
+	// Scaling
+	Matrix4f S;
+	S.InitScaleTransform(1, (rightHand - leftHand).length(), 1);
+	// Rotation
+	QQuaternion rot = QQuaternion::rotationTo(QVector3D(0, 1, 0), barDirection);
+	Matrix4f R(rot, false);
+	// Translation
+	Matrix4f T;
+	T.InitTranslateTransform(leftHand);
+
+	m_Tech->setSpecific(T * R * S);
+	drawArrow();
 
 	if (++m_activeFrame > m_ksensor->skeleton()->sequenceSize())  m_activeFrame = 0;
 
@@ -293,7 +313,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		m_ksensor->skeleton()->saveToBinary();
 		break;
 	case Qt::Key_Q:
-		m_skinnedMesh->PrintInfo();
+		m_skinnedMesh->printInfo();
 		break;
 	case Qt::Key_T:
 		m_ksensor->skeleton()->writeTRC();
@@ -356,7 +376,7 @@ void MainWidget::NextInfoBlock(int step)
 {
 	activeInfo = Mod(activeInfo, NUM_INFO_BLOCKS, step);
 	cout << "Printing info block " << activeInfo << endl;
-	if (activeInfo == 0) m_skinnedMesh->PrintInfo();
+	if (activeInfo == 0) m_skinnedMesh->printInfo();
 	else m_Cam->printInfo();
 }
 void MainWidget::transformSkinnedMesh(bool print)
@@ -493,9 +513,6 @@ bool MainWidget::loadSkinnedMesh(const string& basename)
 	glEnableVertexAttribArray(BONE_WEIGHT_LOCATION);
 	glVertexAttribPointer(BONE_WEIGHT_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(VertexBoneData), (const GLvoid*)16);
 
-	//m_vertexArrayBytes = sizeof(Positions[0]) * Positions.size() + sizeof(TexCoords[0]) * TexCoords.size()
-	//	+ sizeof(Normals[0]) * Normals.size() + sizeof(Bones[0]) * Bones.size();
-
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_Buffers[INDEX_BUFFER]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices[0]) * Indices.size(), &Indices[0], GL_STATIC_DRAW);
 
@@ -578,4 +595,62 @@ void MainWidget::setBoneAxes(const QString &boneName)
 void MainWidget::setActiveBone(const QString& boneName)
 {
 	m_activeBone = m_skinnedMesh->findBoneId(boneName);
+}
+void MainWidget::loadArrow()
+{
+	const float head = 0.1f;
+	const float colorRed = 255.f;
+	const float colorBlue = 255.f;
+	const float colorGreen = 255.f;
+
+	const GLfloat vertices[] =
+	{
+		0    , 0, 0, // start
+		colorRed  , colorGreen, colorBlue,
+		0    , 1, 0, // end
+		colorRed  , colorGreen, colorBlue,
+		head , 1 - head, 0, // +x
+		colorRed  , colorGreen, colorBlue,
+		-head, 1 - head, 0, // -x
+		colorRed  , colorGreen, colorBlue,
+		0    , 1 - head, head, // +z
+		colorRed  , colorGreen, colorBlue,
+		0    , 1 - head, -head, // -z
+		colorRed  , colorGreen, colorBlue,
+	};
+
+	const GLushort indices[] =
+	{
+		0, 1,
+		1, 2,
+		1, 3,
+		1, 4,
+		1, 5,
+	};
+	glGenVertexArrays(1, &m_arrowVAO);
+	glBindVertexArray(m_arrowVAO);
+
+	GLuint arrowIBO;
+	glGenBuffers(1, &arrowIBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, arrowIBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
+
+	GLuint arrowVBO;
+	glGenBuffers(1, &arrowVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, arrowVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0], GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, BUFFER_OFFSET(sizeof(GLfloat) * 3));
+
+	glBindVertexArray(0); // break the existing vertex array object binding
+}
+
+void MainWidget::drawArrow()
+{
+
+	glBindVertexArray(m_arrowVAO);
+	glDrawElements(GL_LINES, 10, GL_UNSIGNED_SHORT, 0);
+	glBindVertexArray(0);
 }

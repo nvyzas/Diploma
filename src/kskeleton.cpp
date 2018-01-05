@@ -214,13 +214,6 @@ void KSkeleton::initJointHierarchy()
 	}
 }
 
-void KSkeleton::nextJoint(int step)
-{
-	m_activeJoint = Mod(m_activeJoint, JointType_Count, step);
-	const KJoint &j = m_joints[m_activeJoint];
-	qDebug() << qSetFieldWidth(15) << m_nodes[m_activeJoint].name << ": " << qSetFieldWidth(10) << m_joints[m_activeJoint].position << m_joints[m_activeJoint].getTrackingState();
-}
-
 void KSkeleton::printInfo() const
 {
 	cout << endl;
@@ -301,6 +294,11 @@ void KSkeleton::setActiveJoints(uint frameIndex)
 	else {
 		m_joints = m_sequence[frameIndex].joints;
 	}
+}
+
+array<KJoint, NUM_MARKERS>& KSkeleton::joints()
+{
+	return m_joints;
 }
 
 void KSkeleton::setActiveFrame(uint index)
@@ -479,7 +477,6 @@ void KSkeleton::drawSkeleton()
 		m_jointBufferData[6 * i + 4] = (m_joints[i].trackingState == TrackingState_Tracked ? 255.f : 0.f);
 		m_jointBufferData[6 * i + 5] = (m_joints[i].trackingState == TrackingState_Inferred ? 255.f : 0.f);
 	}
-
 	loadSkeletonData();
 
 	glBindVertexArray(m_skeletonVAO);

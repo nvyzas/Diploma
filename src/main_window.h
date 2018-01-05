@@ -53,6 +53,7 @@ private:
 	// Status Bar
 	QLabel *statusLabel;
 	QLCDNumber *fps;
+	QLCDNumber *barAngle;
 };
 
 #endif /* MAIN_WINDOW_H */

@@ -93,11 +93,11 @@ public:
 	void GetBoneTransforms(vector<Matrix4f>& Transforms);
 	void traverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P);
 	void initCorrectedMatrices();
-	void PrintInfo() const;
-	void PrintNodeHierarchy(const aiNode* pNode) const;
-	void PrintNodeMatching(const aiNode* pNode) const;
-	void PrintParameters() const;
-	void PrintSceneInfo() const;
+	void printInfo() const;
+	void printNodeHierarchy(const aiNode* pNode) const;
+	void printNodeMatching(const aiNode* pNode) const;
+	void printParameters() const;
+	void printSceneInfo() const;
 
 	
 	bool m_SuccessfullyLoaded;
@@ -140,7 +140,7 @@ public:
 	uint sequenceSize();
 
 private:
-	void Clear();
+	void clear();
 	void InitMesh(uint MeshIndex, const aiMesh* paiMesh);
 	void LoadBones(uint MeshIndex, const aiMesh* paiMesh, vector<VertexBoneData>& Bones);
 	bool initImages(const aiScene* pScene, const string& Filename);

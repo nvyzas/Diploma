@@ -64,7 +64,6 @@ QString toStringAxisAngle(const QQuaternion &q);
 QString toStringCartesian(const QVector3D &v);
 QString toStringSpherical(const QVector3D &v);
 double ticksToMilliseconds(clock_t ticks);
-
 std::ostream& operator<<(std::ostream& out, const QVector3D& v);
 
 #endif	/* UTIL_H */

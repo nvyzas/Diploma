@@ -134,6 +134,7 @@ public:
 	void loadSkeletonData();
 	uint sequenceSize();
 	void setActiveJoints(uint frameIndex);
+	array<KJoint, NUM_MARKERS>& joints();
 
 private:
 	array<KNode, NUM_MARKERS> m_nodes; // these define the kinect skeleton hierarchy

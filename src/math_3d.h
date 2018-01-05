@@ -131,6 +131,14 @@ struct Vector4f
         z = _z;
         w = _w;
     }
+
+	Vector4f(QVector3D& v)
+	{
+		x = v.x();
+		y = v.y();
+		z = v.z();
+		w = 1;
+	}
     
     void Print(bool endl = true) const
     {

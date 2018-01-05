@@ -112,3 +112,8 @@ std::ostream& operator<<(std::ostream& out, const QVector3D& v)
 	out << setw(15) << v.x() << " " << setw(15) << v.y() << " " << setw(15) << v.z() << " ";
 	return out;
 }
+
+float toDegrees(float radians)
+{
+	return 0.0f;
+}

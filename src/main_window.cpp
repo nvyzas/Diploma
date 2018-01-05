@@ -188,7 +188,10 @@ void MainWindow::setupObjects()
 
 	fps = new QLCDNumber(this);
 	ui->statusBar->addPermanentWidget(fps);
-	
+	barAngle = new QLCDNumber(this);
+	//barAngle->setAutoFillBackground(true);
+	ui->statusBar->addPermanentWidget(barAngle);
+
 	m_guiTimer = new QTimer(this);
 	m_guiTimer->setTimerType(Qt::CoarseTimer);
 	connect(m_guiTimer, SIGNAL(timeout()), this, SLOT(updateStatusBar()));
@@ -247,4 +250,5 @@ void MainWindow::setActiveKinectSkeletonFrame(int progressPercent)
 void MainWindow::updateStatusBar()
 {
 	fps->display((int)ui->openGLWidget->m_fpsCount);
+	barAngle->display((double)ui->openGLWidget->m_barAngle);
 }

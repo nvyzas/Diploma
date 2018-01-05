@@ -45,6 +45,7 @@ public:
 	const uint m_captureInterval = 10; // in milliseconds
 	uint m_playbackInterval; // in milliseconds
 	uint m_fpsCount = 0; // for counting fps
+	float m_barAngle;
 
 public slots:
 	void setRenderAxes(bool state);
@@ -58,6 +59,8 @@ public slots:
 	void updateIndirect();
 	void setActiveBone(const QString& modelName);
 
+	void loadArrow();
+	void drawArrow();
 protected:
 	void initializeGL();
 	void paintGL();
@@ -123,6 +126,8 @@ private:
 
 	QTimer m_timer;
 	bool m_defaultPose = false;
+
+	GLuint m_arrowVAO;
 };
 
 #endif /* MAIN_WIDGET_H */

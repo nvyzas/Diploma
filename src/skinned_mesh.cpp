@@ -13,20 +13,20 @@
 SkinnedMesh::SkinnedMesh()
 {
 	cout << "SkinnedMesh constructor start." << endl;
-	Clear();
+	clear();
 	m_SuccessfullyLoaded = false;
 	m_pScene = NULL;
-	loadMesh("cmu_test");
-	PrintInfo();
+	loadMesh("cmu");
+	printInfo();
 	loadMotion("motion.mot");
 	cout << "SkinnedMesh constructor end." << endl;
 }
 SkinnedMesh::~SkinnedMesh()
 {
-    Clear();
+    clear();
 }
 // delete container contents and resize to 0
-void SkinnedMesh::Clear()
+void SkinnedMesh::clear()
 {	
 	m_entries.clear();
 	m_positions.clear();
@@ -40,7 +40,7 @@ void SkinnedMesh::Clear()
 }
 bool SkinnedMesh::loadMesh(const string& basename)
 {
-	Clear();
+	clear();
 
     bool Ret = false;
 	string filename = "models/" + basename + ".dae";
@@ -401,22 +401,22 @@ void SkinnedMesh::BoneTransform(float TimeInSeconds, vector<Matrix4f>& Transform
 		Transforms[i] = m_boneInfo[i].combined;
 	}
 }
-void SkinnedMesh::PrintInfo() const
+void SkinnedMesh::printInfo() const
 {
 	if (m_pScene) {
 		cout << endl;
-		PrintSceneInfo();
+		printSceneInfo();
 		if (m_pScene->mRootNode) {
 			cout << endl;
 			cout << "Model node hierarchy:" << endl;
-			PrintNodeHierarchy(m_pScene->mRootNode);
+			printNodeHierarchy(m_pScene->mRootNode);
 			cout << endl;
 			cout << "Model bone -> Kinect joint id matching:" << endl;
-			PrintNodeMatching(m_pScene->mRootNode);
+			printNodeMatching(m_pScene->mRootNode);
 		}
 	}
 }
-void SkinnedMesh::PrintSceneInfo() const
+void SkinnedMesh::printSceneInfo() const
 {
 	cout << "Scene info:" << endl;
 	cout << "Mesh:";
@@ -434,11 +434,10 @@ void SkinnedMesh::PrintSceneInfo() const
 		cout << " Bones:" << setw(3) << m_pScene->mMeshes[i]->mNumBones;
 		cout << endl;
 	}
-	cout << "Total: Vertices:" << m_numVertices;
-	cout << " Bones:" << m_numBones;
+	cout << "Total: Vertices:" << m_numVertices << " Bones:" << m_numBones;
 	cout << endl;
 }
-void SkinnedMesh::PrintNodeHierarchy(const aiNode* pNode) const
+void SkinnedMesh::printNodeHierarchy(const aiNode* pNode) const
 {
 	static uint counter = 0;
 	if (!pNode->mParent) counter = 0;
@@ -457,11 +456,11 @@ void SkinnedMesh::PrintNodeHierarchy(const aiNode* pNode) const
 	}
 	cout << endl;
 	for (uint i = 0; i < pNode->mNumChildren; i++) {
-		PrintNodeHierarchy(pNode->mChildren[i]);
+		printNodeHierarchy(pNode->mChildren[i]);
 	}
 	
 }
-void SkinnedMesh::PrintNodeMatching(const aiNode* pNode) const
+void SkinnedMesh::printNodeMatching(const aiNode* pNode) const
 {
 	string nodeName(pNode->mName.data);
 	const auto& kit = m_kboneMap.find(nodeName);
@@ -470,7 +469,7 @@ void SkinnedMesh::PrintNodeMatching(const aiNode* pNode) const
 		cout << setw(20) << left << nodeName << " -> " << kboneIndex << endl;
 	}
 	for (uint i = 0; i < pNode->mNumChildren; i++) {
-		PrintNodeMatching(pNode->mChildren[i]);
+		printNodeMatching(pNode->mChildren[i]);
 	}
 }
 void SkinnedMesh::GetBoneTransforms(vector<Matrix4f>& Transforms)
@@ -769,7 +768,7 @@ void SkinnedMesh::flipParameter(uint i)
 	m_parameters[i].flip();
 	cout << "Parameter " << i << ": " << m_parameterInfo[i] << (m_parameters[i] ? " ON" : " OFF") << endl;
 }
-void SkinnedMesh::PrintParameters() const
+void SkinnedMesh::printParameters() const
 {
 	for (uint i = 0; i < NUM_PARAMETERS; i++) {
 		cout << "Parameter " << i << ": " << m_parameterInfo[i] << (m_parameters[i] ? " ON" : " OFF") << endl;
@@ -855,7 +854,12 @@ void SkinnedMesh::loadAxesToGPU()
 		0.f  , 0.f  , 255.f // z axis color
 	};
 
-	GLushort indices[] = { 0, 1, 0, 2, 0, 3 };
+	GLushort indices[] = 
+	{ 
+		0, 1, 
+		0, 2, 
+		0, 3 
+	};
 
 	glGenVertexArrays(1, &m_axesVAO);
 	glBindVertexArray(m_axesVAO);
@@ -870,9 +874,9 @@ void SkinnedMesh::loadAxesToGPU()
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, BUFFER_OFFSET(sizeof(float) * 3));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, BUFFER_OFFSET(sizeof(GLfloat) * 3));
 
-	glBindVertexArray(0); // break the existing vertex array object binding
+	glBindVertexArray(0); 
 }
 void SkinnedMesh::drawBoneAxes()
 { 
@@ -920,8 +924,7 @@ bool SkinnedMesh::loadMotion(const QString& filename)
 			}
 		}
 		m_modelCoordinateSequence.push_back(coords);
-	} 
-	while (!line.isNull());
+	} while (!line.isNull());
 
 	/*cout << "Lines in .mot file: " << lineCounter << endl;
 	cout << "Timestamp = " << m_timestamps[0] << endl;
