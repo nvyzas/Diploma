@@ -35,7 +35,6 @@ void SkinnedMesh::clear()
 	m_vertexBoneData.clear();
 	m_indices.clear();
 	m_images.clear();
-
 	m_boneInfo.clear();
 }
 bool SkinnedMesh::loadMesh(const string& basename)

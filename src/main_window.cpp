@@ -12,6 +12,8 @@
 #include <QtWidgets\QAction>
 #include <QtWidgets\QMenu>
 #include <QtWidgets\QLCDNumber>
+#include <QKeyEvent>
+#include <QDesktopWidget>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
@@ -20,6 +22,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 	ui->setupUi(this);
 	setupObjects();
 	setupConnections();
+	//resize(QDesktopWidget().availableGeometry(this).size()*0.5);
 	cout << "MainWindow constructor end." << endl;
 }
 MainWindow::~MainWindow()
@@ -179,26 +182,13 @@ void MainWindow::setupObjects()
 	menuInfo->addAction("Bone Transforms", this, SLOT(printActiveBoneTransforms()));
 	menuInfo->addAction("Bone Rotations", this, SLOT(printActiveBoneRotations()));
 	ui->pushButton_info->setMenu(menuInfo);
-	
-	//*
-	// Status Bar
-	statusLabel = new QLabel(this);
-	statusLabel->setText("FPS: ");
-	ui->statusBar->addPermanentWidget(statusLabel);
-
-	fps = new QLCDNumber(this);
-	ui->statusBar->addPermanentWidget(fps);
-	barAngle = new QLCDNumber(this);
-	//barAngle->setAutoFillBackground(true);
-	ui->statusBar->addPermanentWidget(barAngle);
 
 	m_guiTimer = new QTimer(this);
 	m_guiTimer->setTimerType(Qt::CoarseTimer);
 	connect(m_guiTimer, SIGNAL(timeout()), this, SLOT(updateStatusBar()));
 
-	m_guiTimer->setInterval(500);
+	m_guiTimer->setInterval(100);
 	m_guiTimer->start();
-	//*/
 }
 void MainWindow::setActiveBoneAxes() {
 	const QString &boneName = ui->comboBox_activeBone->currentText();
@@ -249,6 +239,16 @@ void MainWindow::setActiveKinectSkeletonFrame(int progressPercent)
 
 void MainWindow::updateStatusBar()
 {
-	fps->display((int)ui->openGLWidget->m_fpsCount);
-	barAngle->display((double)ui->openGLWidget->m_barAngle);
+	ui->label_barAngle->setNum((double)ui->openGLWidget->m_barAngle);
+	ui->label_fps->setNum((int)ui->openGLWidget->m_fpsCount);
+	QString barSpeedX; 
+	barSpeedX.setNum(ui->openGLWidget->m_barSpeed.x(), 'f', 3);
+	QString barSpeedY;
+	barSpeedY.setNum(ui->openGLWidget->m_barSpeed.y(), 'f', 3);
+	QString barSpeedZ;
+	barSpeedZ.setNum(ui->openGLWidget->m_barSpeed.z(), 'f', 3);
+
+	ui->label_barAngle->setText(barSpeedX+" "+barSpeedY+" "+barSpeedZ);
+
+	ui->label_kneeAngle->setNum((double)ui->openGLWidget->m_kneeAngle);
 }

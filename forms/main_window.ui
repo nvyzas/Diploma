@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>520</width>
-    <height>689</height>
+    <height>707</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -27,6 +27,12 @@
        <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,0">
         <item>
          <widget class="MainWidget" name="openGLWidget">
+          <property name="baseSize">
+           <size>
+            <width>512</width>
+            <height>424</height>
+           </size>
+          </property>
           <property name="focusPolicy">
            <enum>Qt::StrongFocus</enum>
           </property>
@@ -123,14 +129,14 @@
               </widget>
              </item>
              <item row="29" column="0">
-              <widget class="QLabel" name="label_3">
+              <widget class="QLabel" name="label_activeJoint">
                <property name="text">
                 <string>Active Joint</string>
                </property>
               </widget>
              </item>
              <item row="4" column="0">
-              <widget class="QLabel" name="label">
+              <widget class="QLabel" name="label_activeBone">
                <property name="text">
                 <string>Active Bone</string>
                </property>
@@ -180,7 +186,7 @@
               </widget>
              </item>
              <item row="1" column="0">
-              <widget class="QLabel" name="label_2">
+              <widget class="QLabel" name="label_activeModel">
                <property name="text">
                 <string>Active Model</string>
                </property>
@@ -282,22 +288,79 @@
         </item>
        </layout>
       </widget>
-      <widget class="QPlainTextEdit" name="plainTextEdit">
-       <property name="sizeAdjustPolicy">
-        <enum>QAbstractScrollArea::AdjustToContentsOnFirstShow</enum>
-       </property>
-       <property name="lineWrapMode">
-        <enum>QPlainTextEdit::NoWrap</enum>
-       </property>
-       <property name="readOnly">
-        <bool>true</bool>
-       </property>
+      <widget class="QWidget" name="gridLayoutWidget">
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <item>
+         <widget class="QGroupBox" name="groupBox_info">
+          <property name="title">
+           <string>Info</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_5">
+           <item row="0" column="2">
+            <widget class="QLabel" name="label_barSpeedTitle">
+             <property name="text">
+              <string>Bar speed:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QLabel" name="label_barSpeed">
+             <property name="text">
+              <string>TextLabel</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLabel" name="label_fps">
+             <property name="text">
+              <string>TextLabel</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_fpsTitle">
+             <property name="text">
+              <string>FPS:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_kneeAngleTitle">
+             <property name="text">
+              <string>Knee angle:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QLabel" name="label_barAngleTitle">
+             <property name="text">
+              <string>Bar angle: </string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLabel" name="label_kneeAngle">
+             <property name="text">
+              <string>TextLabel</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="3">
+            <widget class="QLabel" name="label_barAngle">
+             <property name="text">
+              <string>TextLabel</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
       </widget>
      </widget>
     </item>
    </layout>
   </widget>
-  <widget class="QStatusBar" name="statusBar"/>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>

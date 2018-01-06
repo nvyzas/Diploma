@@ -172,8 +172,8 @@ void MainWidget::paintGL()
 	if (m_renderSkinnedMesh && m_successfullyLoaded) {
 		drawSkinnedMesh();
 	}
-	m_Tech->enable();
 
+	m_Tech->enable();
 	// draw skinned mesh bone axes
 	m_Tech->setMVP(m_Pipe->GetWVPTrans());
 	m_Tech->setSpecific(m_skinnedMesh->boneGlobal(m_activeBone));
@@ -186,11 +186,22 @@ void MainWidget::paintGL()
 	if (m_renderSkeleton) m_ksensor->skeleton()->drawSkeleton();
 
 	// draw arrow
-
 	QVector3D leftHand = (m_ksensor->skeleton()->joints())[JointType_HandLeft].position;
 	QVector3D rightHand = (m_ksensor->skeleton()->joints())[JointType_HandRight].position;
 	QVector3D barDirection = rightHand - leftHand;
-	m_barAngle = ToDegree(atan2(barDirection.y(), sqrt(pow(barDirection.x(), 2) + pow(barDirection.z(), 2))));
+	m_barAngle = ToDegrees(atan2(barDirection.y(), sqrt(pow(barDirection.x(), 2) + pow(barDirection.z(), 2))));
+	
+	static QVector3D previousBarPosition, currentBarPosition;
+	currentBarPosition = (leftHand + rightHand) * 0.5;
+	m_barSpeed = (currentBarPosition - previousBarPosition) / m_playbackInterval * 1000;
+	previousBarPosition = currentBarPosition;
+
+	QVector3D hipRight = (m_ksensor->skeleton()->joints())[JointType_HipRight].position;
+	QVector3D kneeRight = (m_ksensor->skeleton()->joints())[JointType_KneeRight].position;
+	QVector3D ankleRight = (m_ksensor->skeleton()->joints())[JointType_AnkleRight].position;
+	QVector3D kneeToHip = (hipRight - kneeRight).normalized();
+	QVector3D kneeToAnkle = (ankleRight - kneeRight).normalized();
+	m_kneeAngle = 180.f-ToDegrees(acos(QVector3D::dotProduct(kneeToHip, kneeToAnkle)));
 	
 	// Scaling
 	Matrix4f S;

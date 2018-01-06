@@ -45,9 +45,9 @@ void Matrix4f::InitRotateTransform(float RotateX, float RotateY, float RotateZ)
 {
     Matrix4f rx, ry, rz;
 
-    const float x = ToRadian(RotateX);
-    const float y = ToRadian(RotateY);
-    const float z = ToRadian(RotateZ);
+    const float x = ToRadians(RotateX);
+    const float y = ToRadians(RotateY);
+    const float z = ToRadians(RotateZ);
 
     rx.m[0][0] = 1.0f; rx.m[0][1] = 0.0f   ; rx.m[0][2] = 0.0f    ; rx.m[0][3] = 0.0f;
     rx.m[1][0] = 0.0f; rx.m[1][1] = cosf(x); rx.m[1][2] = -sinf(x); rx.m[1][3] = 0.0f;
@@ -128,7 +128,7 @@ void Matrix4f::InitPersProjTransform(const PersProjInfo& p)
 {
     const float ar         = p.Width / p.Height;
     const float zRange     = p.zNear - p.zFar;
-    const float tanHalfFOV = tanf(ToRadian(p.FOV / 2.0f));
+    const float tanHalfFOV = tanf(ToRadians(p.FOV / 2.0f));
 
     m[0][0] = -1.0f/(tanHalfFOV * ar); m[0][1] = 0.0f;            m[0][2] = 0.0f;						m[0][3] = 0.0;
     m[1][0] = 0.0f;                    m[1][1] = 1.0f/tanHalfFOV; m[1][2] = 0.0f;						m[1][3] = 0.0;

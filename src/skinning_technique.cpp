@@ -212,7 +212,7 @@ void SkinningTechnique::SetSpotLights(uint NumLights, const SpotLight* pLights)
 		QVector3D Direction = pLights[i].Direction;
         Direction.normalize();
         glUniform3f(m_spotLightsLocation[i].Direction, Direction.x(), Direction.y(), Direction.z());
-        glUniform1f(m_spotLightsLocation[i].Cutoff, cosf(ToRadian(pLights[i].Cutoff)));
+        glUniform1f(m_spotLightsLocation[i].Cutoff, cosf(ToRadians(pLights[i].Cutoff)));
         glUniform1f(m_spotLightsLocation[i].Atten.Constant, pLights[i].Attenuation.Constant);
         glUniform1f(m_spotLightsLocation[i].Atten.Linear,   pLights[i].Attenuation.Linear);
         glUniform1f(m_spotLightsLocation[i].Atten.Exp,      pLights[i].Attenuation.Exp);

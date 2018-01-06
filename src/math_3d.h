@@ -14,8 +14,8 @@
 #include <iomanip>
 
 #define PI 3.141592653589
-#define ToRadian(x) (float)(((x) * PI / 180.0f))
-#define ToDegree(x) (float)(((x) * 180.0f / PI))
+#define ToRadians(x) (float)(((x) * PI / 180.f))
+#define ToDegrees(x) (float)(((x) * 180.f / PI))
 
 using namespace std;
 

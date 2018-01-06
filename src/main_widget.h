@@ -45,7 +45,9 @@ public:
 	const uint m_captureInterval = 10; // in milliseconds
 	uint m_playbackInterval; // in milliseconds
 	uint m_fpsCount = 0; // for counting fps
+	float m_kneeAngle;
 	float m_barAngle;
+	QVector3D m_barSpeed;
 
 public slots:
 	void setRenderAxes(bool state);

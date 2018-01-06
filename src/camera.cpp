@@ -57,8 +57,8 @@ void Camera::rotateUp(float angles)
 void Camera::UpdateCartesian()
 {
 	float rho = m_rho;
-	float theta = ToRadian(m_theta);
-	float phi = ToRadian(m_phi);
+	float theta = ToRadians(m_theta);
+	float phi = ToRadians(m_phi);
 	m_x = rho*sin(phi)*cos(theta);
 	m_y = rho*cos(phi);
 	m_z = -rho*sin(phi)*sin(theta);
