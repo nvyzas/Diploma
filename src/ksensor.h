@@ -31,9 +31,6 @@ public:
 	// Start/Stop frame recording in KSkeleton class
 	void record();
 
-	// Playback
-	void setSkeletonActiveFrame(uint progressPercent);
-
 private:
 	KJoint m_Joints[JointType_Count];
 	IKinectSensor *m_sensor = nullptr;

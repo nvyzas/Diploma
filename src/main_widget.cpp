@@ -101,12 +101,15 @@ void MainWidget::MySetup()
 	m_successfullyLoaded = loadSkinnedMesh("cmu_test");
 
 	// Init Pipeline
+	QVector3D spineBase = (m_ksensor->skeleton()->joints())[JointType_SpineBase].position;
+	//m_Cam->setOffset(spineBase);
+	m_Cam->printInfo();
 	m_Pipe->SetCamera(m_Cam->GetPos(), m_Cam->GetTarget(), m_Cam->GetUp());
 
 	PersProjInfo persProjInfo;
 	persProjInfo.FOV = 60.0f;
-	persProjInfo.Height = m_Cam->GetHeight();
-	persProjInfo.Width = m_Cam->GetWidth();
+	persProjInfo.Height = m_Cam->windowHeight();
+	persProjInfo.Width = m_Cam->windowWidth();
 	persProjInfo.zNear = 0.1f;
 	persProjInfo.zFar = 1000.0f;
 	m_Pipe->SetPerspectiveProj(persProjInfo);
@@ -154,17 +157,19 @@ void MainWidget::paintGL()
 	if (m_modeOfOperation == Mode::CAPTURE) {
 		m_ksensor->getBodyData();
 	}
-	else if (m_modeOfOperation == Mode::PLAYBACK && m_play){
+	else if (m_modeOfOperation == Mode::PLAYBACK){
 		m_ksensor->skeleton()->setActiveJoints(m_activeFrame);
 		m_skinnedMesh->setActiveCoordinates(m_activeFrame);
 	}
-	
+	m_time = m_skinnedMesh->timestamp(m_activeFrame);
+	QVector3D offset(0.f, 0.f, -2.f);
+
 	// draw skinned mesh
 	m_Skin->enable();
 	QQuaternion& q = m_skinnedMesh->worldRotation();
 	if (m_defaultPose) m_Pipe->setWorldRotation(QQuaternion()); else m_Pipe->setWorldRotation(q);
 	QVector3D& v = m_skinnedMesh->worldPosition();
-	if (m_defaultPose) m_Pipe->setWorldPosition(QVector3D()); else m_Pipe->setWorldPosition(v);
+	if (m_defaultPose) m_Pipe->setWorldPosition(QVector3D()); else m_Pipe->setWorldPosition(v + offset);
 	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
 	if (m_modeOfOperation == Mode::PLAYBACK && m_play) {
 		transformSkinnedMesh(false);
@@ -174,15 +179,21 @@ void MainWidget::paintGL()
 	}
 
 	m_Tech->enable();
+
 	// draw skinned mesh bone axes
 	m_Tech->setMVP(m_Pipe->GetWVPTrans());
 	m_Tech->setSpecific(m_skinnedMesh->boneGlobal(m_activeBone));
 	//if (m_renderAxes) m_skinnedMesh->drawBoneAxes();
 	
 	// draw basic axes
-	m_Tech->setMVP(m_Pipe->GetVPTrans()); // only VP transformation!
+	m_Tech->setMVP(m_Pipe->GetVPTrans()); // only VP transformation! #! changed view transform to displace all
 	m_Tech->setSpecific(Matrix4f::Identity());
 	if (m_renderAxes) m_skinnedMesh->drawBoneAxes();
+
+	// draw skeleton
+	m_Pipe->setWorldRotation(QQuaternion());
+	if (m_defaultPose) m_Pipe->setWorldPosition(QVector3D()); else m_Pipe->setWorldPosition(offset);
+	m_Tech->setMVP(m_Pipe->GetWVPTrans()); 
 	if (m_renderSkeleton) m_ksensor->skeleton()->drawSkeleton();
 
 	// draw arrow
@@ -216,7 +227,9 @@ void MainWidget::paintGL()
 	m_Tech->setSpecific(T * R * S);
 	drawArrow();
 
-	if (++m_activeFrame > m_ksensor->skeleton()->sequenceSize())  m_activeFrame = 0;
+	if (m_play) {
+		if (++m_activeFrame > m_ksensor->skeleton()->sequenceSize())  m_activeFrame = 0;
+	}
 
 	calculateFPS();
 }
@@ -577,6 +590,10 @@ void MainWidget::drawSkinnedMesh()
 void MainWidget::updateIndirect()
 {
 	update();
+}
+void MainWidget::setActiveFrame(uint index)
+{
+	m_activeFrame = (uint)(index / 100.f * m_ksensor->skeleton()->sequenceSize());
 }
 void MainWidget::changeMode()
 {

@@ -48,6 +48,7 @@ public:
 	float m_kneeAngle;
 	float m_barAngle;
 	QVector3D m_barSpeed;
+	double m_time;
 
 public slots:
 	void setRenderAxes(bool state);
@@ -58,7 +59,8 @@ public slots:
 	void setBoneAxes(const QString& boneName);
 	void setKSensor(KSensor& ksensor);
 	void changeMode();
-	void updateIndirect();
+	void updateIndirect(); // #todo replace it with something else
+	void setActiveFrame(uint index);
 	void setActiveBone(const QString& modelName);
 
 	void loadArrow();

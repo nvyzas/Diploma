@@ -14,47 +14,39 @@ Camera::Camera()
     m_windowWidth  = 512;
     m_windowHeight = 424;
 	m_rho		   = 2.0f;
-	m_theta		   = 0.0f;
+	m_theta		   = 90.0f;
 	m_phi		   = 90.0f;
-	UpdateCartesian();
+	updateCartesian();
 	m_offset	   = QVector3D(0.0f, 0.0f, 0.0f);
 	m_center       = QVector3D(0.0f, 0.0f, 0.0f); // focus point of camera
     m_up           = QVector3D(0.0f, 1.0f, 0.0f); // direction of up vector
-	UpdateCamera();
+	updateVectors();
 }
 // use it after setting XYZ, offset, center and up
-void Camera::UpdateCamera() {
+void Camera::updateVectors() {
 	m_pos = GetXYZ() + m_offset;
 	m_target = m_center - m_pos;
 	m_target.normalize();
-	//m_up = Vector3f(sin(90.0f-m_Phi)*cos(180.0f+m_Theta), cos(m_Phi), -sin(m_Phi)*sin(m_Theta));
-	//m_up = (m_Phi == 180.0f || m_Phi == 360.0f) ? m_up*(-1) : m_up;
 	m_up.normalize();
 	m_right = QVector3D::crossProduct(m_target, m_up);
 	m_right.normalize();
-}
-void Camera::UpdateSpherical()
-{
-	//m_Rho = sqrt(pow(m_X, 2) + pow(m_Y, 2) + pow(m_Z, 2));
-	//m_Theta = atan2(-m_Z / m_X);
-	//m_Phi;
 }
 void Camera::rotateRight(float angles)
 {
 	m_theta += angles;
 	m_theta = wrapAngle(m_theta, 360.f);
-	UpdateCartesian();
-	UpdateCamera();
+	updateCartesian();
+	updateVectors();
 }
 void Camera::rotateUp(float angles)
 {
 	float newPhi = m_phi + angles;
 	if (newPhi >= 180.f || newPhi <= 0.f) return;
 	m_phi = newPhi;
-	UpdateCartesian();
-	UpdateCamera();
+	updateCartesian();
+	updateVectors();
 }
-void Camera::UpdateCartesian()
+void Camera::updateCartesian()
 {
 	float rho = m_rho;
 	float theta = ToRadians(m_theta);
@@ -67,12 +59,16 @@ void Camera::onKeyboardArrow(int key, bool print)
 {	
 	switch (key) {
 	case Qt::Key_Up:
-		rotateUp(-rotateStep);
+		m_pos += m_target;
+		m_center += m_target;
+		updateVectors();
 		if (print) printInfo();
 		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " RTF=" << GetRTF().GetString() << " XYZ=" << GetXYZ().GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
 		return;
 	case Qt::Key_Down:
-		rotateUp(+rotateStep);
+		m_pos -= m_target;
+		m_center -= m_target;
+		updateVectors();
 		if (print) printInfo();
 		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " RTF=" << GetRTF().GetString() << " XYZ=" << GetXYZ().GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
 		return;
@@ -95,8 +91,8 @@ void Camera::onMouseWheel(int degrees, bool print)
 {
 	float deltaDistance = degrees / 60.f;
 	if (m_rho - deltaDistance > 0.1) m_rho -= deltaDistance;
-	UpdateCartesian();
-	UpdateCamera();
+	updateCartesian();
+	updateVectors();
 	if (print) printInfo();
 	//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
 }
@@ -108,6 +104,9 @@ void Camera::Setup(const QVector3D& Pos, const QVector3D& Center, const QVector3
 	m_up.normalize();
 	m_target = m_center - m_pos;
 	m_target.normalize();
+}
+void Camera::setOffset(const QVector3D& position)
+{
 }
 void Camera::printInfo()
 {

@@ -105,7 +105,6 @@ public:
 	void addFrame(const Joint *joints, const JointOrientation *orientations, const double &time);
 	void initJointHierarchy();
 	bool initOGL();
-	void nextJoint(int step);
 	void printInfo() const;
 	void printJointHierarchy() const;
 	void printJoints() const;
@@ -117,8 +116,6 @@ public:
 	void loadFromBinary();
 
 	uint activeFrame() const;
-	void setActiveFrame(uint index);
-	void setActiveFrame(float progressPercent);
 	double timeStep() const;
 	void setTimeStep(double timestep);
 	void clearSequences();

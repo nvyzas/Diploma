@@ -300,33 +300,6 @@ array<KJoint, NUM_MARKERS>& KSkeleton::joints()
 {
 	return m_joints;
 }
-
-void KSkeleton::setActiveFrame(uint index)
-{
-	if (m_interpolatedSequence.size() == 0) {
-		cout << "Interpolated sequence is empty." << endl;
-	}
-	else if (index<0 || index>=m_interpolatedSequence.size()) {
-		cout << "Out of bounds" << endl;
-	}
-	else {
-		m_activeFrame = index;
-		cout << "Active frame index = " << m_activeFrame << endl;
-		m_joints = m_sequence[m_activeFrame].joints;
-	}
-}
-void KSkeleton::setActiveFrame(float progressPercent)
-{
-	if (m_sequence.size() == 0) {
-		cout << "No sequence recorded." << endl;
-	}
-	else {
-		m_activeFrame = m_sequence.size() * progressPercent / 100.f;
-		cout << "Active frame = " << m_activeFrame << endl;
-		m_joints = m_sequence[m_activeFrame].joints;
-	}
-}
-
 void KSkeleton::saveToBinary() const
 {
 	QFile qf("sequences.txt");
@@ -353,7 +326,6 @@ void KSkeleton::saveToBinary() const
 	cout << "Size of saved filtered sequence: " << m_filteredSequence.size() << endl;
 	if (m_filteredSequence.size() != 0) cout << "Duration: " << m_filteredSequence.back().timestamp << endl;
 }
-
 void KSkeleton::loadFromBinary()
 {
 	QFile qf("sequences.txt");

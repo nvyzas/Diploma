@@ -18,7 +18,7 @@ SkinnedMesh::SkinnedMesh()
 	m_pScene = NULL;
 	loadMesh("cmu");
 	printInfo();
-	loadMotion("motion.mot");
+	loadMotion("motion_1.mot");
 	cout << "SkinnedMesh constructor end." << endl;
 }
 SkinnedMesh::~SkinnedMesh()
@@ -527,6 +527,10 @@ QQuaternion SkinnedMesh::worldRotation()
 QVector3D SkinnedMesh::worldPosition()
 {
 	return QVector3D(m_modelCoordinates[pelvis_tx], m_modelCoordinates[pelvis_ty], m_modelCoordinates[pelvis_tz]);
+}
+double SkinnedMesh::timestamp(uint index)
+{
+	return m_timestamps[index];
 }
 void SkinnedMesh::initCoordinates()
 {

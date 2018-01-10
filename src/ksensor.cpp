@@ -305,7 +305,3 @@ KSkeleton* KSensor::skeleton()
 {
 	return &m_skeleton;
 }
-void KSensor::setSkeletonActiveFrame(uint progressPercent)
-{
-	m_skeleton.setActiveFrame(progressPercent);
-}

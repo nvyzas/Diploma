@@ -136,6 +136,7 @@ public:
 
 	QQuaternion worldRotation();
 	QVector3D worldPosition();
+	double timestamp(uint index);
 	void setActiveCoordinates(uint frameIndex);
 	uint sequenceSize();
 

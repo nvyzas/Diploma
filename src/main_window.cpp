@@ -228,12 +228,13 @@ void MainWindow::setupConnections()
 }
 void MainWindow::setActiveKinectSkeletonFrame(int progressPercent)
 {
-	uint pp = progressPercent; // progressPercent implicitly cast to uint?
+	uint pp = progressPercent; // #? progressPercent implicitly cast to uint?
 	if (progressPercent > 100 || progressPercent < 0) {
 		cout << "Progress percent out of bounds: " << progressPercent << endl;
 	}
 	else {
-		m_ksensor.setSkeletonActiveFrame(progressPercent);
+		ui->openGLWidget->setActiveFrame(progressPercent);
+		ui->openGLWidget->update();
 	}
 }
 
@@ -248,7 +249,8 @@ void MainWindow::updateStatusBar()
 	QString barSpeedZ;
 	barSpeedZ.setNum(ui->openGLWidget->m_barSpeed.z(), 'f', 3);
 
-	ui->label_barAngle->setText(barSpeedX+" "+barSpeedY+" "+barSpeedZ);
+	ui->label_barSpeed->setText(barSpeedX+" "+barSpeedY+" "+barSpeedZ);
 
 	ui->label_kneeAngle->setNum((double)ui->openGLWidget->m_kneeAngle);
+	ui->label_time->setNum(ui->openGLWidget->m_time);
 }
