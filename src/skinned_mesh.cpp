@@ -410,8 +410,6 @@ void SkinnedMesh::printInfo() const
 			cout << "Model node hierarchy:" << endl;
 			printNodeHierarchy(m_pScene->mRootNode);
 			cout << endl;
-			cout << "Model bone -> Kinect joint id matching:" << endl;
-			printNodeMatching(m_pScene->mRootNode);
 		}
 	}
 }
@@ -458,18 +456,6 @@ void SkinnedMesh::printNodeHierarchy(const aiNode* pNode) const
 		printNodeHierarchy(pNode->mChildren[i]);
 	}
 	
-}
-void SkinnedMesh::printNodeMatching(const aiNode* pNode) const
-{
-	string nodeName(pNode->mName.data);
-	const auto& kit = m_kboneMap.find(nodeName);
-	if (kit != m_kboneMap.end()) {		
-		uint kboneIndex = kit->second;
-		cout << setw(20) << left << nodeName << " -> " << kboneIndex << endl;
-	}
-	for (uint i = 0; i < pNode->mNumChildren; i++) {
-		printNodeMatching(pNode->mChildren[i]);
-	}
 }
 void SkinnedMesh::GetBoneTransforms(vector<Matrix4f>& Transforms)
 {

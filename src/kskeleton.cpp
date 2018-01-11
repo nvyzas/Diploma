@@ -97,15 +97,16 @@ void KSkeleton::addFrame(const Joint *joints, const JointOrientation *orientatio
 		m_filteredInterpolatedSequence.push_back(kframe);
 	}
 }
-bool KSkeleton::writeTRC()
+bool KSkeleton::saveToTrc()
 {
-	QFile qf("joint_positions.trc");
+	QString fileName("joint_positions.trc");
+	QFile qf(fileName);
 	if (!qf.open(QIODevice::WriteOnly | QIODevice::Text)) {
-		cout << "Could not create .trc file" << endl;
+		cout << "Could not create " << fileName.toStdString() << endl;
 		return false;
 	}
 
-	QVector<KFrame> sequenceToWrite = m_filteredInterpolatedSequence;
+	QVector<KFrame>& sequenceToWrite = m_filteredInterpolatedSequence;
 
 	QTextStream out(&qf);
 	// Line 1
@@ -157,21 +158,8 @@ bool KSkeleton::writeTRC()
 	out << flush;
 	qf.close();
 
-	cout << "Successfully created .trc file." << endl;
+	cout << "Successfully created " << fileName.toStdString() << endl;
 	return true;
-}
-bool KSkeleton::readTRC()
-{
-	QFile file("joint_positions.trc");
-	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-		cout << "Could not read joint_positions.trc file" << endl;
-		return false;
-	}
-	while (!file.atEnd()) {
-		QByteArray line = file.readLine();
-		// process data here
-	}
-	file.close();
 }
 void KSkeleton::initJointHierarchy()
 {
@@ -295,7 +283,6 @@ void KSkeleton::setActiveJoints(uint frameIndex)
 		m_joints = m_sequence[frameIndex].joints;
 	}
 }
-
 array<KJoint, NUM_MARKERS>& KSkeleton::joints()
 {
 	return m_joints;

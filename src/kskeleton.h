@@ -110,8 +110,7 @@ public:
 	void printJoints() const;
 	void printSequence() const;
 	// files
-	bool writeTRC();
-	bool readTRC();
+	bool saveToTrc();
 	void saveToBinary() const;
 	void loadFromBinary();
 

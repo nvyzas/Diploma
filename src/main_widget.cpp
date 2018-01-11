@@ -340,7 +340,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		m_skinnedMesh->printInfo();
 		break;
 	case Qt::Key_T:
-		m_ksensor->skeleton()->writeTRC();
+		m_ksensor->skeleton()->saveToTrc();
 		break;
 	case Qt::Key_Escape:
 		event->ignore();	// event passed to MainWidget's parent (MainWindow)
