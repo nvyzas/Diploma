@@ -65,6 +65,8 @@ public slots:
 
 	void loadArrow();
 	void drawArrow();
+	void loadAxes();
+	void drawAxes();
 protected:
 	void initializeGL();
 	void paintGL();
@@ -132,6 +134,7 @@ private:
 	bool m_defaultPose = false;
 
 	GLuint m_arrowVAO;
+	GLuint m_axesVAO;
 };
 
 #endif /* MAIN_WIDGET_H */

@@ -58,7 +58,7 @@ void MainWidget::initializeGL()
 	m_Pipe = new Pipeline();
 	m_ksensor->skeleton()->initOGL();
 	m_skinnedMesh->initOGL();
-	m_skinnedMesh->loadAxesToGPU();
+	loadAxes();
 	loadArrow();
 
 	//cout << "GL version: " << glGetString(GL_VERSION) << endl;
@@ -183,12 +183,12 @@ void MainWidget::paintGL()
 	// draw skinned mesh bone axes
 	m_Tech->setMVP(m_Pipe->GetWVPTrans());
 	m_Tech->setSpecific(m_skinnedMesh->boneGlobal(m_activeBone));
-	//if (m_renderAxes) m_skinnedMesh->drawBoneAxes();
+	if (m_renderAxes) drawAxes();
 	
 	// draw basic axes
 	m_Tech->setMVP(m_Pipe->GetVPTrans()); // only VP transformation! #! changed view transform to displace all
 	m_Tech->setSpecific(Matrix4f::Identity());
-	if (m_renderAxes) m_skinnedMesh->drawBoneAxes();
+	if (m_renderAxes) drawAxes();
 
 	// draw skeleton
 	m_Pipe->setWorldRotation(QQuaternion());
@@ -674,11 +674,56 @@ void MainWidget::loadArrow()
 
 	glBindVertexArray(0); // break the existing vertex array object binding
 }
-
 void MainWidget::drawArrow()
 {
 
 	glBindVertexArray(m_arrowVAO);
 	glDrawElements(GL_LINES, 10, GL_UNSIGNED_SHORT, 0);
+	glBindVertexArray(0);
+}
+void MainWidget::loadAxes()
+{
+	GLfloat vertices[] =
+	{
+		0.f  , 0.f, 0.f,  // origin position
+		0.f  , 0.f, 0.f, // origin color
+		1.f  , 0.f, 0.f, // x axis position
+		255.f, 0.f  , 0.f, // x axis color
+		0.f  , 1.f, 0.f, // y axis position
+		0.f  , 255.f, 0.f, // y axis color
+		0.f  , 0.f, 1.f, // z axis position
+		0.f  , 0.f  , 255.f // z axis color
+	};
+
+	GLushort indices[] =
+	{
+		0, 1,
+		0, 2,
+		0, 3
+	};
+
+	glGenVertexArrays(1, &m_axesVAO);
+	glBindVertexArray(m_axesVAO);
+
+	GLuint axesIBO;
+	glGenBuffers(1, &axesIBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, axesIBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
+
+	GLuint axesVBO;
+	glGenBuffers(1, &axesVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, axesVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0], GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, BUFFER_OFFSET(sizeof(GLfloat) * 3));
+
+	glBindVertexArray(0);
+}
+void MainWidget::drawAxes()
+{
+	glBindVertexArray(m_axesVAO);
+	glDrawElements(GL_LINES, 6, GL_UNSIGNED_SHORT, 0);
 	glBindVertexArray(0);
 }

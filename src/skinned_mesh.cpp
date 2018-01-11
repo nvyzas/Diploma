@@ -87,7 +87,7 @@ bool SkinnedMesh::initFromScene(const aiScene* pScene, const string& Filename)
 	// Initialize the meshes in the scene one by one
 	for (uint i = 0; i < m_entries.size(); i++) {
 		const aiMesh* paiMesh = pScene->mMeshes[i];
-		InitMesh(i, paiMesh);
+		initMesh(i, paiMesh);
 	}
 
 	m_boneTransformInfo.resize(m_numBones);
@@ -109,7 +109,7 @@ bool SkinnedMesh::initFromScene(const aiScene* pScene, const string& Filename)
 
 	return true;
 }
-void SkinnedMesh::InitMesh(uint MeshIndex, const aiMesh* paiMesh)
+void SkinnedMesh::initMesh(uint MeshIndex, const aiMesh* paiMesh)
 {
 	const aiVector3D Zero3D(0.0f, 0.0f, 0.0f);
 
@@ -124,7 +124,7 @@ void SkinnedMesh::InitMesh(uint MeshIndex, const aiMesh* paiMesh)
 		m_texCoords.push_back(QVector2D(pTexCoord->x, pTexCoord->y));
 	}
 
-	LoadBones(MeshIndex, paiMesh, m_vertexBoneData);
+	loadBones(MeshIndex, paiMesh, m_vertexBoneData);
 	bool SumNot1 = false;
 	for (uint i = 0; i < paiMesh->mNumVertices; i++) {
 		float sum = 0;
@@ -145,7 +145,7 @@ void SkinnedMesh::InitMesh(uint MeshIndex, const aiMesh* paiMesh)
 		m_indices.push_back(Face.mIndices[2]);
 	}
 }
-void SkinnedMesh::LoadBones(uint MeshIndex, const aiMesh* pMesh, vector<VertexBoneData>& Bones)
+void SkinnedMesh::loadBones(uint MeshIndex, const aiMesh* pMesh, vector<VertexBoneData>& Bones)
 {
 	for (uint i = 0; i < pMesh->mNumBones; i++) {
 		uint BoneIndex = 0;
@@ -829,50 +829,6 @@ const map<string, uint>& SkinnedMesh::Bones() const
 {
 	return m_boneMap;
 }
-void SkinnedMesh::loadAxesToGPU()
-{
-	GLfloat vertices[] =
-	{
-		0.f  , 0.f, 0.f,  // origin position
-		0.f  , 0.f, 0.f, // origin color
-		1.f  , 0.f, 0.f, // x axis position
-		255.f, 0.f  , 0.f, // x axis color
-		0.f  , 1.f, 0.f, // y axis position
-		0.f  , 255.f, 0.f, // y axis color
-		0.f  , 0.f, 1.f, // z axis position
-		0.f  , 0.f  , 255.f // z axis color
-	};
-
-	GLushort indices[] = 
-	{ 
-		0, 1, 
-		0, 2, 
-		0, 3 
-	};
-
-	glGenVertexArrays(1, &m_axesVAO);
-	glBindVertexArray(m_axesVAO);
-
-	glGenBuffers(1, &m_axesIBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_axesIBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
-
-	glGenBuffers(1, &m_axesVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_axesVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0], GL_STATIC_DRAW);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, BUFFER_OFFSET(sizeof(GLfloat) * 3));
-
-	glBindVertexArray(0); 
-}
-void SkinnedMesh::drawBoneAxes()
-{ 
-	glBindVertexArray(m_axesVAO);
-	glDrawElements(GL_LINES, 6, GL_UNSIGNED_SHORT, 0);
-	glBindVertexArray(0);
-}
 bool SkinnedMesh::initOGL() 
 {
 	return initializeOpenGLFunctions();
@@ -892,19 +848,21 @@ bool SkinnedMesh::loadMotion(const QString& filename)
 	QString line;
 	QTextStream in(&file);
 	QStringList list;
-	array<float, m_numCoordinates> coords;
 
+	bool headerEnd = false;
 	uint lineCounter = 0;
 	do {
 		line = in.readLine();
 		lineCounter++;
 		list = line.split("\t");
-		if (list.size() < m_numCoordinates || lineCounter < 8) {
+		bool ok;
+		list[0].toDouble(&ok);
+		if (!ok) {
+			cout << "Not ok (timestamp) -> " << lineCounter;
 			continue;
 		}
-		bool ok;
 		m_timestamps.push_back(list[0].toDouble(&ok));
-		if (!ok) cout << "Not ok (timestamp) -> " << lineCounter;
+		array<float, m_numCoordinates> coords;
 		for (uint i = 0; i < m_numCoordinates; i++) {
 			coords[i] = list[i + 1].toFloat(&ok);
 			if (!ok) {

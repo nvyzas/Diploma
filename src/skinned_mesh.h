@@ -95,7 +95,6 @@ public:
 	void initCorrectedMatrices();
 	void printInfo() const;
 	void printNodeHierarchy(const aiNode* pNode) const;
-	void printNodeMatching(const aiNode* pNode) const;
 	void printParameters() const;
 	void printSceneInfo() const;
 
@@ -129,8 +128,6 @@ public:
 	vector<uint>& indices();	
 	vector<QImage>& images();
 
-	void loadAxesToGPU();
-	void drawBoneAxes();
 	bool initOGL();
 	const Matrix4f& boneGlobal(uint boneIndex) const;
 
@@ -142,8 +139,8 @@ public:
 
 private:
 	void clear();
-	void InitMesh(uint MeshIndex, const aiMesh* paiMesh);
-	void LoadBones(uint MeshIndex, const aiMesh* paiMesh, vector<VertexBoneData>& Bones);
+	void initMesh(uint MeshIndex, const aiMesh* paiMesh);
+	void loadBones(uint MeshIndex, const aiMesh* paiMesh, vector<VertexBoneData>& Bones);
 	bool initImages(const aiScene* pScene, const string& Filename);
 	void CalcInterpolatedScaling(aiVector3D& Out, float AnimationTime, const aiNodeAnim* pNodeAnim);
 	void CalcInterpolatedRotation(aiQuaternion& Out, float AnimationTime, const aiNodeAnim* pNodeAnim);
