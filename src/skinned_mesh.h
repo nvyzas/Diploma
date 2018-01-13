@@ -227,7 +227,6 @@ private:
 	uint m_numBones = 0; // crash if not 0
 	uint m_numVertices; // total number of vertices
 	unsigned long long m_vertexArrayBytes;
-	Matrix4f m_GlobalInverseTransform;
 
 	const aiScene* m_pScene;
 	Assimp::Importer m_Importer;

@@ -45,8 +45,6 @@ bool SkinnedMesh::loadMesh(const string& basename)
 	string filename = "models/" + basename + ".dae";
     m_pScene = m_Importer.ReadFile(filename.c_str(), ASSIMP_LOAD_FLAGS);    
     if (m_pScene) {  
-        m_GlobalInverseTransform = m_pScene->mRootNode->mTransformation;
-        m_GlobalInverseTransform.Invert();		
         Ret = initFromScene(m_pScene, filename);
     }
     else {
