@@ -1,13 +1,15 @@
+// Own
 #include "pipeline.h"
 
-const Matrix4f& Pipeline::GetProjTrans() 
+// Project
+#include "util.h"
+
+const QMatrix4x4& Pipeline::GetProjTrans()
 {
-    m_ProjTransformation.InitPersProjTransform(m_persProjInfo);
+	m_ProjTransformation = perspectiveProjection();
     return m_ProjTransformation;
 }
-
-
-const Matrix4f& Pipeline::GetVPTrans()
+const QMatrix4x4& Pipeline::GetVPTrans()
 {
     GetViewTrans();
     GetProjTrans();
@@ -15,31 +17,72 @@ const Matrix4f& Pipeline::GetVPTrans()
     m_VPtransformation = m_ProjTransformation * m_Vtransformation;
     return m_VPtransformation;
 }
-
-const Matrix4f& Pipeline::GetWorldTrans()
+const QMatrix4x4& Pipeline::GetWorldTrans()
 {
-    Matrix4f ScaleTrans, RotateTrans, TranslationTrans;
+	QMatrix4x4 scaling, rotation, translation;
 
-    ScaleTrans.InitScaleTransform(m_worldScale.x(), m_worldScale.y(), m_worldScale.z());
-	RotateTrans.InitRotateTransform2(m_worldRotation);
-    TranslationTrans.InitTranslateTransform(m_worldPosition.x(), m_worldPosition.y(), m_worldPosition.z());
+    scaling = fromScaling(m_worldScale);
+	rotation = fromRotation(m_worldOrientation);
+    translation = fromTranslation(m_worldPosition);
 
-    m_Wtransformation = TranslationTrans * RotateTrans * ScaleTrans;
+    m_Wtransformation = translation * rotation * scaling;
     return m_Wtransformation;
 }
-
-const Matrix4f& Pipeline::GetViewTrans()
+// change from original code: multiplied m[0][0] by -1
+QMatrix4x4 Pipeline::perspectiveProjection()
 {
-    Matrix4f CameraTranslationTrans, CameraRotateTrans, CameraScalingTrans;
+	const float ar = m_persProjInfo.aspectRatio;
+	const float nearPlane = m_persProjInfo.nearPlane;
+	const float farPlane = m_persProjInfo.farPlane;
+	const float zRange = nearPlane - farPlane;
+	const float tanHalfFOV = tanf(ToRadians(m_persProjInfo.fieldOfView / 2.f));
 
-	CameraTranslationTrans.InitTranslateTransform(-m_camera.Pos.x(), -m_camera.Pos.y(), -m_camera.Pos.z());
-    CameraRotateTrans.InitCameraTransform(m_camera.Target, m_camera.Up);
-    m_Vtransformation =  CameraRotateTrans * CameraTranslationTrans;
+	QVector4D firstRow(-1.f / (tanHalfFOV * ar), 0.f, 0.f, 0.f);
+	QVector4D secondRow(0.f, 1.f / tanHalfFOV, 0, 0);
+	QVector4D thirdRow(0.f, 0.f, (-nearPlane - farPlane) / zRange, 2.f*farPlane*nearPlane / zRange);
+	QVector4D fourthRow(0, 0, 1.f, 0);
+
+	QMatrix4x4 ret;
+	ret.setRow(0, firstRow);
+	ret.setRow(1, secondRow);
+	ret.setRow(2, thirdRow);
+	ret.setRow(3, fourthRow);
+	return ret;
+}
+QMatrix4x4 Pipeline::cameraRotation()
+{
+	QVector3D N = m_camera.Target;
+	N.normalize();
+	QVector3D U = m_camera.Up;
+	U = QVector3D::crossProduct(U, N);
+	U.normalize();
+	QVector3D V = QVector3D::crossProduct(N, U);
+
+	QVector4D firstRow(U.x(), U.y(), U.z(), 0);
+	QVector4D secondRow(V.x(), V.y(), V.z(), 0);
+	QVector4D thirdRow(N.x(), N.y(), N.z(), 0);
+	QVector4D fourthRow(0, 0, 0, 1);
+
+	QMatrix4x4 ret;
+	ret.setRow(0, firstRow);
+	ret.setRow(1, secondRow);
+	ret.setRow(2, thirdRow);
+	ret.setRow(3, fourthRow);
+	return ret;
+}
+// #todo optimize
+const QMatrix4x4& Pipeline::GetViewTrans()
+{
+	QMatrix4x4 translation, rotation;
+
+	translation = fromTranslation(-m_camera.Pos);
+	rotation = cameraRotation();
+    m_Vtransformation = rotation * translation;
 
     return m_Vtransformation;
 }
 
-const Matrix4f& Pipeline::GetWVPTrans()
+const QMatrix4x4& Pipeline::GetWVPTrans()
 {
     GetWorldTrans();
     GetVPTrans();
@@ -47,38 +90,11 @@ const Matrix4f& Pipeline::GetWVPTrans()
     m_WVPtransformation = m_VPtransformation * m_Wtransformation;
     return m_WVPtransformation;
 }
-
-
-const Matrix4f& Pipeline::GetWVOrthoPTrans()
-{
-    GetWorldTrans();
-    GetViewTrans();
-
-    Matrix4f P;
-    P.InitOrthoProjTransform(m_orthoProjInfo);
-    
-    m_WVPtransformation = P * m_Vtransformation * m_Wtransformation;
-    return m_WVPtransformation;
-}
-
-
-const Matrix4f& Pipeline::GetWVTrans()
+const QMatrix4x4& Pipeline::GetWVTrans()
 {
 	GetWorldTrans();
     GetViewTrans();
 	
 	m_WVtransformation = m_Vtransformation * m_Wtransformation;
 	return m_WVtransformation;
-}
-
-
-const Matrix4f& Pipeline::GetWPTrans()
-{
-	Matrix4f PersProjTrans;
-
-	GetWorldTrans();
-	PersProjTrans.InitPersProjTransform(m_persProjInfo);
-
-	m_WPtransformation = PersProjTrans * m_Wtransformation;
-	return m_WPtransformation;
 }

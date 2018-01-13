@@ -107,19 +107,11 @@ void MainWidget::MySetup()
 	m_Pipe->SetCamera(m_Cam->GetPos(), m_Cam->GetTarget(), m_Cam->GetUp());
 
 	PersProjInfo persProjInfo;
-	persProjInfo.FOV = 60.0f;
-	persProjInfo.Height = m_Cam->windowHeight();
-	persProjInfo.Width = m_Cam->windowWidth();
-	persProjInfo.zNear = 0.1f;
-	persProjInfo.zFar = 1000.0f;
-	m_Pipe->SetPerspectiveProj(persProjInfo);
-
-	/*m_linesProgram.addShaderFromSourceFile(QOpenGLShader::Vertex, "shaders/axes.vs");
-	qDebug() << m_linesProgram.log();
-	m_linesProgram.addShaderFromSourceFile(QOpenGLShader::Fragment, "shaders/axes.fs");
-	qDebug() << m_linesProgram.log();
-	if (!m_linesProgram.link()) cout << "Could not link axes shader program" << endl;
-	m_linesProgram.bind();*/
+	persProjInfo.fieldOfView = 60.f;
+	persProjInfo.aspectRatio = m_Cam->windowWidth() / m_Cam->windowHeight();
+	persProjInfo.nearPlane = 0.1f;
+	persProjInfo.farPlane = 1000.f;
+	m_Pipe->setPersProjInfo(persProjInfo);
 
 	// 5) Init Technique
 	if (!m_Tech->InitDefault()) cout << "Could not initialize default shaders" << endl;

@@ -26,7 +26,7 @@ public:
     {
         m_worldScale      = QVector3D(1.0f, 1.0f, 1.0f);
         m_worldPosition   = QVector3D(0.0f, 0.0f, 0.0f);
-        m_worldRotation   = QQuaternion::fromEulerAngles(0.0f, 0.0f, 0.0f);
+        m_worldOrientation   = QQuaternion::fromEulerAngles(0.0f, 0.0f, 0.0f);
     }
 
     void setWorldScale(float s)
@@ -60,9 +60,9 @@ public:
 
     void setWorldRotation(float RotateX, float RotateY, float RotateZ)
     {
-        m_worldRotation.setX(RotateX);
-        m_worldRotation.setY(RotateY);
-        m_worldRotation.setZ(RotateZ);
+        m_worldOrientation.setX(RotateX);
+        m_worldOrientation.setY(RotateY);
+        m_worldOrientation.setZ(RotateZ);
     }
     void setWorldRotation(const QVector3D& r)
     {
@@ -70,9 +70,9 @@ public:
     }
 	void setWorldRotation(const QQuaternion& q)
 	{
-		m_worldRotation = q;
+		m_worldOrientation = q;
 	}
-    void SetPerspectiveProj(const PersProjInfo& p)
+    void setPersProjInfo(const PersProjInfo& p)
     {
         m_persProjInfo = p;
     }
@@ -98,21 +98,19 @@ public:
     {
         m_worldScale      = o.m_scale;
         m_worldPosition   = o.m_pos;
-        //m_worldRotation	  = o.m_rotation; #todo fix
+        //m_worldOrientation	  = o.m_rotation; #todo fix
     }
 
-    const Matrix4f& GetWPTrans();
-    const Matrix4f& GetWVTrans();
-    const Matrix4f& GetVPTrans();
-    const Matrix4f& GetWVPTrans();
-    const Matrix4f& GetWVOrthoPTrans();
-    const Matrix4f& GetWorldTrans();
-    const Matrix4f& GetViewTrans();
-    const Matrix4f& GetProjTrans();
+    const QMatrix4x4& GetWVTrans();
+    const QMatrix4x4& GetVPTrans();
+    const QMatrix4x4& GetWVPTrans();
+    const QMatrix4x4& GetWorldTrans();
+    const QMatrix4x4& GetViewTrans();
+    const QMatrix4x4& GetProjTrans();
 
 private:
 	QVector3D m_worldScale;
-	QQuaternion m_worldRotation;
+	QQuaternion m_worldOrientation;
 	QVector3D m_worldPosition;
 
     PersProjInfo m_persProjInfo;
@@ -124,13 +122,15 @@ private:
 		QVector3D Up;
     } m_camera;
 
-    Matrix4f m_WVPtransformation;
-    Matrix4f m_VPtransformation;
-    Matrix4f m_WPtransformation;
-    Matrix4f m_WVtransformation;
-    Matrix4f m_Wtransformation;
-    Matrix4f m_Vtransformation;
-    Matrix4f m_ProjTransformation;
+    QMatrix4x4 m_WVPtransformation;
+    QMatrix4x4 m_VPtransformation;
+    QMatrix4x4 m_WPtransformation;
+    QMatrix4x4 m_WVtransformation;
+    QMatrix4x4 m_Wtransformation;
+    QMatrix4x4 m_Vtransformation;
+    QMatrix4x4 m_ProjTransformation;
+	QMatrix4x4 perspectiveProjection();
+	QMatrix4x4 cameraRotation();
 };
 
 

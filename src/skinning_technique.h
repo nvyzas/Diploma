@@ -65,8 +65,8 @@ public:
 
     virtual bool Init();
 
-    void SetWVP(const Matrix4f& WVP);
-    void SetWorldMatrix(const Matrix4f& WVP);
+    void SetWVP(const QMatrix4x4& WVP);
+    void SetWorldMatrix(const QMatrix4x4& world);
     void SetColorTextureUnit(uint TextureUnit);
     void SetDirectionalLight(const DirectionalLight& Light);
     void SetPointLights(uint NumLights, const PointLight* pLights);

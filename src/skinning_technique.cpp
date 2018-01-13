@@ -153,13 +153,13 @@ bool SkinningTechnique::Init()
 
     return true;
 }
-void SkinningTechnique::SetWVP(const Matrix4f& WVP)
+void SkinningTechnique::SetWVP(const QMatrix4x4& WVP)
 {
-    glUniformMatrix4fv(m_WVPLocation, 1, GL_TRUE, (const GLfloat*)WVP);    
+    glUniformMatrix4fv(m_WVPLocation, 1, GL_TRUE, WVP.transposed().data());    
 }
-void SkinningTechnique::SetWorldMatrix(const Matrix4f& World)
+void SkinningTechnique::SetWorldMatrix(const QMatrix4x4& world)
 {
-    glUniformMatrix4fv(m_WorldMatrixLocation, 1, GL_TRUE, (const GLfloat*)World);
+    glUniformMatrix4fv(m_WorldMatrixLocation, 1, GL_TRUE, world.transposed().data());
 }
 void SkinningTechnique::SetColorTextureUnit(uint TextureUnit)
 {

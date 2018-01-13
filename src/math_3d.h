@@ -199,11 +199,10 @@ inline Vector4f operator/(const Vector4f& l, float f)
 
 struct PersProjInfo
 {
-    float FOV;
-    float Width; 
-    float Height;
-    float zNear;
-    float zFar;
+	float fieldOfView;
+	float aspectRatio;
+	float nearPlane;
+	float farPlane;
 };
 
 

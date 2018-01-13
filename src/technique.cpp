@@ -145,9 +145,9 @@ bool Technique::InitDefault()
 
 	return true;
 }
-void Technique::setMVP(const Matrix4f& MVP)
+void Technique::setMVP(const QMatrix4x4& MVP)
 {
-	glUniformMatrix4fv(m_locationMVP, 1, GL_TRUE, (const GLfloat*)MVP);
+	glUniformMatrix4fv(m_locationMVP, 1, GL_TRUE, MVP.transposed().data());
 }
 GLint Technique::GetUniformLocation(const char* pUniformName)
 {
@@ -168,5 +168,5 @@ GLint Technique::GetProgramParam(GLint param)
 }
 void Technique::setSpecific(const QMatrix4x4& MVP)
 {
-	glUniformMatrix4fv(m_locationSpecific, 1, GL_TRUE, MVP.data());
+	glUniformMatrix4fv(m_locationSpecific, 1, GL_TRUE, MVP.transposed().data());
 }
