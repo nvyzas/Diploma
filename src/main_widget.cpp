@@ -125,7 +125,7 @@ void MainWidget::MySetup()
 	if (!m_Tech->InitDefault()) cout << "Could not initialize default shaders" << endl;
 	m_Tech->enable();
 	m_Tech->setMVP(m_Pipe->GetWVPTrans());
-	m_Tech->setSpecific(Matrix4f::Identity());
+	m_Tech->setSpecific(QMatrix4x4());
 
 	// 6) Init SkinningTechnique
 	if (!m_Skin->Init()) cout << "Could not initialize skinning shaders" << endl;
@@ -187,7 +187,7 @@ void MainWidget::paintGL()
 	
 	// draw basic axes
 	m_Tech->setMVP(m_Pipe->GetVPTrans()); // only VP transformation! #! changed view transform to displace all
-	m_Tech->setSpecific(Matrix4f::Identity());
+	m_Tech->setSpecific(QMatrix4x4());
 	if (m_renderAxes) drawAxes();
 
 	// draw skeleton
@@ -215,14 +215,14 @@ void MainWidget::paintGL()
 	m_kneeAngle = 180.f-ToDegrees(acos(QVector3D::dotProduct(kneeToHip, kneeToAnkle)));
 	
 	// Scaling
-	Matrix4f S;
-	S.InitScaleTransform(1, (rightHand - leftHand).length(), 1);
+	QMatrix4x4 S;
+	S.scale(1, (rightHand - leftHand).length(), 1);
 	// Rotation
-	QQuaternion rot = QQuaternion::rotationTo(QVector3D(0, 1, 0), barDirection);
-	Matrix4f R(rot, false);
+	QMatrix4x4 R;
+	R.rotate(QQuaternion::rotationTo(QVector3D(0, 1, 0), barDirection));
 	// Translation
-	Matrix4f T;
-	T.InitTranslateTransform(leftHand);
+	QMatrix4x4 T;
+	T.translate(leftHand);
 
 	m_Tech->setSpecific(T * R * S);
 	drawArrow();
@@ -408,11 +408,11 @@ void MainWidget::transformSkinnedMesh(bool print)
 	//if (!print) cout.setstate(std::ios_base::failbit);
 	if (m_skinnedMesh->m_SuccessfullyLoaded) {
 		if (print) cout << "Transforming bones." << endl;
-		vector<Matrix4f> Transforms;
-		m_skinnedMesh->GetBoneTransforms(Transforms); // update bone transforms from kinect
+		vector<QMatrix4x4> transforms;
+		m_skinnedMesh->getBoneTransforms(transforms); // update bone transforms from kinect
 		m_Skin->enable();
-		for (uint i = 0; i < Transforms.size(); i++) {
-			m_Skin->setBoneTransform(i, Transforms[i]); // send transforms to vertex shader
+		for (uint i = 0; i < transforms.size(); i++) {
+			m_Skin->setBoneTransform(i, transforms[i]); // send transforms to vertex shader
 		}
 	}
 	else {

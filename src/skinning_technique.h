@@ -74,7 +74,7 @@ public:
     void SetEyeWorldPos(const QVector3D& EyeWorldPos);
     void SetMatSpecularIntensity(float Intensity);
     void SetMatSpecularPower(float Power);
-    void setBoneTransform(uint Index, const Matrix4f& Transform);
+    void setBoneTransform(uint index, const QMatrix4x4& transform);
 	void setSkinning(int value);
 	void setBoneVisibility(uint Index, const bool& Visibility);
 

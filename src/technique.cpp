@@ -166,7 +166,7 @@ GLint Technique::GetProgramParam(GLint param)
     glGetProgramiv(m_shaderProg, param, &ret);
     return ret;
 }
-void Technique::setSpecific(const Matrix4f& MVP)
+void Technique::setSpecific(const QMatrix4x4& MVP)
 {
-	glUniformMatrix4fv(m_locationSpecific, 1, GL_TRUE, (const GLfloat*)MVP);
+	glUniformMatrix4fv(m_locationSpecific, 1, GL_TRUE, MVP.data());
 }

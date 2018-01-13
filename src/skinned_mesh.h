@@ -62,20 +62,17 @@ struct MeshEntry {
 };
 struct BoneInfo
 {
-	Matrix4f local;
-	Matrix4f corrected;
-	Matrix4f offset;
-	Matrix4f global;
-	Matrix4f combined;
+	QMatrix4x4 local;
+	QMatrix4x4 corrected;
+	QMatrix4x4 offset;
+	QMatrix4x4 global;
+	QMatrix4x4 combined;
 
 	bool visible;
 	float xRot, yRot, zRot;
 	
 	BoneInfo()
 	{
-		offset.SetZero();
-		combined.SetZero();
-		local.SetZero();
 		xRot = yRot = zRot = 0.f;
 		visible = true;
 	}
@@ -89,9 +86,8 @@ public:
 	bool loadMesh(const string& basename);
 	bool loadMotion(const QString& filename);
 
-	void BoneTransform(float TimeInSeconds, vector<Matrix4f>& Transforms);
-	void GetBoneTransforms(vector<Matrix4f>& Transforms);
-	void traverseNodeHierarchy(const aiNode* pNode, const Matrix4f& P);
+	void getBoneTransforms(vector<QMatrix4x4>& transforms);
+	void traverseNodeHierarchy(const aiNode* pNode, const QMatrix4x4& P);
 	void initCorrectedMatrices();
 	void printInfo() const;
 	void printNodeHierarchy(const aiNode* pNode) const;
@@ -129,7 +125,7 @@ public:
 	vector<QImage>& images();
 
 	bool initOGL();
-	const Matrix4f& boneGlobal(uint boneIndex) const;
+	const QMatrix4x4& boneGlobal(uint boneIndex) const;
 
 	QQuaternion worldRotation();
 	QVector3D worldPosition();
@@ -142,14 +138,6 @@ private:
 	void initMesh(uint MeshIndex, const aiMesh* paiMesh);
 	void loadBones(uint MeshIndex, const aiMesh* paiMesh, vector<VertexBoneData>& Bones);
 	bool initImages(const aiScene* pScene, const string& Filename);
-	void CalcInterpolatedScaling(aiVector3D& Out, float AnimationTime, const aiNodeAnim* pNodeAnim);
-	void CalcInterpolatedRotation(aiQuaternion& Out, float AnimationTime, const aiNodeAnim* pNodeAnim);
-	void CalcInterpolatedPosition(aiVector3D& Out, float AnimationTime, const aiNodeAnim* pNodeAnim);
-	uint FindScaling(float AnimationTime, const aiNodeAnim* pNodeAnim);
-	uint FindRotation(float AnimationTime, const aiNodeAnim* pNodeAnim);
-	uint FindPosition(float AnimationTime, const aiNodeAnim* pNodeAnim);
-	const aiNodeAnim* FindNodeAnim(const aiAnimation* pAnimation, const string NodeName);
-	void ReadNodeHierarchy(float AnimationTime, const aiNode* pNode, const Matrix4f& ParentTransform);
 	bool initFromScene(const aiScene* pScene, const string& Filename);
 
 	// Data loaded in CPU by loadMesh		
@@ -172,11 +160,11 @@ private:
 	// Control pose
 	vector<Vector3f> m_controlVecs; 
 	vector<QQuaternion> m_controlQuats; 
-	vector<Matrix4f> m_controlMats; 
+	vector<QMatrix4x4> m_controlMats;
 	// Default pose
 	vector<Vector3f> m_correctionVecs; 
 	QVector<QQuaternion> m_correctionQuats;
-	vector<Matrix4f> m_correctionMats; 
+	vector<QMatrix4x4> m_correctionMats; 
 	void initCorrectionQuats();
 	void initLocalMatrices(const aiNode* node);
 

@@ -10,7 +10,9 @@
 // Qt
 #include <QtGui\QOpenGLFunctions_3_3_Core>
 #include <QtGui\QOpenGLFunctions_3_3_Compatibility>
-#include <QVector3D>
+#include <QtGui\QMatrix4x4>
+#include <QtGui\QVector3D>
+#include <QtGui\QGenericMatrix>
 
 // Standard C/C++
 using namespace std;
@@ -57,13 +59,17 @@ inline bool getBit(int number, int position)
 	return (number >> position) & 0;
 }
 float wrapAngle(float angle, float limit);
-QString toString(const QQuaternion &q);
-QString toString(const Matrix4f &m);
-QString toStringEulerAngles(const QQuaternion &q);
-QString toStringAxisAngle(const QQuaternion &q);
-QString toStringCartesian(const QVector3D &v);
-QString toStringSpherical(const QVector3D &v);
+QString toString(const QQuaternion& q);
+QString toString(const QMatrix4x4& m);
+QString toStringEulerAngles(const QQuaternion& q);
+QString toStringAxisAngle(const QQuaternion& q);
+QString toStringCartesian(const QVector3D& v);
+QString toStringSpherical(const QVector3D& v);
 double ticksToMilliseconds(clock_t ticks);
 std::ostream& operator<<(std::ostream& out, const QVector3D& v);
-
+QQuaternion extractQuaternion(QMatrix4x4& m);
+QMatrix4x4 toQMatrix(const aiMatrix4x4& aiMat);
+QMatrix4x4 fromScaling(const QVector3D& v);
+QMatrix4x4 fromRotation(const QQuaternion& q);
+QMatrix4x4 fromTranslation(const QVector3D& v);
 #endif	/* UTIL_H */

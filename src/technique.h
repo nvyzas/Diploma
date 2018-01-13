@@ -1,8 +1,13 @@
 #ifndef TECHNIQUE_H
 #define	TECHNIQUE_H
 
-#include "math_3d.h"
+// Project
 #include "util.h"
+
+// Qt
+#include <QtGui\QMatrix4x4>
+
+// Standard C/C++
 #include <list>
 
 class Technique : protected QOpenGLFunctions_3_3_Core
@@ -19,7 +24,7 @@ public:
 
 	bool InitDefault();
 	void setMVP(const Matrix4f& MVP);
-	void setSpecific(const Matrix4f& MVP);
+	void setSpecific(const QMatrix4x4& MVP);
 
 protected:
 
