@@ -130,13 +130,13 @@ bool Technique::InitDefault()
 		return false;
 	}
 
-	if (!AddShader(GL_VERTEX_SHADER, "shaders/axes.vs")) {
-		printf("Cannot add axes vertex shader\n");
+	if (!AddShader(GL_VERTEX_SHADER, "shaders/simple.vs")) {
+		printf("Cannot add lines vertex shader\n");
 		return false;
 	}
 
-	if (!AddShader(GL_FRAGMENT_SHADER, "shaders/axes.fs")) {
-		printf("Cannot add axes fragment shader\n");
+	if (!AddShader(GL_FRAGMENT_SHADER, "shaders/simple.fs")) {
+		printf("Cannot add lines fragment shader\n");
 		return false;
 	}
 	

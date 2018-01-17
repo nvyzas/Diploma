@@ -65,11 +65,6 @@ public slots:
 	void setActiveFrame(uint index);
 	void setActiveBone(const QString& modelName);
 
-	void loadArrow();
-	void drawArrow();
-	void loadAxes();
-	void drawAxes();
-	void drawOctahedron(float radius);
 
 protected:
 	void initializeGL();
@@ -139,13 +134,21 @@ private:
 
 	GLuint m_arrowVAO;
 	GLuint m_axesVAO;
+	GLuint m_cubeVAO;
 	GLuint m_skeletonVAO;
 	GLuint m_skeletonVBO;
 
 	void loadSkeleton();
 	void loadSkeletonData();
 	void drawSkeleton();
-	float m_jointBufferData[2 * 3 * JointType_Count]; // 2 attributes x 3 components x JointType_Count joints
+	float m_skeletonBoneBufferData[2 * 3 * JointType_Count]; // 2 attributes x 3 components x JointType_Count joints
+
+	void loadArrow();
+	void drawArrow();
+	void loadAxes();
+	void drawAxes();
+	void loadCube(float r);
+	void drawCubes();
 };
 
 #endif /* MAIN_WIDGET_H */

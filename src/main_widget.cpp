@@ -57,10 +57,10 @@ void MainWidget::initializeGL()
 	m_Tech = new Technique();
 	m_Skin = new SkinningTechnique();
 	m_Pipe = new Pipeline();
-	m_skinnedMesh->initOGL();
 	loadAxes();
 	loadArrow();
 	loadSkeleton();
+	loadCube(0.03);
 	
 	glEnable(GL_TEXTURE_2D);
 	glClearColor(0.0f, 0.0f, 0.0f, 0.5f);               
@@ -76,7 +76,7 @@ void MainWidget::initializeGL()
 
 	glFrontFace(GL_CCW);
 	glCullFace(GL_BACK);
-	glDisable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
 	
 	// glShadeModel(GL_SMOOTH); // #? deprecated
 	MySetup();
@@ -181,7 +181,14 @@ void MainWidget::paintGL()
 	m_Pipe->setWorldRotation(QQuaternion());
 	if (m_defaultPose) m_Pipe->setWorldPosition(QVector3D()); else m_Pipe->setWorldPosition(offset);
 	m_Tech->setMVP(m_Pipe->GetWVPTrans()); 
-	if (m_renderSkeleton) drawSkeleton();
+	if (m_renderSkeleton) {
+		drawSkeleton();
+		for (uint i = 0; i < JointType_Count; i++) {
+			QMatrix4x4 mat;
+			m_Tech->setSpecific(fromTranslation(m_ksensor->skeleton()->joints()[i].position));
+			drawCubes();
+		}
+	}
 
 	// draw arrow
 	QVector3D leftHand = (m_ksensor->skeleton()->joints())[JointType_HandLeft].position;
@@ -473,6 +480,59 @@ Technique* MainWidget::technique()
 {
 	return m_Tech;
 }
+void MainWidget::unloadSkinnedMesh()
+{
+	for (uint i = 0; i < m_textures.size(); i++) {
+		SAFE_DELETE(m_textures[i]);
+	}
+
+	if (m_Buffers[0] != 0) {
+		glDeleteBuffers(ARRAY_SIZE_IN_ELEMENTS(m_Buffers), m_Buffers);
+	}
+
+	if (m_VAO != 0) {
+		glDeleteVertexArrays(1, &m_VAO);
+		m_VAO = 0;
+	}
+	m_successfullyLoaded = false;
+}
+void MainWidget::updateIndirect()
+{
+	update();
+}
+void MainWidget::setActiveFrame(uint index)
+{
+	m_activeFrame = (uint)(index / 100.f * m_ksensor->skeleton()->sequenceSize());
+}
+void MainWidget::changeMode()
+{
+		if (m_modeOfOperation == Mode::CAPTURE) {
+			m_modeOfOperation = Mode::PLAYBACK;
+			m_timer.setInterval(m_playbackInterval);
+			cout << "Mode: PLAYBACK" << endl;
+		}
+		else {
+			m_modeOfOperation = Mode::CAPTURE;
+			m_timer.setInterval(m_captureInterval);
+			cout << "Mode: CAPTURE" << endl;
+		}
+		m_timer.start();
+}
+void MainWidget::setKSensor(KSensor& ksensor)
+{
+	m_ksensor = &ksensor;
+}
+void MainWidget::setBoneAxes(const QString &boneName)
+{
+	uint boneId = m_skinnedMesh->findBoneId(boneName);
+	assert(boneId < m_boneInfo.size());
+	m_Tech->enable();
+	m_Tech->setSpecific(m_skinnedMesh->boneGlobal(boneId));
+}
+void MainWidget::setActiveBone(const QString& boneName)
+{
+	m_activeBone = m_skinnedMesh->findBoneId(boneName);
+}
 bool MainWidget::loadSkinnedMesh(const string& basename)
 {
 	// Release the previously loaded mesh (if it exists)
@@ -533,22 +593,6 @@ bool MainWidget::loadSkinnedMesh(const string& basename)
 	if (Ret) cout << "Successfully loaded SkinnedMesh to GPU (MainWidget)" << endl;
 	return Ret;
 }
-void MainWidget::unloadSkinnedMesh()
-{
-	for (uint i = 0; i < m_textures.size(); i++) {
-		SAFE_DELETE(m_textures[i]);
-	}
-
-	if (m_Buffers[0] != 0) {
-		glDeleteBuffers(ARRAY_SIZE_IN_ELEMENTS(m_Buffers), m_Buffers);
-	}
-
-	if (m_VAO != 0) {
-		glDeleteVertexArrays(1, &m_VAO);
-		m_VAO = 0;
-	}
-	m_successfullyLoaded = false;
-}
 void MainWidget::drawSkinnedMesh()
 {
 	if (m_successfullyLoaded) {
@@ -572,43 +616,6 @@ void MainWidget::drawSkinnedMesh()
 		// Make sure the VAO is not changed from the outside    
 		glBindVertexArray(0);
 	}
-}
-void MainWidget::updateIndirect()
-{
-	update();
-}
-void MainWidget::setActiveFrame(uint index)
-{
-	m_activeFrame = (uint)(index / 100.f * m_ksensor->skeleton()->sequenceSize());
-}
-void MainWidget::changeMode()
-{
-		if (m_modeOfOperation == Mode::CAPTURE) {
-			m_modeOfOperation = Mode::PLAYBACK;
-			m_timer.setInterval(m_playbackInterval);
-			cout << "Mode: PLAYBACK" << endl;
-		}
-		else {
-			m_modeOfOperation = Mode::CAPTURE;
-			m_timer.setInterval(m_captureInterval);
-			cout << "Mode: CAPTURE" << endl;
-		}
-		m_timer.start();
-}
-void MainWidget::setKSensor(KSensor& ksensor)
-{
-	m_ksensor = &ksensor;
-}
-void MainWidget::setBoneAxes(const QString &boneName)
-{
-	uint boneId = m_skinnedMesh->findBoneId(boneName);
-	assert(boneId < m_boneInfo.size());
-	m_Tech->enable();
-	m_Tech->setSpecific(m_skinnedMesh->boneGlobal(boneId));
-}
-void MainWidget::setActiveBone(const QString& boneName)
-{
-	m_activeBone = m_skinnedMesh->findBoneId(boneName);
 }
 void MainWidget::loadArrow()
 {
@@ -769,17 +776,17 @@ void MainWidget::loadSkeletonData()
 {
 	glBindBuffer(GL_ARRAY_BUFFER, m_skeletonVBO);
 	
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(m_jointBufferData), m_jointBufferData);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(m_skeletonBoneBufferData), m_skeletonBoneBufferData);
 }
 void MainWidget::drawSkeleton()
 {
 	for (uint i = 0; i < JointType_Count; i++) {
-		m_jointBufferData[6 * i    ] = m_ksensor->skeleton()->joints()[i].position.x();
-		m_jointBufferData[6 * i + 1] = m_ksensor->skeleton()->joints()[i].position.y();
-		m_jointBufferData[6 * i + 2] = m_ksensor->skeleton()->joints()[i].position.z();
-		m_jointBufferData[6 * i + 3] = (m_ksensor->skeleton()->joints()[i].trackingState == TrackingState_NotTracked ? 255.f : 0.f);
-		m_jointBufferData[6 * i + 4] = (m_ksensor->skeleton()->joints()[i].trackingState == TrackingState_Tracked ? 255.f : 0.f);
-		m_jointBufferData[6 * i + 5] = (m_ksensor->skeleton()->joints()[i].trackingState == TrackingState_Inferred ? 255.f : 0.f);
+		m_skeletonBoneBufferData[6 * i    ] = m_ksensor->skeleton()->joints()[i].position.x();
+		m_skeletonBoneBufferData[6 * i + 1] = m_ksensor->skeleton()->joints()[i].position.y();
+		m_skeletonBoneBufferData[6 * i + 2] = m_ksensor->skeleton()->joints()[i].position.z();
+		m_skeletonBoneBufferData[6 * i + 3] = (m_ksensor->skeleton()->joints()[i].trackingState == TrackingState_NotTracked ? 255.f : 0.f);
+		m_skeletonBoneBufferData[6 * i + 4] = (m_ksensor->skeleton()->joints()[i].trackingState == TrackingState_Tracked ? 255.f : 0.f);
+		m_skeletonBoneBufferData[6 * i + 5] = (m_ksensor->skeleton()->joints()[i].trackingState == TrackingState_Inferred ? 255.f : 0.f);
 	}
 	loadSkeletonData();
 
@@ -787,7 +794,60 @@ void MainWidget::drawSkeleton()
 	glDrawElements(GL_LINES, 48, GL_UNSIGNED_SHORT, 0);
 	glBindVertexArray(0);
 }
-void MainWidget::drawOctahedron(float radius)
+void MainWidget::loadCube(float r)
 {
+	GLfloat vertices[] =
+	{
+		+r / 2, -r / 2, +r / 2, // 0
+		+r / 2, +r / 2, +r / 2, // 1
+		-r / 2, +r / 2, +r / 2, // 2
+		-r / 2, -r / 2, +r / 2, // 3
+		+r / 2, -r / 2, -r / 2, // 4
+		+r / 2, +r / 2, -r / 2, // 5
+		-r / 2, +r / 2, -r / 2, // 6
+		-r / 2, -r / 2, -r / 2, // 7
+		255.f, 0.f, 0.f,
+		255.f, 0.f, 0.f,
+		255.f, 0.f, 0.f,
+		255.f, 0.f, 0.f,
+		255.f, 0.f, 0.f,
+		255.f, 0.f, 0.f,
+		255.f, 0.f, 0.f,
+		255.f, 0.f, 0.f
+	};
 
+	GLushort indices[] =
+	{
+		0, 1, 2, 3, 
+		0, 4, 5, 1,	
+		4, 7, 6, 5, 
+		7, 3, 2, 6,
+		2, 1, 5, 6,
+		0, 4, 7, 3
+	};
+
+	glGenVertexArrays(1, &m_cubeVAO);
+	glBindVertexArray(m_cubeVAO);
+
+	GLuint cubeIBO;
+	glGenBuffers(1, &cubeIBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
+
+	GLuint cubeVBO;
+	glGenBuffers(1, &cubeVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0], GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, 0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, BUFFER_OFFSET(sizeof(vertices)/2));
+
+	glBindVertexArray(0);
+}
+void MainWidget::drawCubes()
+{
+	glBindVertexArray(m_cubeVAO);
+	glDrawElements(GL_TRIANGLE_STRIP, 24, GL_UNSIGNED_SHORT, 0);
+	glBindVertexArray(0);
 }
