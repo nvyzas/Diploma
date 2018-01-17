@@ -61,7 +61,6 @@ set(Diploma_SRCS
 	src/main.cpp
 	src/main_widget.cpp
 	src/main_window.cpp
-	src/math_3d.cpp
 	src/opensim_model.cpp
 	src/pipeline.cpp
 	src/ksensor.cpp

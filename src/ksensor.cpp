@@ -1,9 +1,6 @@
 // Own
 #include "ksensor.h"
 
-// Project
-#include "util.h"
-
 // Windows
 #include <Windows.h>
 

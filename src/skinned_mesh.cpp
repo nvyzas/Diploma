@@ -9,6 +9,7 @@
 // Standard C/C++
 #include <cassert>
 #include <sstream>
+#include <iomanip>
 
 SkinnedMesh::SkinnedMesh()
 {
@@ -117,8 +118,8 @@ void SkinnedMesh::initMesh(uint MeshIndex, const aiMesh* paiMesh)
 		const aiVector3D* pNormal = &(paiMesh->mNormals[i]);
 		const aiVector3D* pTexCoord = paiMesh->HasTextureCoords(0) ? &(paiMesh->mTextureCoords[0][i]) : &Zero3D;
 
-		m_positions.push_back(Vector3f(pPos->x, pPos->y, pPos->z));
-		m_normals.push_back(Vector3f(pNormal->x, pNormal->y, pNormal->z));
+		m_positions.push_back(QVector3D(pPos->x, pPos->y, pPos->z));
+		m_normals.push_back(QVector3D(pNormal->x, pNormal->y, pNormal->z));
 		m_texCoords.push_back(QVector2D(pTexCoord->x, pTexCoord->y));
 	}
 
@@ -630,11 +631,11 @@ QString SkinnedMesh::boneTransformInfo(const QString& boneName) const
 {
 	return m_boneTransformInfo[findBoneId(boneName)];
 }
-vector<Vector3f>& SkinnedMesh::positions()
+vector<QVector3D>& SkinnedMesh::positions()
 {
 	return m_positions;
 }
-vector<Vector3f>& SkinnedMesh::normals()
+vector<QVector3D>& SkinnedMesh::normals()
 {
 	return m_normals;
 }
@@ -665,10 +666,6 @@ uint SkinnedMesh::numBones() const
 const map<string, uint>& SkinnedMesh::Bones() const
 {
 	return m_boneMap;
-}
-bool SkinnedMesh::initOGL() 
-{
-	return initializeOpenGLFunctions();
 }
 const QMatrix4x4& SkinnedMesh::boneGlobal(uint boneIndex) const
 {

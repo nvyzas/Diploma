@@ -15,6 +15,9 @@
 #include <QKeyEvent>
 #include <QDesktopWidget>
 
+// Standard C/C++
+#include <iomanip>
+
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
 	cout << "MainWindow constructor start." << endl;
@@ -237,7 +240,6 @@ void MainWindow::setActiveKinectSkeletonFrame(int progressPercent)
 		ui->openGLWidget->update();
 	}
 }
-
 void MainWindow::updateStatusBar()
 {
 	ui->label_barAngle->setNum((double)ui->openGLWidget->m_barAngle);

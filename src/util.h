@@ -1,9 +1,6 @@
 #ifndef UTIL_H
 #define	UTIL_H
 
-// Project
-#include "math_3d.h"
-
 // Assimp
 #include <assimp\matrix4x4.h>
 
@@ -51,6 +48,9 @@ using namespace std;
 #define VSNPRINTF vsnprintf_s
 #define RANDOM rand
 #define SRANDOM srand((unsigned)time(NULL))
+#define PI 3.141592653589
+#define ToRadians(x) (float)(((x) * PI / 180.f))
+#define ToDegrees(x) (float)(((x) * 180.f / PI))
 
 bool ReadFile(const char* fileName, std::string& outFile);
 uint Mod(uint start, uint edge, int step);

@@ -1,7 +1,12 @@
+// Own
 #include "technique.h"
+
+// Project
+#include "util.h"
+
+// Standard C/C++
 #include <stdio.h>
 #include <string.h>
-#include "util.h"
 
 Technique::Technique()
 {

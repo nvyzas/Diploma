@@ -4,7 +4,6 @@
 // Project
 #include "ksensor.h"
 #include "util.h"
-#include "math_3d.h"
 
 // Assimp
 #include <assimp\Importer.hpp>      // C++ importer interface
@@ -78,7 +77,7 @@ struct BoneInfo
 	}
 };
 
-class SkinnedMesh: protected QOpenGLFunctions_3_3_Core
+class SkinnedMesh
 {
 public:
 	SkinnedMesh();
@@ -117,14 +116,13 @@ public:
 
 	// Get vertex attribute functions
 	vector<MeshEntry>& entries();
-	vector<Vector3f>& positions();
-	vector<Vector3f>& normals();
+	vector<QVector3D>& positions();
+	vector<QVector3D>& normals();
 	QVector<QVector2D>& texCoords();
 	vector<VertexBoneData>& vertexBoneData();
 	vector<uint>& indices();	
 	vector<QImage>& images();
 
-	bool initOGL();
 	const QMatrix4x4& boneGlobal(uint boneIndex) const;
 
 	QQuaternion worldRotation();
@@ -143,8 +141,8 @@ private:
 	// Data loaded in CPU by loadMesh		
 	vector<MeshEntry> m_entries;
 	// Vertex Attributes
-	vector<Vector3f> m_positions;
-	vector<Vector3f> m_normals;
+	vector<QVector3D> m_positions;
+	vector<QVector3D> m_normals;
 	QVector<QVector2D> m_texCoords;
 	vector<VertexBoneData> m_vertexBoneData;
 	vector<uint> m_indices;
@@ -158,11 +156,11 @@ private:
 	const KJoint *m_pKBones = NULL;
 
 	// Control pose
-	vector<Vector3f> m_controlVecs; 
+	vector<QVector3D> m_controlVecs; 
 	vector<QQuaternion> m_controlQuats; 
 	vector<QMatrix4x4> m_controlMats;
 	// Default pose
-	vector<Vector3f> m_correctionVecs; 
+	vector<QVector3D> m_correctionVecs; 
 	QVector<QQuaternion> m_correctionQuats;
 	vector<QMatrix4x4> m_correctionMats; 
 	void initCorrectionQuats();
@@ -222,7 +220,6 @@ private:
 
 	void initCoordinates();
 	QQuaternion boneOrientation(uint boneIndex);
-
 
 	uint m_numBones = 0; // crash if not 0
 	uint m_numVertices; // total number of vertices

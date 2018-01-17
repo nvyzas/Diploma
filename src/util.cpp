@@ -7,7 +7,9 @@
 
 // Standard C/C++
 #include <iostream>
+#include <iomanip>
 #include <fstream>
+
 using namespace std;
 
 bool ReadFile(const char* pFileName, string& outFile)

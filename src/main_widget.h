@@ -8,9 +8,11 @@ class SkinnedMesh;
 class Technique;
 class SkinningTechnique;
 class Pipeline;
-#include "math_3d.h"
 #include "opensim_model.h"
 #include "util.h"
+
+// Kinect
+#include <Kinect.h>
 
 // Qt
 #include <QtCore\QTimer>
@@ -67,6 +69,8 @@ public slots:
 	void drawArrow();
 	void loadAxes();
 	void drawAxes();
+	void drawOctahedron(float radius);
+
 protected:
 	void initializeGL();
 	void paintGL();
@@ -135,6 +139,13 @@ private:
 
 	GLuint m_arrowVAO;
 	GLuint m_axesVAO;
+	GLuint m_skeletonVAO;
+	GLuint m_skeletonVBO;
+
+	void loadSkeleton();
+	void loadSkeletonData();
+	void drawSkeleton();
+	float m_jointBufferData[2 * 3 * JointType_Count]; // 2 attributes x 3 components x JointType_Count joints
 };
 
 #endif /* MAIN_WIDGET_H */

@@ -2,7 +2,6 @@
 #define	CAMERA_H
 
 // Project
-#include "math_3d.h"
 #include "util.h"
 
 // Qt

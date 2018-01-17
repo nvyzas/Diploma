@@ -2,18 +2,16 @@
 #define KSKELETON_H
 
 // Project
-#include "math_3d.h"
 #include "util.h"
 
 // Kinect
 #include <Kinect.h>
 
 // Qt
-//#include <QtCore\QVector>
 class QFile;
 
 // Standard C/C++
-//#include <vector>
+#include <iostream>
 #include <array>
 
 #define INVALID_JOINT_ID -1
@@ -98,13 +96,12 @@ struct KFrame
 QDataStream& operator<<(QDataStream& out, const KFrame& frame);
 QDataStream& operator>>(QDataStream& in, const KFrame& frame);
 
-class KSkeleton: protected QOpenGLFunctions_3_3_Core
+class KSkeleton
 {
 public:
 	KSkeleton();
 	void addFrame(const Joint *joints, const JointOrientation *orientations, const double &time);
 	void initJointHierarchy();
-	bool initOGL();
 	void printInfo() const;
 	void printJointHierarchy() const;
 	void printJoints() const;
@@ -124,10 +121,6 @@ public:
 
 	bool m_playbackInterpolated = true;
 	bool m_playbackFiltered = true;
-	void drawSkeleton();
-	void printJointBufferData();
-
-	void loadSkeletonData();
 	uint sequenceSize();
 	void setActiveJoints(uint frameIndex);
 	array<KJoint, NUM_MARKERS>& joints();
@@ -157,9 +150,6 @@ private:
 	const array<float, 10> m_sgCoefficients9 = { -21, 14, 39, 54, 59, 54, 39, 14, -21, 231 };
 	const array<float, 26> m_sgCoefficients25 = { -253, -138, -33, 62, 147, 222, 287, 343, 387, 422, 447, 462, 467, 462, 447, 422, 387, 343, 278, 222, 147, 62, -33, -138, -253, 5175 };
 	
-	float m_jointBufferData[2 * 3 * JointType_Count]; // 2 attributes x 3 components x JointType_Count joints
-	
-	GLuint m_skeletonVAO;
 	GLuint m_skeletonIBO;
 	GLuint m_skeletonVBO;
 };

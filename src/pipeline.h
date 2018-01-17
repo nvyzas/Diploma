@@ -1,23 +1,16 @@
 #ifndef PIPELINE_H
 #define	PIPELINE_H
 
-#include "math_3d.h"
+// Project
 #include "camera.h"
 
-struct Orientation
+struct PersProjInfo
 {
-	QVector3D m_scale;
-	QVector3D m_rotation;
-	QVector3D m_pos;
-    
-    Orientation()
-    {
-        m_scale    = QVector3D(1.0f, 1.0f, 1.0f);
-        m_rotation = QVector3D(0.0f, 0.0f, 0.0f);
-        m_pos      = QVector3D(0.0f, 0.0f, 0.0f);
-    }
+	float fieldOfView;
+	float aspectRatio;
+	float nearPlane;
+	float farPlane;
 };
-
 
 class Pipeline
 {
@@ -76,12 +69,6 @@ public:
     {
         m_persProjInfo = p;
     }
-    
-    void SetOrthographicProj(const OrthoProjInfo& p)
-    {
-        m_orthoProjInfo = p;
-    }    
-
     void SetCamera(const QVector3D& Pos, const QVector3D& Target, const QVector3D& Up)
     {
         m_camera.Pos = Pos;
@@ -92,13 +79,6 @@ public:
     void SetCamera(const Camera& camera)
     {
         SetCamera(camera.GetPos(), camera.GetTarget(), camera.GetUp());
-    }
-    
-    void Orient(const Orientation& o)
-    {
-        m_worldScale      = o.m_scale;
-        m_worldPosition   = o.m_pos;
-        //m_worldOrientation	  = o.m_rotation; #todo fix
     }
 
     const QMatrix4x4& GetWVTrans();
@@ -114,7 +94,6 @@ private:
 	QVector3D m_worldPosition;
 
     PersProjInfo m_persProjInfo;
-    OrthoProjInfo m_orthoProjInfo;
 
     struct {
 		QVector3D Pos;

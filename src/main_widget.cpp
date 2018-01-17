@@ -20,6 +20,7 @@
 
 // Standard C/C++
 #include <cassert>
+#include <iomanip>
 
 MainWidget::MainWidget(QWidget *parent)
 	: QOpenGLWidget(parent)
@@ -56,16 +57,10 @@ void MainWidget::initializeGL()
 	m_Tech = new Technique();
 	m_Skin = new SkinningTechnique();
 	m_Pipe = new Pipeline();
-	m_ksensor->skeleton()->initOGL();
 	m_skinnedMesh->initOGL();
 	loadAxes();
 	loadArrow();
-
-	//cout << "GL version: " << glGetString(GL_VERSION) << endl;
-	//cout << "GL renderer: " << glGetString(GL_RENDERER) << endl;
-	//cout << "GLSL version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << endl;	
-	GLint i;
-	glGetIntegerv(GL_CONTEXT_FLAGS, &i);
+	loadSkeleton();
 	
 	glEnable(GL_TEXTURE_2D);
 	glClearColor(0.0f, 0.0f, 0.0f, 0.5f);               
@@ -163,10 +158,10 @@ void MainWidget::paintGL()
 	QVector3D& v = m_skinnedMesh->worldPosition();
 	if (m_defaultPose) m_Pipe->setWorldPosition(QVector3D()); else m_Pipe->setWorldPosition(v + offset);
 	m_Skin->SetWVP(m_Pipe->GetWVPTrans());
-	if (m_modeOfOperation == Mode::PLAYBACK && m_play) {
+	if (m_modeOfOperation == Mode::PLAYBACK && m_play && m_successfullyLoaded) {
 		transformSkinnedMesh(false);
 	}
-	if (m_renderSkinnedMesh && m_successfullyLoaded) {
+	if (m_modeOfOperation == Mode::PLAYBACK && m_renderSkinnedMesh && m_successfullyLoaded) {
 		drawSkinnedMesh();
 	}
 
@@ -186,7 +181,7 @@ void MainWidget::paintGL()
 	m_Pipe->setWorldRotation(QQuaternion());
 	if (m_defaultPose) m_Pipe->setWorldPosition(QVector3D()); else m_Pipe->setWorldPosition(offset);
 	m_Tech->setMVP(m_Pipe->GetWVPTrans()); 
-	if (m_renderSkeleton) m_ksensor->skeleton()->drawSkeleton();
+	if (m_renderSkeleton) drawSkeleton();
 
 	// draw arrow
 	QVector3D leftHand = (m_ksensor->skeleton()->joints())[JointType_HandLeft].position;
@@ -290,7 +285,6 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		break;
 	case Qt::Key_J:
 		m_ksensor->skeleton()->printJoints();
-		m_ksensor->skeleton()->printJointBufferData();
 		break;
 	case Qt::Key_F:
 		m_ksensor->skeleton()->m_playbackFiltered = !m_ksensor->skeleton()->m_playbackFiltered;
@@ -718,4 +712,82 @@ void MainWidget::drawAxes()
 	glBindVertexArray(m_axesVAO);
 	glDrawElements(GL_LINES, 6, GL_UNSIGNED_SHORT, 0);
 	glBindVertexArray(0);
+}
+void MainWidget::loadSkeleton()
+{
+	GLushort indices[] =
+	{
+		// core (4 parts)
+		JointType_SpineBase    , JointType_SpineMid,
+		JointType_SpineMid     , JointType_SpineShoulder,
+		JointType_SpineShoulder, JointType_Neck,
+		JointType_Neck         , JointType_Head,
+		// left side (10 parts)	   
+		JointType_SpineShoulder, JointType_ShoulderLeft,
+		JointType_ShoulderLeft , JointType_ElbowLeft,
+		JointType_ElbowLeft    , JointType_WristLeft,
+		JointType_WristLeft    , JointType_HandLeft,
+		JointType_HandLeft     , JointType_ThumbLeft,
+		JointType_HandLeft     , JointType_HandTipLeft,
+		JointType_SpineBase    , JointType_HipLeft,
+		JointType_HipLeft      , JointType_KneeLeft,
+		JointType_KneeLeft     , JointType_AnkleLeft,
+		JointType_AnkleLeft    , JointType_FootLeft,
+		// Right side (10 parts) 
+		JointType_SpineShoulder, JointType_ShoulderRight,
+		JointType_ShoulderRight, JointType_ElbowRight,
+		JointType_ElbowRight   , JointType_WristRight,
+		JointType_WristRight   , JointType_HandRight,
+		JointType_HandRight    , JointType_ThumbRight,
+		JointType_HandRight    , JointType_HandTipRight,
+		JointType_SpineBase    , JointType_HipRight,
+		JointType_HipRight     , JointType_KneeRight,
+		JointType_KneeRight    , JointType_AnkleRight,
+		JointType_AnkleRight   , JointType_FootRight
+	};
+
+	glGenVertexArrays(1, &m_skeletonVAO);
+	glBindVertexArray(m_skeletonVAO);
+
+	GLuint skeletonIBO;
+	glGenBuffers(1, &skeletonIBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skeletonIBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
+
+	GLuint skeletonVBO;
+	glGenBuffers(1, &m_skeletonVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_skeletonVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 2 * 3 * JointType_Count, NULL, GL_STREAM_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, BUFFER_OFFSET(sizeof(GLfloat) * 3));
+
+	glBindVertexArray(0);
+}
+void MainWidget::loadSkeletonData()
+{
+	glBindBuffer(GL_ARRAY_BUFFER, m_skeletonVBO);
+	
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(m_jointBufferData), m_jointBufferData);
+}
+void MainWidget::drawSkeleton()
+{
+	for (uint i = 0; i < JointType_Count; i++) {
+		m_jointBufferData[6 * i    ] = m_ksensor->skeleton()->joints()[i].position.x();
+		m_jointBufferData[6 * i + 1] = m_ksensor->skeleton()->joints()[i].position.y();
+		m_jointBufferData[6 * i + 2] = m_ksensor->skeleton()->joints()[i].position.z();
+		m_jointBufferData[6 * i + 3] = (m_ksensor->skeleton()->joints()[i].trackingState == TrackingState_NotTracked ? 255.f : 0.f);
+		m_jointBufferData[6 * i + 4] = (m_ksensor->skeleton()->joints()[i].trackingState == TrackingState_Tracked ? 255.f : 0.f);
+		m_jointBufferData[6 * i + 5] = (m_ksensor->skeleton()->joints()[i].trackingState == TrackingState_Inferred ? 255.f : 0.f);
+	}
+	loadSkeletonData();
+
+	glBindVertexArray(m_skeletonVAO);
+	glDrawElements(GL_LINES, 48, GL_UNSIGNED_SHORT, 0);
+	glBindVertexArray(0);
+}
+void MainWidget::drawOctahedron(float radius)
+{
+
 }
