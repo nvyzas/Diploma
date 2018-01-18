@@ -806,48 +806,62 @@ void MainWidget::loadCube(float r)
 		+r / 2, +r / 2, -r / 2, // 5
 		-r / 2, +r / 2, -r / 2, // 6
 		-r / 2, -r / 2, -r / 2, // 7
-		255.f, 0.f, 0.f,
-		255.f, 0.f, 0.f,
-		255.f, 0.f, 0.f,
-		255.f, 0.f, 0.f,
-		255.f, 0.f, 0.f,
-		255.f, 0.f, 0.f,
-		255.f, 0.f, 0.f,
-		255.f, 0.f, 0.f
+		255.f, 255.f, 255.f,
+		255.f, 255.f, 255.f,
+		255.f, 255.f, 255.f,
+		255.f, 255.f, 255.f,
+		255.f, 255.f, 255.f,
+		255.f, 255.f, 255.f,
+		255.f, 255.f, 255.f,
+		255.f, 255.f, 255.f
 	};
 
 	GLushort indices[] =
 	{
-		0, 1, 2, 3, 
-		0, 4, 5, 1,	
-		4, 7, 6, 5, 
+		0, 1, 2, 3,
+		0, 4, 5, 1,
+		4, 7, 6, 5,
 		7, 3, 2, 6,
 		2, 1, 5, 6,
 		0, 4, 7, 3
 	};
 
-	glGenVertexArrays(1, &m_cubeVAO);
-	glBindVertexArray(m_cubeVAO);
+	glGenVertexArrays(1, &m_skeletonCubesVAO);
+	glBindVertexArray(m_skeletonCubesVAO);
 
-	GLuint cubeIBO;
-	glGenBuffers(1, &cubeIBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIBO);
+	GLuint skeletonCubesIBO;
+	glGenBuffers(1, &skeletonCubesIBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skeletonCubesIBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
 
-	GLuint cubeVBO;
-	glGenBuffers(1, &cubeVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+	glGenBuffers(1, &m_skeletonCubesVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_skeletonCubesVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0], GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, 0);
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, BUFFER_OFFSET(sizeof(vertices)/2));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, BUFFER_OFFSET(sizeof(vertices) / 2));
 
 	glBindVertexArray(0);
 }
 void MainWidget::drawCubes()
 {
-	glBindVertexArray(m_cubeVAO);
+	QVector3D color(0.f, 0.f, 0.f);
+	for (uint i = 0; i < JointType_Count; i++) {
+		if (m_ksensor->skeleton()->joints()[i].trackingState == TrackingState_NotTracked) color.setX(255.f);
+		else if (m_ksensor->skeleton()->joints()[i].trackingState == TrackingState_Tracked) color.setY(255.f);
+		else color.setZ(255.f);
+		for (uint j = 0; j < 8; j++) {
+			m_skeletonCubesBufferData[3 * j + 0] = color.x();
+			m_skeletonCubesBufferData[3 * j + 1] = color.y();
+			m_skeletonCubesBufferData[3 * j + 2] = color.z();
+		}
+	}
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_skeletonCubesVBO);
+	glBufferSubData(GL_ARRAY_BUFFER, sizeof(m_skeletonCubesBufferData) / 2, sizeof(m_skeletonCubesBufferData), m_skeletonCubesBufferData);
+
+	glBindVertexArray(m_skeletonCubesVAO);
 	glDrawElements(GL_TRIANGLE_STRIP, 24, GL_UNSIGNED_SHORT, 0);
 	glBindVertexArray(0);
 }

@@ -137,11 +137,14 @@ private:
 	GLuint m_cubeVAO;
 	GLuint m_skeletonVAO;
 	GLuint m_skeletonVBO;
+	GLuint m_skeletonCubesVAO;
+	GLuint m_skeletonCubesVBO;
 
 	void loadSkeleton();
 	void loadSkeletonData();
 	void drawSkeleton();
 	float m_skeletonBoneBufferData[2 * 3 * JointType_Count]; // 2 attributes x 3 components x JointType_Count joints
+	float m_skeletonCubesBufferData[3 * 8];
 
 	void loadArrow();
 	void drawArrow();
