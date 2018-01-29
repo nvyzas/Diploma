@@ -20,7 +20,7 @@ QDataStream& operator>>(QDataStream& in, KJoint& joint)
 QDataStream& operator<<(QDataStream& out, const KFrame& frame)
 {
 	out << frame.serial << frame.timestamp;
-	for (uint i = 0; i < NUM_MARKERS; i++) {
+	for (uint i = 0; i < JointType_Count; i++) {
 		out << frame.joints[i];
 	}
 	return out;
@@ -28,7 +28,7 @@ QDataStream& operator<<(QDataStream& out, const KFrame& frame)
 QDataStream& operator>>(QDataStream& in, KFrame& frame)
 {
 	in >> frame.serial >> frame.timestamp;
-	for (uint i = 0; i < NUM_MARKERS; i++) {
+	for (uint i = 0; i < JointType_Count; i++) {
 		in >> frame.joints[i];
 	}
 	return in;
@@ -57,8 +57,8 @@ void KSkeleton::addFrame(const Joint *joints, const JointOrientation *orientatio
 		KFrame kframe;
 		kframe.timestamp = time;
 		kframe.joints = m_joints;
-		kframe.serial = m_sequence.size(); // serial = size - 1
-		m_sequence.push_back(kframe);
+		kframe.serial = m_framesRaw.size(); // serial = size - 1
+		m_framesRaw.push_back(kframe);
 		cout << "currentIndex=" << kframe.serial;
 
 		// Interpolation
@@ -68,13 +68,13 @@ void KSkeleton::addFrame(const Joint *joints, const JointOrientation *orientatio
 		}
 		else if (interpolationTime > time) {
 			cout << " Difference=" << interpolationTime - time;
-			kframe.interpolate(m_sequence.end()[-2], m_sequence.back(), interpolationTime);
+			kframe.interpolate(m_framesRaw.end()[-2], m_framesRaw.back(), interpolationTime);
 		}
 		else {
 			cout << " Difference=" << interpolationTime - time;
-			kframe.interpolate(m_sequence.end()[-2], m_sequence.back(), interpolationTime);
+			kframe.interpolate(m_framesRaw.end()[-2], m_framesRaw.back(), interpolationTime);
 		}
-		m_interpolatedSequence.push_back(kframe);
+		m_framesInterpolated.push_back(kframe);
 
 		// Filtering
 		uint np = m_sgCoefficients25.size() - 1; // number of points used
@@ -83,16 +83,16 @@ void KSkeleton::addFrame(const Joint *joints, const JointOrientation *orientatio
 		}
 		else {
 			uint fi = kframe.serial - np / 2; // index of frame to be filtered
-			for (uint i = 0; i < NUM_MARKERS; i++) {
+			for (uint i = 0; i < JointType_Count; i++) {
 				kframe.joints[i].position = QVector3D(0.f, 0.f, 0.f);
 				for (uint j = 0; j < np; j++) {
-					kframe.joints[i].position += m_interpolatedSequence[fi + j - np / 2].joints[i].position *	m_sgCoefficients25[j] / m_sgCoefficients25.back();
+					kframe.joints[i].position += m_framesInterpolated[fi + j - np / 2].joints[i].position *	m_sgCoefficients25[j] / m_sgCoefficients25.back();
 					if (i == 0) cout << (fi + j - np / 2 == fi ? "F:" : "") << fi + j - np / 2 << ",";
 				}
 			}
 			cout << endl;
 		}
-		m_filteredInterpolatedSequence.push_back(kframe);
+		m_framesInterpolatedFiltered.push_back(kframe);
 	}
 }
 bool KSkeleton::saveToTrc()
@@ -104,7 +104,7 @@ bool KSkeleton::saveToTrc()
 		return false;
 	}
 
-	QVector<KFrame>& sequenceToWrite = m_filteredInterpolatedSequence;
+	QVector<KFrame>& framesToWrite = m_framesInterpolatedFiltered;
 
 	QTextStream out(&qf);
 	// Line 1
@@ -124,34 +124,40 @@ bool KSkeleton::saveToTrc()
 	// Line 3
 	out << "30\t";
 	out << "30\t";
-	out << sequenceToWrite.size() << "\t";
-	out << NUM_MARKERS << "\t";
+	out << framesToWrite.size() << "\t";
+	out << (JointType_Count + 1) << "\t";
 	out << "mm\t";
 	out << "30\t";
 	out << "1\t";
-	out << sequenceToWrite.size() << "\n";
+	out << framesToWrite.size() << "\n";
 	// Line 4
 	out << "Frame#\t";
 	out << "Time";
-	for (int i = 0; i < NUM_MARKERS; i++) {
+	for (int i = 0; i < JointType_Count; i++) {
 		out << "\t" << m_nodes[i].name << "\t\t";
 	}
+	out << "\t" << "HipsMid" << "\t\t";
 	out << "\n";
 	// Line 5
 	out << "\t";
-	for (int i = 0; i < NUM_MARKERS; i++) {
+	for (int i = 0; i < JointType_Count; i++) {
 		out << "\t" << "X" << (i + 1) << "\t" << "Y" << (i + 1) << "\t" << "Z" << (i + 1);
 	}
+	out << "\t" << "X" << (JointType_Count + 1) << "\t" << "Y" << (JointType_Count + 1) << "\t" << "Z" << (JointType_Count + 1);
+
 	out << "\n";
 	// Lines 6+
 	out.setFieldWidth(12);
-	for (uint i = 0; i < sequenceToWrite.size(); i++) {
-		out << "\n" << i << "\t" << sequenceToWrite[i].timestamp;
-		for (int j = 0; j < NUM_MARKERS; j++) {
-			out << "\t" << sequenceToWrite[i].joints[j].position.x()*1000.f;
-			out << "\t" << sequenceToWrite[i].joints[j].position.y()*1000.f;
-			out << "\t" << sequenceToWrite[i].joints[j].position.z()*1000.f;
+	for (uint i = 0; i < framesToWrite.size(); i++) {
+		out << "\n" << i << "\t" << framesToWrite[i].timestamp;
+		for (int j = 0; j < JointType_Count; j++) {
+			out << "\t" << framesToWrite[i].joints[j].position.x()*1000.f;
+			out << "\t" << framesToWrite[i].joints[j].position.y()*1000.f;
+			out << "\t" << framesToWrite[i].joints[j].position.z()*1000.f;
 		}
+		out << "\t" << (framesToWrite[i].joints[JointType_HipLeft].position.x()*1000.f + framesToWrite[i].joints[JointType_HipRight].position.x()*1000.f) / 2.f;
+		out << "\t" << (framesToWrite[i].joints[JointType_HipLeft].position.y()*1000.f + framesToWrite[i].joints[JointType_HipRight].position.y()*1000.f) / 2.f;
+		out << "\t" << (framesToWrite[i].joints[JointType_HipLeft].position.z()*1000.f + framesToWrite[i].joints[JointType_HipRight].position.z()*1000.f) / 2.f;
 	}
 	out << flush;
 	qf.close();
@@ -192,7 +198,7 @@ void KSkeleton::initJointHierarchy()
 	m_nodes[JointType_HandTipRight]  = KNode("HandTipRight", JointType_HandRight);
 
 	// Set children
-	for (uint i = 0; i < NUM_MARKERS; i++) {
+	for (uint i = 0; i < JointType_Count; i++) {
 		uint p = m_nodes[i].parentId;
 		if (p != INVALID_JOINT_ID) {
 			(m_nodes[p].childrenId).push_back(i);
@@ -239,15 +245,15 @@ void KSkeleton::printJoints() const
 
 void KSkeleton::printSequence() const
 {
-	if (m_sequence.size() == 0) {
+	if (m_framesRaw.size() == 0) {
 		cout << "Sequence is empty. Returning." << endl;
 		return;
 	}
-	cout << "Number of frames in sequence: " << m_sequence.size() << endl;
+	cout << "Number of frames in sequence: " << m_framesRaw.size() << endl;
 	for (uint i = 0; i < 1; i++) {
-		cout << "Frame=" << i << " Timestamp=" << m_sequence[i].timestamp << endl;
+		cout << "Frame=" << i << " Timestamp=" << m_framesRaw[i].timestamp << endl;
 		for (uint j = 0; j < JointType_Count; j++) {
-			const KJoint &jt = m_sequence[i].joints[j];
+			const KJoint &jt = m_framesRaw[i].joints[j];
 			cout << setw(15) << m_nodes[j].name.toStdString() << ": " << flush;
 			qDebug() << qSetFieldWidth(15) << m_nodes[j].name << ": " << qSetFieldWidth(10) << m_joints[j].position << m_joints[j].getTrackingState();
 		}
@@ -269,19 +275,19 @@ uint KSkeleton::activeFrame() const
 void KSkeleton::setActiveJoints(uint frameIndex)
 {
 	if (m_playbackFiltered && m_playbackInterpolated) {
-		m_joints = m_filteredInterpolatedSequence[frameIndex].joints;
+		m_joints = m_framesInterpolatedFiltered[frameIndex].joints;
 	}
 	else if (m_playbackInterpolated) {
-		m_joints = m_interpolatedSequence[frameIndex].joints;
+		m_joints = m_framesInterpolated[frameIndex].joints;
 	}
 	else if (m_playbackFiltered) { // #todo make just filtered sequence
-		m_joints = m_filteredInterpolatedSequence[frameIndex].joints; 
+		m_joints = m_framesInterpolatedFiltered[frameIndex].joints; 
 	}
 	else {
-		m_joints = m_sequence[frameIndex].joints;
+		m_joints = m_framesRaw[frameIndex].joints;
 	}
 }
-array<KJoint, NUM_MARKERS>& KSkeleton::joints()
+array<KJoint, JointType_Count>& KSkeleton::joints()
 {
 	return m_joints;
 }
@@ -297,19 +303,16 @@ void KSkeleton::saveToBinary() const
 	}
 	QDataStream out(&qf);
 	//out.setVersion(QDataStream::Qt_5_9);
-	out << m_sequence;
-	out << m_interpolatedSequence;
-	out << m_filteredInterpolatedSequence;
-	out << m_filteredSequence;
+	out << m_framesRaw;
+	out << m_framesInterpolated;
+	out << m_framesInterpolatedFiltered;
 	qf.close();
-	cout << "Size of saved sequence: " << m_sequence.size() << endl;
-	if (m_sequence.size() != 0) cout << "Duration: " << m_sequence.back().timestamp << endl;
-	cout << "Size of saved interpolated sequence: " << m_interpolatedSequence.size() << endl;
-	if (m_interpolatedSequence.size() != 0) cout << "Duration: " << m_interpolatedSequence.back().timestamp << endl;
-	cout << "Size of saved filtered interpolated sequence: " << m_filteredInterpolatedSequence.size() << endl;
-	if (m_filteredInterpolatedSequence.size() != 0) cout << "Duration: " << m_filteredInterpolatedSequence.back().timestamp << endl;
-	cout << "Size of saved filtered sequence: " << m_filteredSequence.size() << endl;
-	if (m_filteredSequence.size() != 0) cout << "Duration: " << m_filteredSequence.back().timestamp << endl;
+	cout << "Size of saved sequence: " << m_framesRaw.size() << endl;
+	if (m_framesRaw.size() != 0) cout << "Duration: " << m_framesRaw.back().timestamp << endl;
+	cout << "Size of saved interpolated sequence: " << m_framesInterpolated.size() << endl;
+	if (m_framesInterpolated.size() != 0) cout << "Duration: " << m_framesInterpolated.back().timestamp << endl;
+	cout << "Size of saved filtered interpolated sequence: " << m_framesInterpolatedFiltered.size() << endl;
+	if (m_framesInterpolatedFiltered.size() != 0) cout << "Duration: " << m_framesInterpolatedFiltered.back().timestamp << endl;
 }
 void KSkeleton::loadFromBinary()
 {
@@ -324,31 +327,27 @@ void KSkeleton::loadFromBinary()
 	QDataStream in(&qf);
 	//in.setVersion(QDataStream::Qt_5_9);
 	clearSequences();
-	in >> m_sequence;
-	in >> m_interpolatedSequence;
-	in >> m_filteredInterpolatedSequence;
-	in >> m_filteredSequence;
+	in >> m_framesRaw;
+	in >> m_framesInterpolated;
+	in >> m_framesInterpolatedFiltered;
 	qf.close();
 
-	cout << "Size of loaded sequence: " << m_sequence.size() << endl;
-	if (m_sequence.size() != 0) cout << "Duration: " << m_sequence.back().timestamp << endl;
-	cout << "Size of loaded interpolated sequence: " << m_interpolatedSequence.size() << endl;
-	if (m_interpolatedSequence.size() != 0) cout << "Duration: " << m_interpolatedSequence.back().timestamp << endl;
-	cout << "Size of loaded filtered interpolated sequence: " << m_filteredInterpolatedSequence.size() << endl;
-	if (m_filteredInterpolatedSequence.size() != 0) cout << "Duration: " << m_filteredInterpolatedSequence.back().timestamp << endl;
-	cout << "Size of loaded filtered sequence: " << m_filteredSequence.size() << endl;
-	if (m_filteredSequence.size() != 0) cout << "Duration: " << m_filteredSequence.back().timestamp << endl;
+	cout << "Size of loaded sequence: " << m_framesRaw.size() << endl;
+	if (m_framesRaw.size() != 0) cout << "Duration: " << m_framesRaw.back().timestamp << endl;
+	cout << "Size of loaded interpolated sequence: " << m_framesInterpolated.size() << endl;
+	if (m_framesInterpolated.size() != 0) cout << "Duration: " << m_framesInterpolated.back().timestamp << endl;
+	cout << "Size of loaded filtered interpolated sequence: " << m_framesInterpolatedFiltered.size() << endl;
+	if (m_framesInterpolatedFiltered.size() != 0) cout << "Duration: " << m_framesInterpolatedFiltered.back().timestamp << endl;
 }
 void KSkeleton::clearSequences()
 {
 	// #todo: clear may be expensive so add if for each clear
-	m_sequence.clear();
-	m_interpolatedSequence.clear();
-	m_filteredInterpolatedSequence.clear();
-	m_filteredSequence.clear();
+	m_framesRaw.clear();
+	m_framesInterpolated.clear();
+	m_framesInterpolatedFiltered.clear();
 	m_activeFrame = 0;
 }
 uint KSkeleton::sequenceSize()
 {
-	return m_filteredInterpolatedSequence.size();
+	return m_framesInterpolatedFiltered.size();
 }

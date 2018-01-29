@@ -144,14 +144,14 @@ private:
 	void loadSkeletonData();
 	void drawSkeleton();
 	float m_skeletonBoneBufferData[2 * 3 * JointType_Count]; // 2 attributes x 3 components x JointType_Count joints
-	float m_skeletonCubesBufferData[3 * 8];
+	float m_skeletonCubesColorData[3 * 8];
 
 	void loadArrow();
 	void drawArrow();
 	void loadAxes();
 	void drawAxes();
 	void loadCube(float r);
-	void drawCubes();
+	void drawCube();
 };
 
 #endif /* MAIN_WIDGET_H */

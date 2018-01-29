@@ -186,8 +186,11 @@ void MainWidget::paintGL()
 		for (uint i = 0; i < JointType_Count; i++) {
 			QMatrix4x4 mat;
 			m_Tech->setSpecific(fromTranslation(m_ksensor->skeleton()->joints()[i].position));
-			drawCubes();
+			drawCube();
 		}
+		QVector3D HipsMid = (m_ksensor->skeleton()->joints()[JointType_HipLeft].position + m_ksensor->skeleton()->joints()[JointType_HipRight].position) / 2;
+		m_Tech->setSpecific(fromTranslation(HipsMid));
+		drawCube();
 	}
 
 	// draw arrow
@@ -626,17 +629,17 @@ void MainWidget::loadArrow()
 
 	const GLfloat vertices[] =
 	{
-		0    , 0, 0, // start
+		0         ,   0, 0, // start
 		colorRed  , colorGreen, colorBlue,
-		0    , 1, 0, // end
+		0         ,   1, 0, // end
 		colorRed  , colorGreen, colorBlue,
-		head , 1 - head, 0, // +x
+		head      , 1 - head, 0, // +x
 		colorRed  , colorGreen, colorBlue,
-		-head, 1 - head, 0, // -x
+		-head     , 1 - head, 0, // -x
 		colorRed  , colorGreen, colorBlue,
-		0    , 1 - head, head, // +z
+		0         , 1 - head, head, // +z
 		colorRed  , colorGreen, colorBlue,
-		0    , 1 - head, -head, // -z
+		0         , 1 - head, -head, // -z
 		colorRed  , colorGreen, colorBlue,
 	};
 
@@ -669,7 +672,6 @@ void MainWidget::loadArrow()
 }
 void MainWidget::drawArrow()
 {
-
 	glBindVertexArray(m_arrowVAO);
 	glDrawElements(GL_LINES, 10, GL_UNSIGNED_SHORT, 0);
 	glBindVertexArray(0);
@@ -844,7 +846,7 @@ void MainWidget::loadCube(float r)
 
 	glBindVertexArray(0);
 }
-void MainWidget::drawCubes()
+void MainWidget::drawCube()
 {
 	QVector3D color(0.f, 0.f, 0.f);
 	for (uint i = 0; i < JointType_Count; i++) {
@@ -852,14 +854,14 @@ void MainWidget::drawCubes()
 		else if (m_ksensor->skeleton()->joints()[i].trackingState == TrackingState_Tracked) color.setY(255.f);
 		else color.setZ(255.f);
 		for (uint j = 0; j < 8; j++) {
-			m_skeletonCubesBufferData[3 * j + 0] = color.x();
-			m_skeletonCubesBufferData[3 * j + 1] = color.y();
-			m_skeletonCubesBufferData[3 * j + 2] = color.z();
+			m_skeletonCubesColorData[3 * j + 0] = color.x();
+			m_skeletonCubesColorData[3 * j + 1] = color.y();
+			m_skeletonCubesColorData[3 * j + 2] = color.z();
 		}
 	}
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_skeletonCubesVBO);
-	glBufferSubData(GL_ARRAY_BUFFER, sizeof(m_skeletonCubesBufferData) / 2, sizeof(m_skeletonCubesBufferData), m_skeletonCubesBufferData);
+	glBufferSubData(GL_ARRAY_BUFFER, sizeof(m_skeletonCubesColorData), sizeof(m_skeletonCubesColorData), m_skeletonCubesColorData);
 
 	glBindVertexArray(m_skeletonCubesVAO);
 	glDrawElements(GL_TRIANGLE_STRIP, 24, GL_UNSIGNED_SHORT, 0);

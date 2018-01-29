@@ -15,7 +15,6 @@ class QFile;
 #include <array>
 
 #define INVALID_JOINT_ID -1
-#define NUM_MARKERS JointType_Count
 
 struct KNode
 {
@@ -71,7 +70,7 @@ struct KFrame
 {
 	uint serial; // serial number #! maybe not needed
 	double timestamp;
-	array<KJoint, NUM_MARKERS> joints;
+	array<KJoint, JointType_Count> joints;
 
 	// Interpolates this frame between frames "next" and "previous" at time "interpolationTime"
 	void interpolate(const KFrame& previous, const KFrame& next, double interpolationTime)
@@ -83,7 +82,7 @@ struct KFrame
 		cout << previous.serial << "-" << next.serial << " " << previous.timestamp << "-" << next.timestamp;
 		cout << " @" << interpolationTime <<"->" << percentDistance*100 << "% ";
 		
-		for (uint i = 0; i < NUM_MARKERS; i++) {
+		for (uint i = 0; i < JointType_Count; i++) {
 			joints[i].position.setX(previous.joints[i].position.x() + percentDistance * (next.joints[i].position.x() - previous.joints[i].position.x()));
 			joints[i].position.setY(previous.joints[i].position.y() + percentDistance * (next.joints[i].position.y() - previous.joints[i].position.y()));
 			joints[i].position.setZ(previous.joints[i].position.z() + percentDistance * (next.joints[i].position.z() - previous.joints[i].position.z()));
@@ -123,15 +122,14 @@ public:
 	bool m_playbackFiltered = true;
 	uint sequenceSize();
 	void setActiveJoints(uint frameIndex);
-	array<KJoint, NUM_MARKERS>& joints();
+	array<KJoint, JointType_Count>& joints();
 
 private:
-	array<KNode, NUM_MARKERS> m_nodes; // these define the kinect skeleton hierarchy
-	array<KJoint, NUM_MARKERS> m_joints;
-	QVector<KFrame> m_sequence;
-	QVector<KFrame> m_interpolatedSequence;
-	QVector<KFrame> m_filteredInterpolatedSequence;
-	QVector<KFrame> m_filteredSequence;
+	array<KNode, JointType_Count> m_nodes; // these define the kinect skeleton hierarchy
+	array<KJoint, JointType_Count> m_joints;
+	QVector<KFrame> m_framesRaw;
+	QVector<KFrame> m_framesInterpolated;
+	QVector<KFrame> m_framesInterpolatedFiltered;
 
 	uint m_activeFrame = 0;
 
