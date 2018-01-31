@@ -99,7 +99,7 @@ class KSkeleton
 {
 public:
 	KSkeleton();
-	void addFrame(const Joint *joints, const JointOrientation *orientations, const double &time);
+	void addFrame(const Joint* joints, const JointOrientation* orientations, const double& time);
 	void initJointHierarchy();
 	void printInfo() const;
 	void printJointHierarchy() const;
@@ -143,11 +143,11 @@ private:
 	double m_timeStep;
 
 	// Cubic, Symmetric, 1st element = 1/commonFactor
+	// #? should make them static?
 	const array<float, 6> m_sgCoefficients5 = { -3, 12, 17, 12, -3, 35 };
 	const array<float, 8> m_sgCoefficients7 = { -2, 3, 6, 7, 6, 3, -2, 21 };
 	const array<float, 10> m_sgCoefficients9 = { -21, 14, 39, 54, 59, 54, 39, 14, -21, 231 };
 	const array<float, 26> m_sgCoefficients25 = { -253, -138, -33, 62, 147, 222, 287, 343, 387, 422, 447, 462, 467, 462, 447, 422, 387, 343, 278, 222, 147, 62, -33, -138, -253, 5175 };
-	
 	GLuint m_skeletonIBO;
 	GLuint m_skeletonVBO;
 };

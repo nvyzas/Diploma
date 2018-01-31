@@ -43,7 +43,7 @@ KSkeleton::KSkeleton()
 	cout << "KSkeleton constructor end." << endl;
 }
 
-void KSkeleton::addFrame(const Joint *joints, const JointOrientation *orientations, const double &time)
+void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientations, const double& time)
 {
 	for (uint i = 0; i < JointType_Count; i++) {
 		const Joint& jt = joints[i];
@@ -95,6 +95,7 @@ void KSkeleton::addFrame(const Joint *joints, const JointOrientation *orientatio
 		m_framesInterpolatedFiltered.push_back(kframe);
 	}
 }
+// does not save from start of motion but from start of filtered frames
 bool KSkeleton::saveToTrc()
 {
 	QString fileName("joint_positions.trc");
@@ -148,7 +149,8 @@ bool KSkeleton::saveToTrc()
 	out << "\n";
 	// Lines 6+
 	out.setFieldWidth(12);
-	for (uint i = 0; i < framesToWrite.size(); i++) {
+	const uint framesDelayed = 12;
+	for (uint i = framesDelayed; i < framesToWrite.size() - framesDelayed; i++) {
 		out << "\n" << i << "\t" << framesToWrite[i].timestamp;
 		for (int j = 0; j < JointType_Count; j++) {
 			out << "\t" << framesToWrite[i].joints[j].position.x()*1000.f;
@@ -205,7 +207,6 @@ void KSkeleton::initJointHierarchy()
 		}
 	}
 }
-
 void KSkeleton::printInfo() const
 {
 	cout << endl;
@@ -215,7 +216,6 @@ void KSkeleton::printInfo() const
 	printJoints();
 	cout << endl;
 }
-
 void KSkeleton::printJointHierarchy() const
 {
 	for (uint i = 0; i < JointType_Count; i++) {
@@ -230,7 +230,6 @@ void KSkeleton::printJointHierarchy() const
 		cout << endl;
 	}
 }
-
 void KSkeleton::printJoints() const
 {
 	for (uint i = 0; i < JointType_Count; i++) {
@@ -242,7 +241,6 @@ void KSkeleton::printJoints() const
 	}
 	cout << endl;
 }
-
 void KSkeleton::printSequence() const
 {
 	if (m_framesRaw.size() == 0) {
@@ -259,7 +257,6 @@ void KSkeleton::printSequence() const
 		}
 	}
 }
-
 double KSkeleton::timeStep() const
 {
 	return m_timeStep;
