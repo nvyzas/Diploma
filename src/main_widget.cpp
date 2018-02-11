@@ -83,7 +83,7 @@ void MainWidget::initializeGL()
 
 	m_timer.setTimerType(Qt::PreciseTimer);
 	connect(&m_timer, SIGNAL(timeout()), this, SLOT(updateIndirect()));
-	m_modeOfOperation = Mode::PLAYBACK;
+	m_modeOfOperation = Mode::CAPTURE;
 	m_playbackInterval = m_ksensor->skeleton()->timeStep() * 1000;
 	m_timer.setInterval(m_playbackInterval);
 	m_timer.start();

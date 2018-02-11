@@ -291,6 +291,8 @@ void KSensor::record()
 	}
 	else {
 		m_skeleton.m_recordingOn = false;
+		m_skeleton.interpolateRecordedFrames();
+		m_skeleton.filterRecordedFrames();
 		cout << "Recording stopped." << endl;
 		cout << "Average frame interval (milliseconds) = " << m_averageInterval << endl;
 		m_skeleton.setTimeStep(m_averageInterval);

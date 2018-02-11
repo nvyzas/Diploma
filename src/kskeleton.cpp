@@ -59,40 +59,49 @@ void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientatio
 		kframe.joints = m_joints;
 		kframe.serial = m_framesRaw.size(); // serial = size - 1
 		m_framesRaw.push_back(kframe);
-		cout << "currentIndex=" << kframe.serial;
-
-		// Interpolation
-		double interpolationTime = m_timeStep * kframe.serial;
-		if (interpolationTime == time) {
-			cout << " interpolationTime = frameTime = " << time;
-		}
-		else if (interpolationTime > time) {
-			cout << " Difference=" << interpolationTime - time;
-			kframe.interpolate(m_framesRaw.end()[-2], m_framesRaw.back(), interpolationTime);
-		}
-		else {
-			cout << " Difference=" << interpolationTime - time;
-			kframe.interpolate(m_framesRaw.end()[-2], m_framesRaw.back(), interpolationTime);
-		}
-		m_framesInterpolated.push_back(kframe);
-
-		// Filtering
-		uint np = m_sgCoefficients25.size() - 1; // number of points used
-		if (kframe.serial < np - 1) {
-			cout << " Not enough frames to start filtering." << endl;
+	}		
+}
+void KSkeleton::interpolateRecordedFrames()
+{
+	const uint framesDelayed = 12;
+	double totalTime = m_framesRaw[m_framesRaw.size() - framesDelayed].timestamp - m_framesRaw[framesDelayed].timestamp;
+	double interpolationInterval = totalTime / (m_framesRaw.size() - 2 * framesDelayed);
+	cout << "Interpolating recorded frames. " << endl;
+	cout << "Total time: " << totalTime << endl;
+	cout << "Interpolation interval: " << interpolationInterval << endl;
+	for (uint i = 0; i < m_framesRaw.size(); i++) {
+		KFrame interpolatedFrame;
+		int interpolatedSerial = i - framesDelayed;
+		double interpolatedTime = interpolationInterval * interpolatedSerial;
+		double interpolationTime = m_framesRaw[framesDelayed].timestamp + interpolatedTime;
+		if (i == (m_framesRaw.size() - 1)) {
+			interpolatedFrame.interpolateJoints(m_framesRaw[i - 1], m_framesRaw[i], interpolationTime);
 		}
 		else {
-			uint fi = kframe.serial - np / 2; // index of frame to be filtered
-			for (uint i = 0; i < JointType_Count; i++) {
-				kframe.joints[i].position = QVector3D(0.f, 0.f, 0.f);
-				for (uint j = 0; j < np; j++) {
-					kframe.joints[i].position += m_framesInterpolated[fi + j - np / 2].joints[i].position *	m_sgCoefficients25[j] / m_sgCoefficients25.back();
-					if (i == 0) cout << (fi + j - np / 2 == fi ? "F:" : "") << fi + j - np / 2 << ",";
-				}
+			interpolatedFrame.interpolateJoints(m_framesRaw[i], m_framesRaw[i + 1], interpolationTime);
+		}
+		interpolatedFrame.serial = interpolatedSerial;
+		interpolatedFrame.timestamp = interpolatedTime;
+		m_framesInterpolated.push_back(interpolatedFrame);
+	}
+}
+void KSkeleton::filterRecordedFrames()
+{
+	const uint framesDelayed = 12;
+	uint np = m_sgCoefficients25.size() - 1; // number of points used
+	for (uint i = framesDelayed; i < m_framesInterpolated.size()- framesDelayed; i++) {
+		KFrame filteredFrame;
+		for (uint j = 0; j < JointType_Count; j++) {
+			filteredFrame.joints[j].position = QVector3D(0.f, 0.f, 0.f);
+			for (uint k = 0; k < 2 * framesDelayed + 1; k++) {
+				filteredFrame.joints[j].position += m_framesInterpolated[i + k - np / 2].joints[j].position *	m_sgCoefficients25[k] / m_sgCoefficients25.back();
+				if (j == 0) cout << (i + k - np / 2 == i ? "F:" : "") << i + k - np / 2 << ",";
 			}
-			cout << endl;
 		}
-		m_framesInterpolatedFiltered.push_back(kframe);
+		cout << endl;
+		filteredFrame.serial = m_framesInterpolated[i].serial;
+		filteredFrame.timestamp = m_framesInterpolated[i].timestamp;
+		m_framesInterpolatedFiltered.push_back(filteredFrame);
 	}
 }
 // does not save from start of motion but from start of filtered frames
@@ -149,8 +158,7 @@ bool KSkeleton::saveToTrc()
 	out << "\n";
 	// Lines 6+
 	out.setFieldWidth(12);
-	const uint framesDelayed = 12;
-	for (uint i = framesDelayed; i < framesToWrite.size() - framesDelayed; i++) {
+	for (uint i = 0; i < framesToWrite.size(); i++) {
 		out << "\n" << i << "\t" << framesToWrite[i].timestamp;
 		for (int j = 0; j < JointType_Count; j++) {
 			out << "\t" << framesToWrite[i].joints[j].position.x()*1000.f;

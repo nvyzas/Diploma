@@ -11,8 +11,9 @@
 class QFile;
 
 // Standard C/C++
-#include <iostream>
 #include <array>
+#include <iomanip>
+#include <iostream>
 
 #define INVALID_JOINT_ID -1
 
@@ -73,22 +74,28 @@ struct KFrame
 	array<KJoint, JointType_Count> joints;
 
 	// Interpolates this frame between frames "next" and "previous" at time "interpolationTime"
-	void interpolate(const KFrame& previous, const KFrame& next, double interpolationTime)
+	void interpolateJoints(const KFrame& previous, const KFrame& next, double interpolationTime)
 	{
+		double percentDistance = (interpolationTime - previous.timestamp) / (next.timestamp - previous.timestamp);
+		
 		if (next.timestamp < previous.timestamp) cout << " Error: next.timestamp < previous.timestamp" << endl;
 		
-		double percentDistance = (interpolationTime - previous.timestamp) / (next.timestamp - previous.timestamp);
-		cout << (interpolationTime < next.timestamp ? " Interpolation " : " Extrapolation ");
-		cout << previous.serial << "-" << next.serial << " " << previous.timestamp << "-" << next.timestamp;
-		cout << " @" << interpolationTime <<"->" << percentDistance*100 << "% ";
+		if (interpolationTime == previous.timestamp) cout << setw(16) << "Coincidence-";
+		else if (interpolationTime == next.timestamp) cout << setw(16) << "Coincidence+";
+		else if (interpolationTime < previous.timestamp) cout << setw(16) << "Extrapolation-";
+		else if (interpolationTime > next.timestamp) cout << setw(16) << "Extrapolation+";
+		else cout << setw(16) << "Interpolation";
+		
+		cout << " " << setw(4) << previous.serial << " " << setw(4) << next.serial;
+		cout << " " << setw(10) << previous.timestamp << " " << setw(10) << next.timestamp;
+		cout << " @" << setw(10) << interpolationTime << " -> " << setw(10) << percentDistance * 100 << " %";
+		cout << endl;
 		
 		for (uint i = 0; i < JointType_Count; i++) {
 			joints[i].position.setX(previous.joints[i].position.x() + percentDistance * (next.joints[i].position.x() - previous.joints[i].position.x()));
 			joints[i].position.setY(previous.joints[i].position.y() + percentDistance * (next.joints[i].position.y() - previous.joints[i].position.y()));
 			joints[i].position.setZ(previous.joints[i].position.z() + percentDistance * (next.joints[i].position.z() - previous.joints[i].position.z()));
 		}
-		timestamp = interpolationTime;
-		serial = next.serial;
 	}
 };
 
@@ -100,6 +107,8 @@ class KSkeleton
 public:
 	KSkeleton();
 	void addFrame(const Joint* joints, const JointOrientation* orientations, const double& time);
+	void interpolateRecordedFrames();
+	void filterRecordedFrames();
 	void initJointHierarchy();
 	void printInfo() const;
 	void printJointHierarchy() const;
@@ -142,14 +151,13 @@ private:
 	// Savitzky-Golay filter
 	double m_timeStep;
 
-	// Cubic, Symmetric, 1st element = 1/commonFactor
+	// Coefficients (Symmetric), Cubic order, 1st element = 1/commonFactor
 	// #? should make them static?
 	const array<float, 6> m_sgCoefficients5 = { -3, 12, 17, 12, -3, 35 };
 	const array<float, 8> m_sgCoefficients7 = { -2, 3, 6, 7, 6, 3, -2, 21 };
 	const array<float, 10> m_sgCoefficients9 = { -21, 14, 39, 54, 59, 54, 39, 14, -21, 231 };
 	const array<float, 26> m_sgCoefficients25 = { -253, -138, -33, 62, 147, 222, 287, 343, 387, 422, 447, 462, 467, 462, 447, 422, 387, 343, 278, 222, 147, 62, -33, -138, -253, 5175 };
-	GLuint m_skeletonIBO;
-	GLuint m_skeletonVBO;
+	const uint m_filterDelay = 25/2;
 };
 
 #endif
