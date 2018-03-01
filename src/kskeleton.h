@@ -114,6 +114,7 @@ public:
 	void printJointHierarchy() const;
 	void printJoints() const;
 	void printSequence() const;
+
 	// files
 	bool saveToTrc();
 	void saveToBinary() const;

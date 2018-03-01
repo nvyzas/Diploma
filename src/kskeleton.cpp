@@ -42,7 +42,6 @@ KSkeleton::KSkeleton()
 	loadFromBinary();
 	cout << "KSkeleton constructor end." << endl;
 }
-
 void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientations, const double& time)
 {
 	for (uint i = 0; i < JointType_Count; i++) {
@@ -248,22 +247,6 @@ void KSkeleton::printJoints() const
 		cout << endl;
 	}
 	cout << endl;
-}
-void KSkeleton::printSequence() const
-{
-	if (m_framesRaw.size() == 0) {
-		cout << "Sequence is empty. Returning." << endl;
-		return;
-	}
-	cout << "Number of frames in sequence: " << m_framesRaw.size() << endl;
-	for (uint i = 0; i < 1; i++) {
-		cout << "Frame=" << i << " Timestamp=" << m_framesRaw[i].timestamp << endl;
-		for (uint j = 0; j < JointType_Count; j++) {
-			const KJoint &jt = m_framesRaw[i].joints[j];
-			cout << setw(15) << m_nodes[j].name.toStdString() << ": " << flush;
-			qDebug() << qSetFieldWidth(15) << m_nodes[j].name << ": " << qSetFieldWidth(10) << m_joints[j].position << m_joints[j].getTrackingState();
-		}
-	}
 }
 double KSkeleton::timeStep() const
 {
