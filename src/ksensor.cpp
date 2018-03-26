@@ -279,6 +279,7 @@ void KSensor::calculateFPS()
 void KSensor::record()
 {
 	if (!m_skeleton.m_recordingOn) {
+		cout << "Recording started." << endl;
 		// Reset record related variables
 		m_acceptedFrames = 0;
 		m_totalTime = 0;
@@ -287,14 +288,13 @@ void KSensor::record()
 		m_skeleton.clearSequences();
 
 		m_skeleton.m_recordingOn = true;
-		cout << "Recording started." << endl;
-	}
-	else {
-		m_skeleton.m_recordingOn = false;
-		m_skeleton.interpolateRecordedFrames();
-		m_skeleton.filterRecordedFrames();
+	} else {
 		cout << "Recording stopped." << endl;
 		cout << "Average frame interval (milliseconds) = " << m_averageInterval << endl;
+		m_skeleton.m_recordingOn = false;
+		m_skeleton.m_finalizingOn = true;
+		m_skeleton.interpolateRecordedFrames();
+		m_skeleton.filterRecordedFrames();
 		m_skeleton.setTimeStep(m_averageInterval);
 		m_skeleton.saveToBinary();
 	}

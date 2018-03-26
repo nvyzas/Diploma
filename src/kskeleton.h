@@ -125,8 +125,9 @@ public:
 	void setTimeStep(double timestep);
 	void clearSequences();
 
-	bool m_playOn = false;
+	bool m_playbackOn = false;
 	bool m_recordingOn = false;
+	bool m_finalizingOn = false;
 
 	bool m_playbackInterpolated = true;
 	bool m_playbackFiltered = true;
@@ -137,9 +138,9 @@ public:
 private:
 	array<KNode, JointType_Count> m_nodes; // these define the kinect skeleton hierarchy
 	array<KJoint, JointType_Count> m_joints;
-	QVector<KFrame> m_framesRaw;
-	QVector<KFrame> m_framesInterpolated;
-	QVector<KFrame> m_framesInterpolatedFiltered;
+	QVector<KFrame> m_rawFrames;
+	QVector<KFrame> m_interpolatedFrames;
+	QVector<KFrame> m_filteredFrames;
 
 	uint m_activeFrame = 0;
 
@@ -154,11 +155,11 @@ private:
 
 	// Coefficients (Symmetric), Cubic order, 1st element = 1/commonFactor
 	// #? should make them static?
-	const array<float, 6> m_sgCoefficients5 = { -3, 12, 17, 12, -3, 35 };
-	const array<float, 8> m_sgCoefficients7 = { -2, 3, 6, 7, 6, 3, -2, 21 };
-	const array<float, 10> m_sgCoefficients9 = { -21, 14, 39, 54, 59, 54, 39, 14, -21, 231 };
-	const array<float, 26> m_sgCoefficients25 = { -253, -138, -33, 62, 147, 222, 287, 343, 387, 422, 447, 462, 467, 462, 447, 422, 387, 343, 278, 222, 147, 62, -33, -138, -253, 5175 };
-	const uint m_filterDelay = 25/2;
+	static const uint m_framesDelayed = 12;
+	const array<float, 2*m_framesDelayed+2> m_sgCoefficients25 = { -253, -138, -33, 62, 147, 222, 287, 343, 387, 422, 447, 462, 467, 462, 447, 422, 387, 343, 278, 222, 147, 62, -33, -138, -253, 5175 };
+	array<KFrame, m_framesDelayed> m_firstRawFrames;
+	array<KFrame, m_framesDelayed> m_lastRawFrames;
+	uint m_firstFrameIndex = 0;
 };
 
 #endif
