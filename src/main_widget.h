@@ -97,7 +97,7 @@ private:
 
 	bool m_renderAxes = true;
 	bool m_renderSkeleton = true;
-	bool m_renderSkinnedMesh = true;
+	bool m_renderSkinnedMesh = false;
 
 	bool m_play = true;	
 

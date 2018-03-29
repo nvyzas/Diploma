@@ -142,7 +142,7 @@ void MainWidget::paintGL()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	if (m_modeOfOperation == Mode::CAPTURE) {
-		m_ksensor->getBodyData();
+		m_ksensor->getBodyFrame();
 	}
 	else if (m_modeOfOperation == Mode::PLAYBACK){
 		m_ksensor->skeleton()->setActiveJoints(m_activeFrame);
@@ -305,7 +305,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		cout << "Interpolated data playback " << (m_ksensor->skeleton()->m_playbackInterpolated ? "ON" : "OFF") << endl;
 		break;
 	case Qt::Key_G:
-		if (!m_ksensor->getBodyData()) cout << "Could not update kinect data." << endl;
+		if (!m_ksensor->getBodyFrame()) cout << "Could not update kinect data." << endl;
 		break;
 	case Qt::Key_L:
 		m_ksensor->skeleton()->loadFromBinary();
@@ -316,18 +316,18 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_P:
 		if (m_play) {
 			m_play = false;
-			cout << "Play: OFF" << endl;
+			cout << "Play OFF" << endl;
 			m_timer.stop();
 		}
 		else {
 			m_play = true;
-			cout << "Play: ON" << endl;
+			cout << "Play ON" << endl;
 			m_timer.start();
 		}
 		break;
 	case Qt::Key_R:
 		if (m_modeOfOperation==Mode::CAPTURE) m_ksensor->record();
-		else cout << "Record does not work in this mode" << endl;
+		else cout << "Record does not work in this mode." << endl;
 		break;
 	case Qt::Key_S:
 		m_ksensor->skeleton()->saveToBinary();
