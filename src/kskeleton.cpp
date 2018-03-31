@@ -60,27 +60,26 @@ void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientatio
 	kframe.joints = m_joints;
 	kframe.serial = addedFrames; // serial = size - 1
 
-	/*if (addedFrames <= m_framesDelayed) {
-		m_firstRawFrames[addedFrames - 1] = kframe;
-	}*/
-
 	if (m_recordingOn) {
 		m_rawFrames.push_back(kframe);
-	}
-	else {
-		m_firstRawFrames[m_firstFrameIndex] = kframe;
-		m_firstFrameIndex = addedFrames % m_framesDelayed;
-	}
-
-	if (m_finalizingOn) {
+		kframe.print();
+	} 
+	else if (m_finalizingOn) {
 		static uint counter = 0;
 		if (counter < m_framesDelayed) {
-			m_lastRawFrames[counter] = kframe;
-			cout << "counter = " << counter << endl;
 			counter++;
+			uint index = (m_firstFrameIndex - counter + m_framesDelayed) % m_framesDelayed;
+
+			m_rawFrames.push_back(kframe);
+			cout << "counter=" << counter << " ";
+			kframe.print();
+
+			m_rawFrames.push_front(m_firstRawFrames[index]);
+			cout << "index=" << index << " ";
+			m_firstRawFrames[index].print();
 		}
 		else {
-			cout << "Finalizing recording." << endl;
+			cout << "Recording finished." << endl;
 			m_finalizingOn = false;
 			interpolateRecordedFrames();
 			filterRecordedFrames();
@@ -88,6 +87,16 @@ void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientatio
 			counter = 0;
 			addedFrames = 0;
 		}
+	}
+	else {
+		if (addedFrames <= m_framesDelayed) {
+			m_firstRawFrames[addedFrames - 1] = kframe;
+		}
+		else {
+			m_firstRawFrames[m_firstFrameIndex] = kframe;
+			m_firstFrameIndex = addedFrames % m_framesDelayed;
+		}
+		//cout << "First frame index = " << m_firstFrameIndex << endl;
 	}
 }
 void KSkeleton::interpolateRecordedFrames()
@@ -98,51 +107,14 @@ void KSkeleton::interpolateRecordedFrames()
 	double interpolationInterval = totalTime / (m_rawFrames.size()-1);
 	cout << "Interpolation interval: " << interpolationInterval << endl;
 	cout << "First frame index: " << m_firstFrameIndex << endl;
-	for (uint i = 0; i < m_firstRawFrames.size() - 1; i++) {
+	for (uint i = 0; i < m_rawFrames.size() - 1; i++) {
 		KFrame interpolatedFrame;
-		int interpolatedSerial = -m_framesDelayed + i;
+		int interpolatedSerial = i - m_framesDelayed;
 		double interpolatedTime = interpolationInterval * interpolatedSerial;
-		double interpolationTime = m_rawFrames.front().timestamp + interpolatedTime;
+		double interpolationTime = m_rawFrames[m_framesDelayed].timestamp + interpolatedTime;
 		interpolatedFrame.serial = interpolatedSerial;
 		interpolatedFrame.timestamp = interpolatedTime;
-		uint previousIndex = (i + m_firstFrameIndex) % m_framesDelayed;
-		uint nextIndex = (i + m_firstFrameIndex + 1) % m_framesDelayed;
-		cout << "InterpolatedSerial=" << interpolatedSerial << " PreviousIndex: " << previousIndex << " NextIndex: " << nextIndex << endl;
-		if (i == (m_firstRawFrames.size() - 1)) {
-			interpolatedFrame.interpolateJoints(m_firstRawFrames[previousIndex], m_rawFrames.front(), interpolationTime);
-		} else {
-			interpolatedFrame.interpolateJoints(m_firstRawFrames[previousIndex], m_firstRawFrames[nextIndex], interpolationTime);
-		}
-		m_interpolatedFrames.push_back(interpolatedFrame);
-	}
-	for (uint i = 0; i < m_rawFrames.size(); i++) {
-		KFrame interpolatedFrame;
-		int interpolatedSerial = i;
-		double interpolatedTime = interpolationInterval * interpolatedSerial;
-		double interpolationTime = m_rawFrames.front().timestamp + interpolatedTime;
-		interpolatedFrame.serial = interpolatedSerial;
-		interpolatedFrame.timestamp = interpolatedTime;
-		if (i == (m_rawFrames.size() - 1)) {
-			interpolatedFrame.interpolateJoints(m_rawFrames[i], m_lastRawFrames.front(), interpolationTime);
-		}
-		else {
-			interpolatedFrame.interpolateJoints(m_rawFrames[i], m_rawFrames[i + 1], interpolationTime);
-		}
-		m_interpolatedFrames.push_back(interpolatedFrame);
-	}
-	for (uint i = 0; i < m_lastRawFrames.size(); i++) {
-		KFrame interpolatedFrame;
-		int interpolatedSerial = m_rawFrames.last().serial + i +1;
-		double interpolatedTime = interpolationInterval * interpolatedSerial;
-		double interpolationTime = m_rawFrames.front().timestamp + interpolatedTime;
-		if (i == (m_lastRawFrames.size() - 1)) {
-			interpolatedFrame.interpolateJoints(m_lastRawFrames[i - 1], m_lastRawFrames[i], interpolationTime);
-		}
-		else {
-			interpolatedFrame.interpolateJoints(m_lastRawFrames[i], m_lastRawFrames[i + 1], interpolationTime);
-		}
-		interpolatedFrame.serial = interpolatedSerial;
-		interpolatedFrame.timestamp = interpolatedTime;
+		interpolatedFrame.interpolateJoints(m_rawFrames[i], m_rawFrames[i+1], interpolationTime);
 		m_interpolatedFrames.push_back(interpolatedFrame);
 	}
 }
@@ -356,12 +328,13 @@ void KSkeleton::saveToBinary() const
 	out << m_interpolatedFrames;
 	out << m_filteredFrames;
 	qf.close();
-	cout << "Size of saved sequence: " << m_rawFrames.size() << endl;
-	if (m_rawFrames.size() != 0) cout << "Duration: " << m_rawFrames.back().timestamp - m_rawFrames.front().timestamp << endl;
-	cout << "Size of saved interpolated sequence: " << m_interpolatedFrames.size() << endl;
-	if (m_interpolatedFrames.size() != 0) cout << "Duration: " << m_interpolatedFrames.back().timestamp << endl;
-	cout << "Size of saved filtered interpolated sequence: " << m_filteredFrames.size() << endl;
-	if (m_filteredFrames.size() != 0) cout << "Duration: " << m_filteredFrames.back().timestamp << endl;
+
+	cout << "Raw sequence: " << endl;
+	printSequence(m_rawFrames);
+	cout << "Interpolated sequence: " << endl;
+	printSequence(m_interpolatedFrames);
+	cout << "Filtered sequence: " << endl;
+	printSequence(m_filteredFrames);
 }
 void KSkeleton::loadFromBinary()
 {
@@ -381,12 +354,12 @@ void KSkeleton::loadFromBinary()
 	in >> m_filteredFrames;
 	qf.close();
 
-	cout << "Size of loaded sequence: " << m_rawFrames.size() << endl;
-	if (m_rawFrames.size() != 0) cout << "Duration: " << m_rawFrames.back().timestamp << endl;
-	cout << "Size of loaded interpolated sequence: " << m_interpolatedFrames.size() << endl;
-	if (m_interpolatedFrames.size() != 0) cout << "Duration: " << m_interpolatedFrames.back().timestamp << endl;
-	cout << "Size of loaded filtered interpolated sequence: " << m_filteredFrames.size() << endl;
-	if (m_filteredFrames.size() != 0) cout << "Duration: " << m_filteredFrames.back().timestamp << endl;
+	cout << "Raw sequence: " << endl;
+	printSequence(m_rawFrames);
+	cout << "Interpolated sequence: " << endl;
+	printSequence(m_interpolatedFrames);
+	cout << "Filtered sequence: " << endl;
+	printSequence(m_filteredFrames);
 }
 void KSkeleton::clearSequences()
 {
@@ -399,4 +372,9 @@ void KSkeleton::clearSequences()
 uint KSkeleton::sequenceSize()
 {
 	return m_filteredFrames.size();
+}
+void KSkeleton::printSequence(const QVector<KFrame>& seq) const
+{
+	for (uint i = 0; i < seq.size(); i++) seq[i].print();
+	cout << "Size=" << seq.size() << " Duration=" << seq.back().timestamp - seq.front().timestamp << endl;
 }

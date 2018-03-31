@@ -69,7 +69,7 @@ QDataStream& operator>>(QDataStream& in, const KJoint& joint);
 
 struct KFrame
 {
-	uint serial; // serial number #! maybe not needed
+	int serial; // serial number #! maybe not needed
 	double timestamp;
 	array<KJoint, JointType_Count> joints;
 
@@ -77,8 +77,6 @@ struct KFrame
 	void interpolateJoints(const KFrame& previous, const KFrame& next, double interpolationTime)
 	{
 		double percentDistance = (interpolationTime - previous.timestamp) / (next.timestamp - previous.timestamp);
-		
-		if (next.timestamp < previous.timestamp) cout << " Error: next.timestamp < previous.timestamp" << endl;
 		
 		if (interpolationTime == previous.timestamp) cout << setw(16) << "Coincidence-";
 		else if (interpolationTime == next.timestamp) cout << setw(16) << "Coincidence+";
@@ -88,7 +86,9 @@ struct KFrame
 		
 		cout << " " << setw(4) << previous.serial << " " << setw(4) << next.serial;
 		cout << " " << setw(10) << previous.timestamp << " " << setw(10) << next.timestamp;
-		cout << " @" << setw(10) << interpolationTime << " -> " << setw(10) << percentDistance * 100 << " %";
+		cout << " @" << setw(10) << interpolationTime << "->" << setw(10) << percentDistance * 100 << " %";
+		cout << " Interval=" << next.timestamp - previous.timestamp;
+		if (next.timestamp < previous.timestamp) cout << " Error: next.timestamp < previous.timestamp";
 		cout << endl;
 		
 		for (uint i = 0; i < JointType_Count; i++) {
@@ -96,6 +96,11 @@ struct KFrame
 			joints[i].position.setY(previous.joints[i].position.y() + percentDistance * (next.joints[i].position.y() - previous.joints[i].position.y()));
 			joints[i].position.setZ(previous.joints[i].position.z() + percentDistance * (next.joints[i].position.z() - previous.joints[i].position.z()));
 		}
+	}
+
+	void print() const
+	{
+		cout << "Serial=" << setw(4) << serial << " Timestamp=" << setw(10) << timestamp << endl;
 	}
 };
 
@@ -113,7 +118,7 @@ public:
 	void printInfo() const;
 	void printJointHierarchy() const;
 	void printJoints() const;
-	void printSequence() const;
+	void printSequence(const QVector<KFrame>& seq) const;
 
 	// files
 	bool saveToTrc();
