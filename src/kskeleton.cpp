@@ -107,6 +107,7 @@ void KSkeleton::interpolateRecordedFrames()
 	double interpolationInterval = totalTime / (m_rawFrames.size()-1);
 	cout << "Interpolation interval: " << interpolationInterval << endl;
 	cout << "First frame index: " << m_firstFrameIndex << endl;
+	static uint index = 0;
 	for (uint i = 0; i < m_rawFrames.size() - 1; i++) {
 		KFrame interpolatedFrame;
 		int interpolatedSerial = i - m_framesDelayed;
@@ -114,9 +115,24 @@ void KSkeleton::interpolateRecordedFrames()
 		double interpolationTime = m_rawFrames[m_framesDelayed].timestamp + interpolatedTime;
 		interpolatedFrame.serial = interpolatedSerial;
 		interpolatedFrame.timestamp = interpolatedTime;
-		interpolatedFrame.interpolateJoints(m_rawFrames[i], m_rawFrames[i+1], interpolationTime);
+		while (m_rawFrames[index].timestamp < interpolationTime) {
+			index++;
+		}
+		uint firstIndex;
+		if (index == 0) {
+			firstIndex = 0;
+		}
+		else if (index < m_rawFrames.size()) {
+			firstIndex = index - 1;
+		}
+		else {
+			firstIndex = m_rawFrames.size() - 2;
+		}
+		//uint firstIndex = (index >= m_rawFrames.size() - 1 ? m_rawFrames.size() - 2 : index-1);
+		interpolatedFrame.interpolateJoints(m_rawFrames[firstIndex], m_rawFrames[firstIndex+1], interpolationTime);
 		m_interpolatedFrames.push_back(interpolatedFrame);
 	}
+	index = 0;
 }
 void KSkeleton::filterRecordedFrames()
 {
@@ -130,7 +146,7 @@ void KSkeleton::filterRecordedFrames()
 				//if (j == 0) cout << (i + k - np / 2 == i ? "F:" : "") << i + k - np / 2 << ",";
 			}
 		}
-		cout << endl;
+		//cout << endl;
 		filteredFrame.serial = m_interpolatedFrames[i].serial;
 		filteredFrame.timestamp = m_interpolatedFrames[i].timestamp;
 		m_filteredFrames.push_back(filteredFrame);

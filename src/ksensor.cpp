@@ -166,7 +166,7 @@ bool KSensor::getBodyFrame()
 		if (!m_lastAttemptFailed) m_forCaptureLog << "Failed to acquire frame. ";
 		m_consecutiveFails++;
 		if (m_consecutiveFails == 15 && m_skeleton.m_recordingOn) {
-			cout << "15 consecutive fails." << endl;
+			cout << "\nStopping recording due to many consecutive fails." << endl;
 			record();
 		}
 		m_lastAttemptFailed = true;
@@ -174,10 +174,10 @@ bool KSensor::getBodyFrame()
 	} 
 	else {
 		if (m_consecutiveFails > 0) {
-			m_forCaptureLog << " ConsecutiveFails = " << m_consecutiveFails << endl;
+			m_forCaptureLog << " ConsecutiveFails=" << m_consecutiveFails << endl;
+			m_lastAttemptFailed = false;
+			m_consecutiveFails = 0;
 		}
-		m_lastAttemptFailed = false;
-		m_consecutiveFails = 0;
 		m_forCaptureLog << "Acquired frame. ";
 		INT64 relativeTime;
 		hr = frame->get_RelativeTime(&relativeTime);
@@ -231,42 +231,26 @@ void KSensor::processBodyFrameData(IBody** bodies, double timestamp)
 		}
 	} 
 	else {
-		m_forCaptureLog << "Frame accepted. " << qSetFieldWidth(4);
+		m_forCaptureLog << (m_skeleton.m_recordingOn ? "Recorded" : "Captured")  << qSetFieldWidth(4);
 		static double lastTimestamp = timestamp;
 		double interval = timestamp - lastTimestamp;
-		m_forCaptureLog << "  RelativeTime=" << qSetFieldWidth(10) << timestamp;
-		m_forCaptureLog << "  Interval=" << qSetFieldWidth(10) << interval;
+		m_forCaptureLog << " RelativeTime=" << qSetFieldWidth(10) << timestamp;
+		m_forCaptureLog << " Interval=" << qSetFieldWidth(10) << interval;
 		lastTimestamp = timestamp;
 
-		m_ticksNow = clock();
-		if (m_acceptedFrames == 1) {
-			m_ticksBefore = m_ticksNow;
-		}
-
-		double deltaTime = (double)(m_ticksNow - m_ticksBefore) / (double)CLOCKS_PER_SEC;
-		m_totalTime += deltaTime;
-		m_forCaptureLog << "  Time=" << qSetFieldWidth(5) << m_totalTime;
-		m_forCaptureLog << "  DeltaTime=" << qSetFieldWidth(5) << deltaTime;
 		m_skeleton.addFrame(joints, orientations, timestamp);
 		calculateFPS();
-		m_forCaptureLog << "  FPS=" << m_fps << endl;
-		m_ticksBefore = m_ticksNow;
+		m_forCaptureLog << " FPS=" << m_fps << endl;
 	}
 }
 // must be called after m_acceptedFrames is incremented
 void KSensor::calculateFPS() 
 {
 	static clock_t ticksThisTime;
-	static clock_t ticksLastTime;
-	static uint framesPassed;
+	static clock_t ticksLastTime = clock();
+	static uint framesPassed = 0;
 
 	ticksThisTime = clock();
-	// first time it is called or after resetting record variables
-	if (m_acceptedFrames == 1) {
-		ticksLastTime = ticksThisTime;
-		framesPassed = 0;
-	}
-
 	framesPassed++;
 	clock_t ticksPassed = ticksThisTime - ticksLastTime;
 	double millisecondsPassed = ticksToMilliseconds(ticksPassed);
@@ -282,16 +266,12 @@ void KSensor::record()
 	if (!m_skeleton.m_recordingOn) {
 		cout << "Recording started." << endl;
 		// Reset record related variables
-		m_acceptedFrames = 0;
-		m_totalTime = 0;
-		m_averageInterval = 0;
 		m_fps = 0;
 		m_skeleton.clearSequences();
 
 		m_skeleton.m_recordingOn = true;
 	} else {
 		cout << "Recording stopped." << endl;
-		cout << "Average frame interval (milliseconds) = " << m_averageInterval << endl;
 		m_skeleton.m_recordingOn = false;
 		m_skeleton.m_finalizingOn = true;
 		//m_skeleton.setTimeStep(m_averageInterval); // #?

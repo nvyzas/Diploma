@@ -46,20 +46,10 @@ private:
 	double m_relativeTimeOffset;
 	double m_lastRelativeTime;
 	double m_relativeTime;
-	double m_averageInterval = 0;
-
-	uint captureInterval = 10; // milliseconds
-
-	uint m_acceptedFrames = 0;
-	double m_totalTime = 0;
-	clock_t m_ticksNow;
-	clock_t m_ticksBefore;
 
 	// FPS counter
 	double m_fps = 0.;
 
 	KSkeleton m_skeleton;
-	KJoint m_leftFootStance;
-	KJoint m_rightFootStance;
 };
 #endif /* SENSOR_H */

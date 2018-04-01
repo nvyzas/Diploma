@@ -88,7 +88,7 @@ struct KFrame
 		cout << " " << setw(10) << previous.timestamp << " " << setw(10) << next.timestamp;
 		cout << " @" << setw(10) << interpolationTime << "->" << setw(10) << percentDistance * 100 << " %";
 		cout << " Interval=" << next.timestamp - previous.timestamp;
-		if (next.timestamp < previous.timestamp) cout << " Error: next.timestamp < previous.timestamp";
+		if (next.timestamp <= previous.timestamp) cout << " Error: next.timestamp <= previous.timestamp";
 		cout << endl;
 		
 		for (uint i = 0; i < JointType_Count; i++) {
