@@ -52,7 +52,6 @@ void MainWidget::initializeGL()
 	qDebug() << "Obtained format:" << format();
 	initializeOpenGLFunctions();
 
-
 	m_Cam = new Camera();
 	m_Tech = new Technique();
 	m_Skin = new SkinningTechnique();
@@ -84,7 +83,7 @@ void MainWidget::initializeGL()
 	m_timer.setTimerType(Qt::PreciseTimer);
 	connect(&m_timer, SIGNAL(timeout()), this, SLOT(updateIndirect()));
 	m_modeOfOperation = Mode::CAPTURE;
-	m_playbackInterval = m_ksensor->skeleton()->timeStep() * 1000;
+	m_playbackInterval = m_ksensor->skeleton()->m_interpolationInterval * 1000;
 	m_timer.setInterval(m_playbackInterval);
 	m_timer.start();
 
@@ -224,8 +223,9 @@ void MainWidget::paintGL()
 	m_Tech->setSpecific(T * R * S);
 	drawArrow();
 
-	if (m_play) {
+	if (m_play && m_shouldUpdate) {
 		if (++m_activeFrame > m_ksensor->skeleton()->sequenceSize())  m_activeFrame = 0;
+		m_shouldUpdate = false;
 	}
 
 	calculateFPS();
@@ -299,10 +299,6 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_F:
 		m_ksensor->skeleton()->m_playbackFiltered = !m_ksensor->skeleton()->m_playbackFiltered;
 		cout << "Filtered data playback " << (m_ksensor->skeleton()->m_playbackFiltered ? "ON" : "OFF") << endl;
-		break;
-	case Qt::Key_I:
-		m_ksensor->skeleton()->m_playbackInterpolated = !m_ksensor->skeleton()->m_playbackInterpolated;
-		cout << "Interpolated data playback " << (m_ksensor->skeleton()->m_playbackInterpolated ? "ON" : "OFF") << endl;
 		break;
 	case Qt::Key_G:
 		if (!m_ksensor->getBodyFrame()) cout << "Could not update kinect data." << endl;
@@ -501,7 +497,8 @@ void MainWidget::unloadSkinnedMesh()
 }
 void MainWidget::updateIndirect()
 {
-	update();
+	m_shouldUpdate = true;
+	update(); // #? use QWidget->update or QWidget->repaint
 }
 void MainWidget::setActiveFrame(uint index)
 {

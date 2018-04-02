@@ -126,19 +126,19 @@ public:
 	void loadFromBinary();
 
 	uint activeFrame() const;
-	double timeStep() const;
-	void setTimeStep(double timestep);
 	void clearSequences();
 
 	bool m_playbackOn = false;
 	bool m_recordingOn = false;
 	bool m_finalizingOn = false;
 
-	bool m_playbackInterpolated = true;
 	bool m_playbackFiltered = true;
 	uint sequenceSize();
 	void setActiveJoints(uint frameIndex);
 	array<KJoint, JointType_Count>& joints();
+
+	double m_interpolationInterval;
+	double m_recordingDuration;
 
 private:
 	array<KNode, JointType_Count> m_nodes; // these define the kinect skeleton hierarchy
@@ -156,7 +156,6 @@ private:
 	uint m_activeJoint = JointType_SpineBase;
 
 	// Savitzky-Golay filter
-	double m_timeStep;
 
 	// Coefficients (Symmetric), Cubic order, 1st element = 1/commonFactor
 	// #? should make them static?

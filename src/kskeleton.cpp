@@ -34,12 +34,15 @@ QDataStream& operator>>(QDataStream& in, KFrame& frame)
 	return in;
 }
 
-KSkeleton::KSkeleton()
+KSkeleton::KSkeleton() 
 {
 	cout << "KSkeleton constructor start." << endl;
-	m_timeStep = 0.0333345;
 	initJointHierarchy();
 	loadFromBinary();
+	m_recordingDuration = m_rawFrames.back().timestamp - m_rawFrames.front().timestamp;
+	m_interpolationInterval = m_recordingDuration / (m_rawFrames.size() - 1);
+	cout << "Recording duration: " << m_recordingDuration << endl;
+	cout << "Interpolation interval: " << m_interpolationInterval << endl;
 	cout << "KSkeleton constructor end." << endl;
 }
 void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientations, const double& time)
@@ -102,16 +105,16 @@ void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientatio
 void KSkeleton::interpolateRecordedFrames()
 {
 	cout << "Interpolating recorded frames." << endl;
-	double totalTime = m_rawFrames.back().timestamp - m_rawFrames.front().timestamp;
-	cout << "Total time: " << totalTime << endl;
-	double interpolationInterval = totalTime / (m_rawFrames.size()-1);
-	cout << "Interpolation interval: " << interpolationInterval << endl;
+	m_recordingDuration = m_rawFrames.back().timestamp - m_rawFrames.front().timestamp;
+	m_interpolationInterval = m_recordingDuration / (m_rawFrames.size() - 1);
+	cout << "Recording duration: " << m_recordingDuration << endl;
+	cout << "Interpolation interval: " << m_interpolationInterval << endl;
 	cout << "First frame index: " << m_firstFrameIndex << endl;
 	static uint index = 0;
 	for (uint i = 0; i < m_rawFrames.size() - 1; i++) {
 		KFrame interpolatedFrame;
 		int interpolatedSerial = i - m_framesDelayed;
-		double interpolatedTime = interpolationInterval * interpolatedSerial;
+		double interpolatedTime = m_interpolationInterval * interpolatedSerial;
 		double interpolationTime = m_rawFrames[m_framesDelayed].timestamp + interpolatedTime;
 		interpolatedFrame.serial = interpolatedSerial;
 		interpolatedFrame.timestamp = interpolatedTime;
@@ -297,31 +300,17 @@ void KSkeleton::printJoints() const
 	}
 	cout << endl;
 }
-double KSkeleton::timeStep() const
-{
-	return m_timeStep;
-}
-void KSkeleton::setTimeStep(double timestep)
-{
-	m_timeStep = timestep;
-}
 uint KSkeleton::activeFrame() const
 {
 	return m_activeFrame;
 }
 void KSkeleton::setActiveJoints(uint frameIndex)
 {
-	if (m_playbackFiltered && m_playbackInterpolated) {
+	if (m_playbackFiltered) {
 		m_joints = m_filteredFrames[frameIndex].joints;
 	}
-	else if (m_playbackInterpolated) {
-		m_joints = m_interpolatedFrames[frameIndex].joints;
-	}
-	else if (m_playbackFiltered) { // #todo make just filtered sequence
-		m_joints = m_filteredFrames[frameIndex].joints; 
-	}
 	else {
-		m_joints = m_rawFrames[frameIndex].joints;
+		m_joints = m_interpolatedFrames[frameIndex].joints;
 	}
 }
 array<KJoint, JointType_Count>& KSkeleton::joints()
@@ -345,12 +334,14 @@ void KSkeleton::saveToBinary() const
 	out << m_filteredFrames;
 	qf.close();
 
+	/*
 	cout << "Raw sequence: " << endl;
 	printSequence(m_rawFrames);
 	cout << "Interpolated sequence: " << endl;
 	printSequence(m_interpolatedFrames);
 	cout << "Filtered sequence: " << endl;
 	printSequence(m_filteredFrames);
+	//*/
 }
 void KSkeleton::loadFromBinary()
 {
@@ -370,12 +361,14 @@ void KSkeleton::loadFromBinary()
 	in >> m_filteredFrames;
 	qf.close();
 
+	/*
 	cout << "Raw sequence: " << endl;
 	printSequence(m_rawFrames);
 	cout << "Interpolated sequence: " << endl;
 	printSequence(m_interpolatedFrames);
 	cout << "Filtered sequence: " << endl;
 	printSequence(m_filteredFrames);
+	//*/
 }
 void KSkeleton::clearSequences()
 {
@@ -391,6 +384,8 @@ uint KSkeleton::sequenceSize()
 }
 void KSkeleton::printSequence(const QVector<KFrame>& seq) const
 {
+	cout << endl;
+	cout << "Printing sequence: Size=" << seq.size() << " Duration=" << seq.back().timestamp - seq.front().timestamp << endl;
 	for (uint i = 0; i < seq.size(); i++) seq[i].print();
-	cout << "Size=" << seq.size() << " Duration=" << seq.back().timestamp - seq.front().timestamp << endl;
+	cout << endl;
 }

@@ -47,6 +47,7 @@ public:
 	const uint m_captureInterval = 10; // in milliseconds
 	uint m_playbackInterval; // in milliseconds
 	uint m_fpsCount = 0; // for counting fps
+	
 	float m_kneeAngle;
 	float m_barAngle;
 	QVector3D m_barSpeed;
@@ -130,6 +131,8 @@ private:
 	uint m_activeFrame = 0;
 
 	QTimer m_timer;
+	bool m_shouldUpdate = false;
+
 	bool m_defaultPose = false;
 
 	GLuint m_arrowVAO;
