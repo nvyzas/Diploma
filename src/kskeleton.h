@@ -40,6 +40,30 @@ struct KNode
 
 };
 
+struct KLimb
+{
+	QString name;
+	uint start;
+	uint end;
+
+	float lengthMin = FLT_MAX, lengthMax = FLT_MIN, lengthAverage = 0;
+	int serialMin = -1, serialMax = -1;
+
+	KLimb()
+		:name("aLimb"),
+		start(INVALID_JOINT_ID),
+		end(INVALID_JOINT_ID)
+	{
+	}
+
+	KLimb(QString _name, uint _start, uint _end)
+		:name(_name),
+		start(_start),
+		end(_end)
+	{
+	}
+};
+
 struct KJoint
 {
 	uint id; // #! maybe not needed
@@ -164,6 +188,11 @@ private:
 	array<KFrame, m_framesDelayed> m_firstRawFrames;
 	array<KFrame, m_framesDelayed> m_lastRawFrames;
 	uint m_firstFrameIndex = 0;
+
+	QVector<KLimb> m_limbs;
+	void initLimbs();
+	void calculateLimbLengths();
+	void printLimbLengths() const;
 };
 
 #endif

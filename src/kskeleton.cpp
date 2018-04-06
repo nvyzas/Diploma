@@ -38,6 +38,7 @@ KSkeleton::KSkeleton()
 {
 	cout << "KSkeleton constructor start." << endl;
 	initJointHierarchy();
+	initLimbs();
 	loadFromBinary();
 	m_recordingDuration = m_rawFrames.back().timestamp - m_rawFrames.front().timestamp;
 	m_interpolationInterval = m_recordingDuration / (m_rawFrames.size() - 1);
@@ -87,6 +88,8 @@ void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientatio
 			interpolateRecordedFrames();
 			filterRecordedFrames();
 			saveToBinary();
+			calculateLimbLengths();
+			printLimbLengths();
 			counter = 0;
 			addedFrames = 0;
 		}
@@ -266,6 +269,17 @@ void KSkeleton::initJointHierarchy()
 		}
 	}
 }
+void KSkeleton::initLimbs()
+{
+	//m_limbs.push_back(KLimb("Neck", JointType_Neck, JointType_Head));
+	//m_limbs.push_back(KLimb("Arm Left", JointType_ShoulderLeft, JointType_ElbowLeft));
+	for (uint i = 0; i < JointType_Count; i++) {
+		uint p = m_nodes[i].parentId;
+		if (p != INVALID_JOINT_ID) {
+			m_limbs.push_back(KLimb("", i, p));
+		}
+	}
+}
 void KSkeleton::printInfo() const
 {
 	cout << endl;
@@ -361,6 +375,8 @@ void KSkeleton::loadFromBinary()
 	in >> m_filteredFrames;
 	qf.close();
 
+	calculateLimbLengths();
+	printLimbLengths();
 	/*
 	cout << "Raw sequence: " << endl;
 	printSequence(m_rawFrames);
@@ -388,4 +404,37 @@ void KSkeleton::printSequence(const QVector<KFrame>& seq) const
 	cout << "Printing sequence: Size=" << seq.size() << " Duration=" << seq.back().timestamp - seq.front().timestamp << endl;
 	for (uint i = 0; i < seq.size(); i++) seq[i].print();
 	cout << endl;
+}
+void KSkeleton::calculateLimbLengths()
+{
+	for (uint l = 0; l < m_limbs.size(); l++) {
+		float limbLengthSum = 0;
+		for (uint i = 0; i < m_filteredFrames.size(); i++) {
+			QVector3D& start = m_filteredFrames[i].joints[m_limbs[l].start].position;
+			QVector3D& end = m_filteredFrames[i].joints[m_limbs[l].end].position;
+			float distance = start.distanceToPoint(end);
+			if (distance > m_limbs[l].lengthMax) {
+				m_limbs[l].lengthMax = distance;
+				m_limbs[l].serialMax = m_filteredFrames[i].serial;
+			}
+			if (distance < m_limbs[l].lengthMin) {
+				m_limbs[l].lengthMin = distance;
+				m_limbs[l].serialMin = m_filteredFrames[i].serial;
+			}
+			limbLengthSum += distance;
+		}
+		m_limbs[l].lengthAverage = limbLengthSum / m_filteredFrames.size();
+	}
+}
+void KSkeleton::printLimbLengths() const
+{
+	for (uint i = 0; i < m_limbs.size(); i++) {
+		cout << setw(5) << left << m_limbs[i].name.toStdString() << " ";
+		cout << setw(15) << left << m_nodes[m_limbs[i].start].name.toStdString() << " ";
+		cout << setw(15) << left << m_nodes[m_limbs[i].end].name.toStdString() << " ";
+		cout << "Min=" << setw(10) << m_limbs[i].lengthMin << " (" << setw(5) << m_limbs[i].serialMin;
+		cout << ") Max=" << setw(10) << m_limbs[i].lengthMax << " (" << setw(5) << m_limbs[i].serialMax;
+		cout << ") Avg=" << setw(10) << m_limbs[i].lengthAverage << " ";
+		cout << "Gap=" << setw(10) << m_limbs[i].lengthMax - m_limbs[i].lengthMin << endl;
+	}
 }
