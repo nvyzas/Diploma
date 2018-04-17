@@ -39,11 +39,9 @@ KSkeleton::KSkeleton()
 	cout << "KSkeleton constructor start." << endl;
 	initJointHierarchy();
 	initLimbs();
-	loadFromBinary();
-	m_recordingDuration = m_rawFrames.back().timestamp - m_rawFrames.front().timestamp;
-	m_interpolationInterval = m_recordingDuration / (m_rawFrames.size() - 1);
-	cout << "Recording duration: " << m_recordingDuration << endl;
-	cout << "Interpolation interval: " << m_interpolationInterval << endl;
+	loadFrameSequences();
+	m_activeSequence = &m_adjustedFrames;
+	m_interpolationInterval = m_interpolatedFrames[1].timestamp - m_interpolatedFrames[0].timestamp;
 	cout << "KSkeleton constructor end." << endl;
 }
 void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientations, const double& time)
@@ -54,14 +52,14 @@ void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientatio
 	for (uint i = 0; i < JointType_Count; i++) {
 		const Joint& jt = joints[i];
 		const JointOrientation& or = orientations[i];
-		m_joints[i].position = QVector3D(jt.Position.X, jt.Position.Y, jt.Position.Z);
-		m_joints[i].trackingState = jt.TrackingState;
-		m_joints[i].orientation = QQuaternion(or.Orientation.w, or.Orientation.x, or.Orientation.y, or.Orientation.z);
+		m_activeJoints[i].position = QVector3D(jt.Position.X, jt.Position.Y, jt.Position.Z);
+		m_activeJoints[i].trackingState = jt.TrackingState;
+		m_activeJoints[i].orientation = QQuaternion(or.Orientation.w, or.Orientation.x, or.Orientation.y, or.Orientation.z);
 	}
 
 	KFrame kframe;
 	kframe.timestamp = time;
-	kframe.joints = m_joints;
+	kframe.joints = m_activeJoints;
 	kframe.serial = addedFrames; // serial = size - 1
 
 	if (m_recordingOn) {
@@ -85,11 +83,8 @@ void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientatio
 		else {
 			cout << "Recording finished." << endl;
 			m_finalizingOn = false;
-			interpolateRecordedFrames();
-			filterRecordedFrames();
-			saveToBinary();
-			calculateLimbLengths();
-			printLimbLengths();
+			processFrames();
+			saveFrameSequences();
 			counter = 0;
 			addedFrames = 0;
 		}
@@ -105,8 +100,17 @@ void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientatio
 		//cout << "First frame index = " << m_firstFrameIndex << endl;
 	}
 }
-void KSkeleton::interpolateRecordedFrames()
+void KSkeleton::interpolateFrames()
 {
+	if (m_rawFrames.empty()) {
+		cout << "No recorded frames!" << endl;
+		return;
+	}
+	if (!m_interpolatedFrames.empty()) {
+		cout << "Recorded frames already interpolated!" << endl;
+		return;
+	}
+
 	cout << "Interpolating recorded frames." << endl;
 	m_recordingDuration = m_rawFrames.back().timestamp - m_rawFrames.front().timestamp;
 	m_interpolationInterval = m_recordingDuration / (m_rawFrames.size() - 1);
@@ -140,8 +144,18 @@ void KSkeleton::interpolateRecordedFrames()
 	}
 	index = 0;
 }
-void KSkeleton::filterRecordedFrames()
+void KSkeleton::filterFrames()
 {
+	if (m_interpolatedFrames.empty()) {
+		cout << "No interpolated frames!" << endl;
+		return;
+	}
+	if (!m_filteredFrames.empty()) {
+		cout << "Recorded frames already filtered!" << endl;
+		return;
+	}
+
+	cout << "Filtering recorded frames." << endl;
 	uint np = m_sgCoefficients25.size() - 1; // number of points used
 	for (uint i = m_framesDelayed; i < m_interpolatedFrames.size()- m_framesDelayed; i++) {
 		KFrame filteredFrame;
@@ -269,17 +283,6 @@ void KSkeleton::initJointHierarchy()
 		}
 	}
 }
-void KSkeleton::initLimbs()
-{
-	//m_limbs.push_back(KLimb("Neck", JointType_Neck, JointType_Head));
-	//m_limbs.push_back(KLimb("Arm Left", JointType_ShoulderLeft, JointType_ElbowLeft));
-	for (uint i = 0; i < JointType_Count; i++) {
-		uint p = m_nodes[i].parentId;
-		if (p != INVALID_JOINT_ID) {
-			m_limbs.push_back(KLimb("", i, p));
-		}
-	}
-}
 void KSkeleton::printInfo() const
 {
 	cout << endl;
@@ -306,10 +309,10 @@ void KSkeleton::printJointHierarchy() const
 void KSkeleton::printJoints() const
 {
 	for (uint i = 0; i < JointType_Count; i++) {
-		const KJoint &jt = m_joints[i];
+		const KJoint &jt = m_activeJoints[i];
 		cout << setw(15) << m_nodes[i].name.toStdString() << ": ";
-		cout << setw(15) << m_joints[i].position << " ";
-		cout << m_joints[i].getTrackingState().toStdString();
+		cout << setw(15) << m_activeJoints[i].position << " ";
+		cout << m_activeJoints[i].getTrackingState().toStdString();
 		cout << endl;
 	}
 	cout << endl;
@@ -320,70 +323,86 @@ uint KSkeleton::activeFrame() const
 }
 void KSkeleton::setActiveJoints(uint frameIndex)
 {
-	if (m_playbackFiltered) {
-		m_joints = m_filteredFrames[frameIndex].joints;
+	m_activeJoints = m_activeSequence->at(frameIndex).joints;
+}
+void KSkeleton::nextActiveSequence()
+{
+	if (m_activeSequence == &m_interpolatedFrames) {
+		m_activeSequence = &m_filteredFrames;
+		cout << "Active frame sequence: Filtered" << endl;
+	} else if (m_activeSequence == &m_filteredFrames) {
+		m_activeSequence = &m_adjustedFrames;
+		cout << "Active frame sequence: Adjusted" << endl;
+	}
+	else if (m_activeSequence == &m_adjustedFrames) {
+		m_activeSequence = &m_interpolatedFrames;
+		cout << "Active frame sequence: Interpolated" << endl;
 	}
 	else {
-		m_joints = m_interpolatedFrames[frameIndex].joints;
+		cout << "Unknown active frame sequence." << endl;
 	}
 }
-array<KJoint, JointType_Count>& KSkeleton::joints()
+array<KJoint, JointType_Count>& KSkeleton::activeJoints()
 {
-	return m_joints;
+	return m_activeJoints;
 }
-void KSkeleton::saveToBinary() const
+void KSkeleton::saveFrameSequences() const
 {
 	QFile qf("sequences.txt");
 	if (!qf.open(QIODevice::WriteOnly)) {
-		cout << "Cannot write to sequences.txt file." << endl;
+		cout << "Cannot write to sequences.txt binary file." << endl;
 		return;
 	}
 	else {
-		cout << "Saving to binary sequences.txt" << endl;
+		cout << "Saving to sequences.txt binary file" << endl;
 	}
 	QDataStream out(&qf);
 	//out.setVersion(QDataStream::Qt_5_9);
 	out << m_rawFrames;
 	out << m_interpolatedFrames;
 	out << m_filteredFrames;
+	out << m_adjustedFrames;
 	qf.close();
 
-	/*
+	//*
 	cout << "Raw sequence: " << endl;
-	printSequence(m_rawFrames);
+	printSequenceInfo(m_rawFrames);
 	cout << "Interpolated sequence: " << endl;
-	printSequence(m_interpolatedFrames);
+	printSequenceInfo(m_interpolatedFrames);
 	cout << "Filtered sequence: " << endl;
-	printSequence(m_filteredFrames);
+	printSequenceInfo(m_filteredFrames);
+	cout << "Adjusted sequence: " << endl;
+	printSequenceInfo(m_adjustedFrames);
 	//*/
 }
-void KSkeleton::loadFromBinary()
+void KSkeleton::loadFrameSequences()
 {
 	QFile qf("sequences.txt");
 	if (!qf.open(QIODevice::ReadOnly)) {
-		cout << "Cannot read from sequences.txt file." << endl;
+		cout << "Cannot read from sequences.txt binary file." << endl;
 		return;
 	}
 	else {
-		cout << "Loading from binary sequences.txt" << endl;
+		cout << "Loading from sequences.txt binary file." << endl;
 	}
 	QDataStream in(&qf);
 	//in.setVersion(QDataStream::Qt_5_9);
-	clearSequences();
+	//clearSequences(); // #? Is this needed
 	in >> m_rawFrames;
 	in >> m_interpolatedFrames;
 	in >> m_filteredFrames;
+	in >> m_adjustedFrames;
 	qf.close();
 
-	calculateLimbLengths();
-	printLimbLengths();
-	/*
+	//*
 	cout << "Raw sequence: " << endl;
-	printSequence(m_rawFrames);
+	printSequenceInfo(m_rawFrames);
 	cout << "Interpolated sequence: " << endl;
-	printSequence(m_interpolatedFrames);
+	printSequenceInfo(m_interpolatedFrames);
 	cout << "Filtered sequence: " << endl;
-	printSequence(m_filteredFrames);
+	printSequenceInfo(m_filteredFrames);
+	cout << "Adjusted sequence: " << endl;
+	printSequenceInfo(m_adjustedFrames);
 	//*/
 }
 void KSkeleton::clearSequences()
@@ -392,49 +411,112 @@ void KSkeleton::clearSequences()
 	m_rawFrames.clear();
 	m_interpolatedFrames.clear();
 	m_filteredFrames.clear();
+	m_adjustedFrames.clear();
 	m_activeFrame = 0;
 }
-uint KSkeleton::sequenceSize()
+void KSkeleton::printSequenceInfo(const QVector<KFrame>& seq) const
 {
-	return m_filteredFrames.size();
+	cout << "Size=" << seq.size() << " Duration=" << seq.back().timestamp - seq.front().timestamp << endl;
+	//for (uint i = 0; i < seq.size(); i++) seq[i].print();
 }
-void KSkeleton::printSequence(const QVector<KFrame>& seq) const
+void KSkeleton::initLimbs()
 {
-	cout << endl;
-	cout << "Printing sequence: Size=" << seq.size() << " Duration=" << seq.back().timestamp - seq.front().timestamp << endl;
-	for (uint i = 0; i < seq.size(); i++) seq[i].print();
-	cout << endl;
+	for (uint i = 0; i < JointType_Count; i++) {
+		uint p = m_nodes[i].parentId;
+		if (p != INVALID_JOINT_ID) {
+			m_limbs[i] = KLimb(m_nodes[p].name + " - " + m_nodes[i].name, i, p);
+		}
+		else {
+			m_limbs[i] = KLimb("LimblessRoot", i, i); // #? how to define not existant root limb
+		}
+	}
 }
-void KSkeleton::calculateLimbLengths()
+void KSkeleton::calculateLimbLengths(QVector<KFrame>& sequence)
 {
+	if (m_limbs.empty()) {
+		cout << "Limbs array is empty!" << endl;
+		return;
+	}
+	if (sequence.empty()) {
+		cout << "Frames sequence is empty!" << endl;
+		return;
+	}
+
+	for (uint l = 0; l < m_limbs.size(); l++) {
+		m_limbs[l].lengthMax = FLT_MIN;
+		m_limbs[l].lengthMin = FLT_MAX;
+	}
+
 	for (uint l = 0; l < m_limbs.size(); l++) {
 		float limbLengthSum = 0;
-		for (uint i = 0; i < m_filteredFrames.size(); i++) {
-			QVector3D& start = m_filteredFrames[i].joints[m_limbs[l].start].position;
-			QVector3D& end = m_filteredFrames[i].joints[m_limbs[l].end].position;
-			float distance = start.distanceToPoint(end);
-			if (distance > m_limbs[l].lengthMax) {
-				m_limbs[l].lengthMax = distance;
-				m_limbs[l].serialMax = m_filteredFrames[i].serial;
+		for (uint i = 0; i < sequence.size(); i++) {
+			QVector3D& start = sequence[i].joints[m_limbs[l].start].position;
+			QVector3D& end = sequence[i].joints[m_limbs[l].end].position;
+			float length = start.distanceToPoint(end);
+			if (length > m_limbs[l].lengthMax) {
+				m_limbs[l].lengthMax = length;
+				m_limbs[l].serialMax = sequence[i].serial;
 			}
-			if (distance < m_limbs[l].lengthMin) {
-				m_limbs[l].lengthMin = distance;
-				m_limbs[l].serialMin = m_filteredFrames[i].serial;
+			if (length < m_limbs[l].lengthMin) {
+				m_limbs[l].lengthMin = length;
+				m_limbs[l].serialMin = sequence[i].serial;
 			}
-			limbLengthSum += distance;
+			limbLengthSum += length;
 		}
-		m_limbs[l].lengthAverage = limbLengthSum / m_filteredFrames.size();
+		m_limbs[l].lengthAverage = limbLengthSum / sequence.size();
 	}
 }
 void KSkeleton::printLimbLengths() const
 {
+	cout << "Limbs: " << endl;
 	for (uint i = 0; i < m_limbs.size(); i++) {
-		cout << setw(5) << left << m_limbs[i].name.toStdString() << " ";
-		cout << setw(15) << left << m_nodes[m_limbs[i].start].name.toStdString() << " ";
-		cout << setw(15) << left << m_nodes[m_limbs[i].end].name.toStdString() << " ";
+		cout << setw(40) << left << m_limbs[i].name.toStdString() << " ";
+		//cout << setw(15) << left << m_nodes[m_limbs[i].start].name.toStdString() << " ";
+		//cout << setw(15) << left << m_nodes[m_limbs[i].end].name.toStdString() << " ";
 		cout << "Min=" << setw(10) << m_limbs[i].lengthMin << " (" << setw(5) << m_limbs[i].serialMin;
 		cout << ") Max=" << setw(10) << m_limbs[i].lengthMax << " (" << setw(5) << m_limbs[i].serialMax;
 		cout << ") Avg=" << setw(10) << m_limbs[i].lengthAverage << " ";
 		cout << "Gap=" << setw(10) << m_limbs[i].lengthMax - m_limbs[i].lengthMin << endl;
 	}
+}
+void KSkeleton::adjustFrames()
+{
+	if (m_filteredFrames.empty()) {
+		cout << "No filtered frames!" << endl;
+		return;
+	}
+	if (!m_adjustedFrames.empty()) {
+		cout << "Frames already adjusted!" << endl;
+		return;
+	}
+	calculateLimbLengths(m_filteredFrames);
+	printLimbLengths();
+
+	m_adjustedFrames = m_filteredFrames;
+	for (uint i = 0; i < m_filteredFrames.size(); i++) {
+		for (uint j = 0; j < m_limbs.size(); j++) {
+			if (m_nodes[j].parentId != INVALID_JOINT_ID) {
+				KLimb& limb = m_limbs[j];
+				QVector3D& start = m_filteredFrames[i].joints[limb.start].position;
+				QVector3D& end = m_filteredFrames[i].joints[limb.end].position;
+				float length = start.distanceToPoint(end);
+				float adjustmentFactor = limb.lengthAverage / length;
+				adjustLimbLength(i, j, adjustmentFactor);
+			}
+		}
+	}
+}
+void KSkeleton::adjustLimbLength(uint frameLocation, uint jointId, float factor)
+{
+	QVector3D newEnd = m_filteredFrames[frameLocation].joints[jointId].position * factor; // #? have to setup direction
+	for (uint i = 0; i < m_nodes[jointId].childrenId.size(); i++) {
+		adjustLimbLength(frameLocation, i, factor);
+	}
+}
+
+void KSkeleton::processFrames()
+{
+	interpolateFrames();
+	filterFrames();
+	adjustFrames();
 }

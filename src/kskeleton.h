@@ -136,40 +136,44 @@ class KSkeleton
 public:
 	KSkeleton();
 	void addFrame(const Joint* joints, const JointOrientation* orientations, const double& time);
-	void interpolateRecordedFrames();
-	void filterRecordedFrames();
+	void processFrames();
 	void initJointHierarchy();
 	void printInfo() const;
 	void printJointHierarchy() const;
 	void printJoints() const;
-	void printSequence(const QVector<KFrame>& seq) const;
+	void printSequenceInfo(const QVector<KFrame>& seq) const;
 
 	// files
 	bool saveToTrc();
-	void saveToBinary() const;
-	void loadFromBinary();
+	void saveFrameSequences() const;
+	void loadFrameSequences();
 
-	uint activeFrame() const;
 	void clearSequences();
 
 	bool m_playbackOn = false;
 	bool m_recordingOn = false;
 	bool m_finalizingOn = false;
 
-	bool m_playbackFiltered = true;
-	uint sequenceSize();
+	uint activeFrame() const;
+
+	array<KJoint, JointType_Count>& activeJoints();
 	void setActiveJoints(uint frameIndex);
-	array<KJoint, JointType_Count>& joints();
+
+	bool m_playbackFiltered = true;
+	QVector<KFrame>* m_activeSequence;
+	void nextActiveSequence();
 
 	double m_interpolationInterval;
 	double m_recordingDuration;
-
+	void calculateLimbLengths(QVector<KFrame>& sequence);
+	void printLimbLengths() const;
 private:
 	array<KNode, JointType_Count> m_nodes; // these define the kinect skeleton hierarchy
-	array<KJoint, JointType_Count> m_joints;
+	array<KJoint, JointType_Count> m_activeJoints;
 	QVector<KFrame> m_rawFrames;
 	QVector<KFrame> m_interpolatedFrames;
 	QVector<KFrame> m_filteredFrames;
+	QVector<KFrame> m_adjustedFrames;
 
 	uint m_activeFrame = 0;
 
@@ -189,10 +193,12 @@ private:
 	array<KFrame, m_framesDelayed> m_lastRawFrames;
 	uint m_firstFrameIndex = 0;
 
-	QVector<KLimb> m_limbs;
+	array<KLimb, JointType_Count> m_limbs;
 	void initLimbs();
-	void calculateLimbLengths();
-	void printLimbLengths() const;
+	void interpolateFrames();
+	void filterFrames();
+	void adjustFrames();
+	void adjustLimbLength(uint frameLocation, uint jointId, float factor); // recursively adjust joints
 };
 
 #endif

@@ -84,6 +84,7 @@ void MainWidget::initializeGL()
 	connect(&m_timer, SIGNAL(timeout()), this, SLOT(updateIndirect()));
 	m_modeOfOperation = Mode::CAPTURE;
 	m_playbackInterval = m_ksensor->skeleton()->m_interpolationInterval * 1000;
+	cout << "Playback interval: " << m_playbackInterval << endl;
 	m_timer.setInterval(m_playbackInterval);
 	m_timer.start();
 
@@ -95,7 +96,7 @@ void MainWidget::MySetup()
 	m_successfullyLoaded = loadSkinnedMesh("cmu_test");
 
 	// Init Pipeline
-	QVector3D spineBase = (m_ksensor->skeleton()->joints())[JointType_SpineBase].position;
+	QVector3D spineBase = (m_ksensor->skeleton()->activeJoints())[JointType_SpineBase].position;
 	//m_Cam->setOffset(spineBase);
 	m_Cam->printInfo();
 	m_Pipe->SetCamera(m_Cam->GetPos(), m_Cam->GetTarget(), m_Cam->GetUp());
@@ -147,6 +148,9 @@ void MainWidget::paintGL()
 		m_ksensor->skeleton()->setActiveJoints(m_activeFrame);
 		m_skinnedMesh->setActiveCoordinates(m_activeFrame);
 	}
+	else {
+		cout << "Unknown mode of operation." << endl;
+	}
 	m_time = m_skinnedMesh->timestamp(m_activeFrame);
 	QVector3D offset(0.f, 0.f, -2.f);
 
@@ -184,17 +188,17 @@ void MainWidget::paintGL()
 		drawSkeleton();
 		for (uint i = 0; i < JointType_Count; i++) {
 			QMatrix4x4 mat;
-			m_Tech->setSpecific(fromTranslation(m_ksensor->skeleton()->joints()[i].position));
+			m_Tech->setSpecific(fromTranslation(m_ksensor->skeleton()->activeJoints()[i].position));
 			drawCube();
 		}
-		QVector3D HipsMid = (m_ksensor->skeleton()->joints()[JointType_HipLeft].position + m_ksensor->skeleton()->joints()[JointType_HipRight].position) / 2;
+		QVector3D HipsMid = (m_ksensor->skeleton()->activeJoints()[JointType_HipLeft].position + m_ksensor->skeleton()->activeJoints()[JointType_HipRight].position) / 2;
 		m_Tech->setSpecific(fromTranslation(HipsMid));
 		drawCube();
 	}
 
 	// draw arrow
-	QVector3D leftHand = (m_ksensor->skeleton()->joints())[JointType_HandLeft].position;
-	QVector3D rightHand = (m_ksensor->skeleton()->joints())[JointType_HandRight].position;
+	QVector3D leftHand = (m_ksensor->skeleton()->activeJoints())[JointType_HandLeft].position;
+	QVector3D rightHand = (m_ksensor->skeleton()->activeJoints())[JointType_HandRight].position;
 	QVector3D barDirection = rightHand - leftHand;
 	m_barAngle = ToDegrees(atan2(barDirection.y(), sqrt(pow(barDirection.x(), 2) + pow(barDirection.z(), 2))));
 	
@@ -203,9 +207,9 @@ void MainWidget::paintGL()
 	m_barSpeed = (currentBarPosition - previousBarPosition) / m_playbackInterval * 1000;
 	previousBarPosition = currentBarPosition;
 
-	QVector3D hipRight = (m_ksensor->skeleton()->joints())[JointType_HipRight].position;
-	QVector3D kneeRight = (m_ksensor->skeleton()->joints())[JointType_KneeRight].position;
-	QVector3D ankleRight = (m_ksensor->skeleton()->joints())[JointType_AnkleRight].position;
+	QVector3D hipRight = (m_ksensor->skeleton()->activeJoints())[JointType_HipRight].position;
+	QVector3D kneeRight = (m_ksensor->skeleton()->activeJoints())[JointType_KneeRight].position;
+	QVector3D ankleRight = (m_ksensor->skeleton()->activeJoints())[JointType_AnkleRight].position;
 	QVector3D kneeToHip = (hipRight - kneeRight).normalized();
 	QVector3D kneeToAnkle = (ankleRight - kneeRight).normalized();
 	m_kneeAngle = 180.f-ToDegrees(acos(QVector3D::dotProduct(kneeToHip, kneeToAnkle)));
@@ -224,7 +228,7 @@ void MainWidget::paintGL()
 	drawArrow();
 
 	if (m_play && m_shouldUpdate) {
-		if (++m_activeFrame > m_ksensor->skeleton()->sequenceSize())  m_activeFrame = 0;
+		if (++m_activeFrame > m_ksensor->skeleton()->m_activeSequence->size())  m_activeFrame = 0;
 		m_shouldUpdate = false;
 	}
 
@@ -286,28 +290,31 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		cout << "Playback interval: " << m_playbackInterval << endl;
 		m_timer.setInterval(m_playbackInterval);
 		break;
+	case Qt::Key_A:
+		m_ksensor->skeleton()->processFrames();
+		break;
 	case Qt::Key_C:
-		if (!m_ksensor->open()) cout << "Could not open kinect sensor." << endl;
+		m_ksensor->skeleton()->calculateLimbLengths(*m_ksensor->skeleton()->m_activeSequence);
+		m_ksensor->skeleton()->printLimbLengths();
 		break;
 	case Qt::Key_D:
 		m_defaultPose = !m_defaultPose;
 		cout << "Default pause " << (m_defaultPose ? "ON" : "OFF") << endl;
 		break;
-	case Qt::Key_J:
-		m_ksensor->skeleton()->printJoints();
-		break;
-	case Qt::Key_F:
-		m_ksensor->skeleton()->m_playbackFiltered = !m_ksensor->skeleton()->m_playbackFiltered;
-		cout << "Filtered data playback " << (m_ksensor->skeleton()->m_playbackFiltered ? "ON" : "OFF") << endl;
-		break;
 	case Qt::Key_G:
 		if (!m_ksensor->getBodyFrame()) cout << "Could not update kinect data." << endl;
 		break;
+	case Qt::Key_J:
+		m_ksensor->skeleton()->printJoints();
+		break;
 	case Qt::Key_L:
-		m_ksensor->skeleton()->loadFromBinary();
+		m_ksensor->skeleton()->loadFrameSequences();
 		break;
 	case Qt::Key_M:
 		changeMode();
+		break;
+	case Qt::Key_N:
+		m_ksensor->skeleton()->nextActiveSequence();
 		break;
 	case Qt::Key_P:
 		if (m_play) {
@@ -326,7 +333,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		else cout << "Record does not work in this mode." << endl;
 		break;
 	case Qt::Key_S:
-		m_ksensor->skeleton()->saveToBinary();
+		m_ksensor->skeleton()->saveFrameSequences();
 		break;
 	case Qt::Key_Q:
 		m_skinnedMesh->printInfo();
@@ -502,7 +509,7 @@ void MainWidget::updateIndirect()
 }
 void MainWidget::setActiveFrame(uint index)
 {
-	m_activeFrame = (uint)(index / 100.f * m_ksensor->skeleton()->sequenceSize());
+	m_activeFrame = (uint)(index / 100.f * m_ksensor->skeleton()->m_activeSequence->size());
 }
 void MainWidget::changeMode()
 {
@@ -780,12 +787,12 @@ void MainWidget::loadSkeletonData()
 void MainWidget::drawSkeleton()
 {
 	for (uint i = 0; i < JointType_Count; i++) {
-		m_skeletonBoneBufferData[6 * i    ] = m_ksensor->skeleton()->joints()[i].position.x();
-		m_skeletonBoneBufferData[6 * i + 1] = m_ksensor->skeleton()->joints()[i].position.y();
-		m_skeletonBoneBufferData[6 * i + 2] = m_ksensor->skeleton()->joints()[i].position.z();
-		m_skeletonBoneBufferData[6 * i + 3] = (m_ksensor->skeleton()->joints()[i].trackingState == TrackingState_NotTracked ? 255.f : 0.f);
-		m_skeletonBoneBufferData[6 * i + 4] = (m_ksensor->skeleton()->joints()[i].trackingState == TrackingState_Tracked ? 255.f : 0.f);
-		m_skeletonBoneBufferData[6 * i + 5] = (m_ksensor->skeleton()->joints()[i].trackingState == TrackingState_Inferred ? 255.f : 0.f);
+		m_skeletonBoneBufferData[6 * i    ] = m_ksensor->skeleton()->activeJoints()[i].position.x();
+		m_skeletonBoneBufferData[6 * i + 1] = m_ksensor->skeleton()->activeJoints()[i].position.y();
+		m_skeletonBoneBufferData[6 * i + 2] = m_ksensor->skeleton()->activeJoints()[i].position.z();
+		m_skeletonBoneBufferData[6 * i + 3] = (m_ksensor->skeleton()->activeJoints()[i].trackingState == TrackingState_NotTracked ? 255.f : 0.f);
+		m_skeletonBoneBufferData[6 * i + 4] = (m_ksensor->skeleton()->activeJoints()[i].trackingState == TrackingState_Tracked ? 255.f : 0.f);
+		m_skeletonBoneBufferData[6 * i + 5] = (m_ksensor->skeleton()->activeJoints()[i].trackingState == TrackingState_Inferred ? 255.f : 0.f);
 	}
 	loadSkeletonData();
 
@@ -847,8 +854,8 @@ void MainWidget::drawCube()
 {
 	QVector3D color(0.f, 0.f, 0.f);
 	for (uint i = 0; i < JointType_Count; i++) {
-		if (m_ksensor->skeleton()->joints()[i].trackingState == TrackingState_NotTracked) color.setX(255.f);
-		else if (m_ksensor->skeleton()->joints()[i].trackingState == TrackingState_Tracked) color.setY(255.f);
+		if (m_ksensor->skeleton()->activeJoints()[i].trackingState == TrackingState_NotTracked) color.setX(255.f);
+		else if (m_ksensor->skeleton()->activeJoints()[i].trackingState == TrackingState_Tracked) color.setY(255.f);
 		else color.setZ(255.f);
 		for (uint j = 0; j < 8; j++) {
 			m_skeletonCubesColorData[3 * j + 0] = color.x();
