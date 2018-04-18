@@ -31,7 +31,6 @@ public:
 	void record();
 
 private:
-	KJoint m_Joints[JointType_Count];
 	IKinectSensor *m_sensor = nullptr;
 	IBodyFrameSource *m_source = nullptr;
 	IBodyFrameReader *m_reader = nullptr;
@@ -42,10 +41,6 @@ private:
 	// Frame counter and timestamps
 	bool m_lastAttemptFailed = false;
 	uint m_consecutiveFails = 0;
-
-	double m_relativeTimeOffset;
-	double m_lastRelativeTime;
-	double m_relativeTime;
 
 	// FPS counter
 	double m_fps = 0.;

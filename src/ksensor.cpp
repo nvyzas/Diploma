@@ -268,13 +268,11 @@ void KSensor::record()
 		// Reset record related variables
 		m_fps = 0;
 		m_skeleton.clearSequences();
-
 		m_skeleton.m_recordingOn = true;
 	} else {
 		cout << "Recording stopped." << endl;
 		m_skeleton.m_recordingOn = false;
 		m_skeleton.m_finalizingOn = true;
-		//m_skeleton.setTimeStep(m_averageInterval); // #?
 	}
 }
 KSkeleton* KSensor::skeleton()

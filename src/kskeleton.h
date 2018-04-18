@@ -48,6 +48,7 @@ struct KLimb
 
 	float lengthMin = FLT_MAX, lengthMax = FLT_MIN, lengthAverage = 0;
 	int serialMin = -1, serialMax = -1;
+	static float gapAverage;
 
 	KLimb()
 		:name("aLimb"),
@@ -165,7 +166,7 @@ public:
 
 	double m_interpolationInterval;
 	double m_recordingDuration;
-	void calculateLimbLengths(QVector<KFrame>& sequence);
+	void calculateLimbLengths(const QVector<KFrame>& sequence);
 	void printLimbLengths() const;
 private:
 	array<KNode, JointType_Count> m_nodes; // these define the kinect skeleton hierarchy
@@ -198,7 +199,7 @@ private:
 	void interpolateFrames();
 	void filterFrames();
 	void adjustFrames();
-	void adjustLimbLength(uint frameLocation, uint jointId, float factor); // recursively adjust joints
+	void adjustLimbLength(uint frameLocation, uint jointId, const QVector3D& direction, float factor); // recursively adjust joints
 };
 
 #endif
