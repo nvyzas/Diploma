@@ -492,15 +492,12 @@ void KSkeleton::adjustFrames()
 	}
 
 	m_adjustedFrames = m_filteredFrames;
-	for (uint i = 0; i < m_adjustedFrames.size(); i++) {
-		for (uint j = 0; j < m_limbs.size(); j++) {
+	for (uint j = 0; j < m_limbs.size(); j++) {
+		calculateLimbLengths(m_adjustedFrames);
+		printLimbLengths();
+		for (uint i = 0; i < m_adjustedFrames.size(); i++) {
 			//if (j != JointType_SpineMid) continue;
 			if (m_nodes[j].parentId != INVALID_JOINT_ID) {
-				calculateLimbLengths(m_adjustedFrames);
-				if (i == 0) {
-					cout << endl;
-					printLimbLengths();
-				}
 				KLimb& limb = m_limbs[j];
 				QVector3D& start = m_adjustedFrames[i].joints[limb.start].position;
 				QVector3D& end = m_adjustedFrames[i].joints[limb.end].position;
@@ -509,11 +506,12 @@ void KSkeleton::adjustFrames()
 				float adjustmentFactor = limb.lengthAverage / length;
 				if (i == 0) {
 					cout << "Limb=" << limb.name.toStdString();
+					cout << " Average=" << limb.lengthAverage;
 					cout << " CurrentLength=" << length;
-					cout << " Factor=" << adjustmentFactor << endl;
+					cout << " CurrentFactor=" << adjustmentFactor << endl;
 				}
 				adjustLimbLength(i, j, startToEnd, adjustmentFactor);
-				if (i == 0) cout << endl;
+				if (i == 0) cout << "\n" << endl;
 			}
 		}
 	}
@@ -525,8 +523,8 @@ void KSkeleton::adjustFrames()
 void KSkeleton::adjustLimbLength(uint frameIndex, uint jointId, const QVector3D& direction, float factor)
 {
 	uint parentId = m_nodes[jointId].parentId;
-	QVector3D& start = m_filteredFrames[frameIndex].joints[parentId].position;
-	QVector3D& end = m_filteredFrames[frameIndex].joints[jointId].position;
+	QVector3D& start = m_adjustedFrames[frameIndex].joints[parentId].position;
+	QVector3D& end = m_adjustedFrames[frameIndex].joints[jointId].position;
 	m_adjustedFrames[frameIndex].joints[jointId].position = end - (1-factor) * direction;
 	if (frameIndex == 0) {
 		cout << m_nodes[jointId].name.toStdString() << " ";
