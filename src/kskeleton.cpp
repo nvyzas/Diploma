@@ -154,7 +154,7 @@ void KSkeleton::filterFrames()
 		cout << "Filtered frames vector not empty!" << endl;
 		return;
 	}
-
+	
 	cout << "Filtering recorded frames." << endl;
 	uint np = m_sgCoefficients25.size() - 1; // number of points used
 	for (uint i = m_framesDelayed; i < m_interpolatedFrames.size()- m_framesDelayed; i++) {
@@ -285,7 +285,7 @@ bool KSkeleton::saveToTrc()
 		return false;
 	}
 
-	QVector<KFrame>& framesToWrite = m_filteredFrames;
+	QVector<KFrame>& framesToWrite = *m_activeSequence;
 
 	QTextStream out(&qf);
 	// Line 1
@@ -421,15 +421,38 @@ void KSkeleton::printSequenceInfo(const QVector<KFrame>& seq) const
 }
 void KSkeleton::initLimbs()
 {
-	for (uint i = 0; i < JointType_Count; i++) {
-		uint p = m_nodes[i].parentId;
-		if (p != INVALID_JOINT_ID) {
-			m_limbs[i] = KLimb(m_nodes[p].name + "->" + m_nodes[i].name, p, i);
-		}
-		else {
-			m_limbs[i] = KLimb("LimblessRoot", i, i); // #? how to define not existant root limb
-		}
-	}
+	//for (uint i = 0; i < JointType_Count; i++) {
+	//	uint p = m_nodes[i].parentId;
+	//	if (p != INVALID_JOINT_ID) {
+	//		m_limbs.push_back(KLimb(m_nodes[p].name + "->" + m_nodes[i].name, p, i));
+	//	}
+	//}
+
+	// Legs
+	m_limbs[JointType_HipLeft] = KLimb("SpineBase->HipLeft", JointType_SpineBase, JointType_HipLeft, JointType_HipRight);
+	m_limbs[JointType_HipRight] = KLimb("SpineBase->HipRight", JointType_SpineBase, JointType_HipRight, JointType_HipLeft);
+	m_limbs[JointType_KneeLeft] = KLimb("HipLeft->KneeLeft", JointType_HipLeft, JointType_KneeLeft, JointType_KneeRight);
+	m_limbs[JointType_KneeRight] = KLimb("HipRight->KneeRight", JointType_HipRight, JointType_KneeRight, JointType_KneeLeft);
+	m_limbs[JointType_AnkleLeft] = KLimb("KneeLeft->AnkleLeft", JointType_KneeLeft, JointType_AnkleLeft, JointType_AnkleRight);
+	m_limbs[JointType_AnkleRight] = KLimb("KneeRight->AnkleRight", JointType_KneeRight, JointType_AnkleRight, JointType_AnkleLeft);
+	m_limbs[JointType_FootLeft] = KLimb("AnkleLeft->FootLeft", JointType_AnkleLeft, JointType_FootLeft, JointType_FootRight);
+	m_limbs[JointType_FootRight] = KLimb("AnkleRight->FootRight", JointType_AnkleRight, JointType_FootRight, JointType_FootLeft);
+
+	// Arms
+	m_limbs[JointType_ShoulderRight] = KLimb("SpineShoulder->ShoulderRight", JointType_SpineShoulder, JointType_ShoulderRight, JointType_ShoulderLeft);
+	m_limbs[JointType_ShoulderLeft] = KLimb("SpineShoulder->ShoulderLeft", JointType_SpineShoulder, JointType_ShoulderLeft, JointType_ShoulderRight);
+	m_limbs[JointType_ElbowLeft] = KLimb("ShoulderLeft->ElbowLeft", JointType_ShoulderLeft, JointType_ElbowLeft, JointType_ElbowRight);
+	m_limbs[JointType_ElbowRight] = KLimb("ShoulderRight->ElbowRight", JointType_ShoulderRight, JointType_ElbowRight, JointType_ElbowLeft);
+	m_limbs[JointType_WristLeft] = KLimb("ElbowLeft->WristLeft", JointType_ElbowLeft, JointType_WristLeft, JointType_WristRight);
+	m_limbs[JointType_WristRight] = KLimb("ElbowRight->WristRight", JointType_ElbowRight, JointType_WristRight, JointType_WristLeft);
+	m_limbs[JointType_HandLeft] = KLimb("WristLeft->HandLeft", JointType_WristLeft, JointType_HandLeft, JointType_HandRight);
+	m_limbs[JointType_HandRight] = KLimb("WristRight->HandRight", JointType_WristRight, JointType_HandRight, JointType_HandLeft);
+
+	m_limbs[0] = KLimb("SpineBase->SpineShoulder", JointType_SpineBase, JointType_SpineShoulder);
+	//m_limbs[JointType_Count + 1] = KLimb("ShoulderLeft->ShoulderRight", JointType_ShoulderLeft, JointType_ShoulderRight);
+	m_limbs[JointType_Count + 2] = KLimb("WristRight->HandTipRight", JointType_WristRight, JointType_HandTipRight, JointType_Count + 3);
+	m_limbs[JointType_Count + 3] = KLimb("WristLeft->HandTipLeft", JointType_WristLeft, JointType_HandTipLeft, JointType_Count + 2);
+
 }
 
 float KLimb::gapAverage = 0.f;
@@ -446,6 +469,7 @@ void KSkeleton::calculateLimbLengths(const QVector<KFrame>& sequence)
 
 	KLimb::gapAverage = 0.f;
 	for (uint l = 0; l < m_limbs.size(); l++) {
+		if (m_limbs[l].end == INVALID_JOINT_ID) continue;
 		m_limbs[l].lengthMax = FLT_MIN;
 		m_limbs[l].lengthMin = FLT_MAX;
 		m_limbs[l].lengthAverage = 0;
@@ -471,12 +495,13 @@ void KSkeleton::calculateLimbLengths(const QVector<KFrame>& sequence)
 void KSkeleton::printLimbLengths() const
 {
 	cout << "Limb lengths: " << endl;
-	for (uint i = 0; i < m_limbs.size(); i++) {
-		cout << setw(40) << left << m_limbs[i].name.toStdString() << " ";
-		cout << "Min=" << setw(10) << m_limbs[i].lengthMin << " (" << setw(5) << m_limbs[i].serialMin;
-		cout << ") Max=" << setw(10) << m_limbs[i].lengthMax << " (" << setw(5) << m_limbs[i].serialMax;
-		cout << ") Avg=" << setw(10) << m_limbs[i].lengthAverage << " ";
-		cout << "Gap=" << setw(10) << m_limbs[i].lengthMax - m_limbs[i].lengthMin << endl;
+	for (uint l = 0; l < m_limbs.size(); l++) {
+		if (m_limbs[l].end == INVALID_JOINT_ID) continue;
+		cout << setw(40) << left << m_limbs[l].name.toStdString() << " ";
+		cout << "Min=" << setw(10) << m_limbs[l].lengthMin << " (" << setw(5) << m_limbs[l].serialMin;
+		cout << ") Max=" << setw(10) << m_limbs[l].lengthMax << " (" << setw(5) << m_limbs[l].serialMax;
+		cout << ") Avg=" << setw(10) << m_limbs[l].lengthAverage << " ";
+		cout << "Gap=" << setw(10) << m_limbs[l].lengthMax - m_limbs[l].lengthMin << endl;
 	}
 	cout << "GapAverage=" << KLimb::gapAverage << endl;
 }
@@ -492,27 +517,43 @@ void KSkeleton::adjustFrames()
 	}
 
 	m_adjustedFrames = m_filteredFrames;
-	for (uint j = 0; j < m_limbs.size(); j++) {
+	for (uint l = 0; l < m_limbs.size(); l++) {
+		if (m_limbs[l].end == INVALID_JOINT_ID) continue;
 		calculateLimbLengths(m_adjustedFrames);
 		printLimbLengths();
 		for (uint i = 0; i < m_adjustedFrames.size(); i++) {
-			//if (j != JointType_SpineMid) continue;
-			if (m_nodes[j].parentId != INVALID_JOINT_ID) {
-				KLimb& limb = m_limbs[j];
-				QVector3D& start = m_adjustedFrames[i].joints[limb.start].position;
-				QVector3D& end = m_adjustedFrames[i].joints[limb.end].position;
-				QVector3D startToEnd = end - start;
-				float length = start.distanceToPoint(end);
-				float adjustmentFactor = limb.lengthAverage / length;
-				if (i == 0) {
-					cout << "Limb=" << limb.name.toStdString();
-					cout << " Average=" << limb.lengthAverage;
-					cout << " CurrentLength=" << length;
-					cout << " CurrentFactor=" << adjustmentFactor << endl;
+			KLimb& limb = m_limbs[l];
+			QVector3D& start = m_adjustedFrames[i].joints[limb.start].position;
+			QVector3D& end = m_adjustedFrames[i].joints[limb.end].position;
+			QVector3D startToEnd = end - start;
+			float length = start.distanceToPoint(end);
+			float average = limb.lengthAverage;
+			if (limb.sibling != INVALID_JOINT_ID) {
+				if (limb.siblingsLengthAverage != 0) {
+					average = limb.siblingsLengthAverage;
 				}
-				adjustLimbLength(i, j, startToEnd, adjustmentFactor);
-				if (i == 0) cout << "\n" << endl;
+				else {
+					average = (limb.lengthAverage + m_limbs[limb.sibling].lengthAverage) / 2.f;
+					m_limbs[limb.sibling].siblingsLengthAverage = average;
+				}
 			}
+			float adjustmentFactor =  average / length;
+			if (i == 0) {
+				cout << "Limb=" << limb.name.toStdString();
+				cout << " Average=" << average;
+				cout << " CurrentLength=" << length;
+				cout << " CurrentFactor=" << adjustmentFactor << endl;
+			}
+			adjustLimbLength(i, limb.end, startToEnd, adjustmentFactor);
+			if (i == 0) cout << "\n" << endl;
+
+			//if (limb.sibling != INVALID_JOINT_ID){
+			//KLimb& siblingLimb = m_limbs[m_limbs[l].sibling];
+			//QVector3D& siblingStart = m_adjustedFrames[i].joints[siblingLimb.start].position;
+			//QVector3D& siblingEnd = m_adjustedFrames[i].joints[siblingLimb.end].position;
+			//QVector3D siblingStartToEnd = siblingEnd - siblingStart;
+			//adjustLimbLength(i, siblingLimb.end, siblingStartToEnd, adjustmentFactor);
+			//if (i == 0) cout << "\n" << endl;
 		}
 	}
 
@@ -522,13 +563,10 @@ void KSkeleton::adjustFrames()
 }
 void KSkeleton::adjustLimbLength(uint frameIndex, uint jointId, const QVector3D& direction, float factor)
 {
-	uint parentId = m_nodes[jointId].parentId;
-	QVector3D& start = m_adjustedFrames[frameIndex].joints[parentId].position;
 	QVector3D& end = m_adjustedFrames[frameIndex].joints[jointId].position;
 	m_adjustedFrames[frameIndex].joints[jointId].position = end - (1-factor) * direction;
 	if (frameIndex == 0) {
 		cout << m_nodes[jointId].name.toStdString() << " ";
-		//cout << " Parent=" << m_nodes[parentId].name.toStdString() << endl;
 	}
 	for (uint i = 0; i < m_nodes[jointId].childrenId.size(); i++) {
 		uint childId = m_nodes[jointId].childrenId[i];

@@ -40,29 +40,38 @@ struct KNode
 
 };
 
+// Represents the segment between 2 joints.
 struct KLimb
 {
 	QString name;
-	uint start;
-	uint end;
+	uint start;		// starting joint id
+	uint end;		// ending joint id 
+	uint sibling;	// sibling's ending joint id
 
 	float lengthMin = FLT_MAX, lengthMax = FLT_MIN, lengthAverage = 0;
 	int serialMin = -1, serialMax = -1;
 	static float gapAverage;
+	float siblingsLengthAverage = 0;
+	bool needsAdjustment = false;
 
 	KLimb()
-		:name("aLimb"),
+		:
+		name("aLimb"),
 		start(INVALID_JOINT_ID),
-		end(INVALID_JOINT_ID)
+		end(INVALID_JOINT_ID),
+		sibling(INVALID_JOINT_ID)
 	{
 	}
 
-	KLimb(QString _name, uint _start, uint _end)
-		:name(_name),
+	KLimb(QString _name, uint _start, uint _end, uint _sibling = INVALID_JOINT_ID)
+		:
+		name(_name),
 		start(_start),
-		end(_end)
+		end(_end),
+		sibling(_sibling)
 	{
 	}
+
 };
 
 struct KJoint
@@ -194,12 +203,13 @@ private:
 	array<KFrame, m_framesDelayed> m_lastRawFrames;
 	uint m_firstFrameIndex = 0;
 
-	array<KLimb, JointType_Count> m_limbs;
+	array<KLimb, 50> m_limbs;
 	void initLimbs();
 	void interpolateFrames();
 	void filterFrames();
 	void adjustFrames();
 	void adjustLimbLength(uint frameLocation, uint jointId, const QVector3D& direction, float factor); // recursively adjust joints
+	
 };
 
 #endif

@@ -683,16 +683,19 @@ bool SkinnedMesh::loadMotion(const QString& filename)
 	QTextStream in(&file);
 	QStringList list;
 
-	bool headerEnd = false;
 	uint lineCounter = 0;
 	do {
 		line = in.readLine();
 		lineCounter++;
 		list = line.split("\t");
+
 		bool ok;
 		list[0].toDouble(&ok);
 		if (!ok) {
-			cout << "Not ok (timestamp) -> " << lineCounter;
+			cout << "StringList element could not be converted to double.";
+			cout << " Element=" << list[0].toStdString();
+			cout << " Index=0";
+			cout << " Line=" << lineCounter << endl;
 			continue;
 		}
 		m_timestamps.push_back(list[0].toDouble(&ok));
@@ -700,8 +703,11 @@ bool SkinnedMesh::loadMotion(const QString& filename)
 		for (uint i = 0; i < m_numCoordinates; i++) {
 			coords[i] = list[i + 1].toFloat(&ok);
 			if (!ok) {
-				qDebug() << list[i + 1];
-				cout << "Not ok (coordinates) -> " << lineCounter;
+				cout << "StringList element could not be converted to double.";
+				cout << " Element=" << list[i+1].toStdString();
+				cout << " Index=0";
+				cout << " Line=" << lineCounter << endl;
+				continue;
 			}
 		}
 		m_modelCoordinateSequence.push_back(coords);
