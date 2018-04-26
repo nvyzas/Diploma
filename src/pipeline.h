@@ -4,7 +4,10 @@
 // Project
 #include "camera.h"
 
-struct PersProjInfo
+// Standard C/C++
+#include "iostream"
+
+struct PerspectiveProjectionInfo
 {
 	float fieldOfView;
 	float aspectRatio;
@@ -17,9 +20,13 @@ class Pipeline
 public:
     Pipeline()
     {
+		cout << "Pipeline class constructor start" << endl;
+
         m_worldScale      = QVector3D(1.0f, 1.0f, 1.0f);
         m_worldPosition   = QVector3D(0.0f, 0.0f, 0.0f);
         m_worldOrientation   = QQuaternion::fromEulerAngles(0.0f, 0.0f, 0.0f);
+
+		cout << "Pipeline class constructor end\n" << endl;
     }
 
     void setWorldScale(float s)
@@ -65,25 +72,20 @@ public:
 	{
 		m_worldOrientation = q;
 	}
-    void setPersProjInfo(const PersProjInfo& p)
+    void setPersProjInfo(const PerspectiveProjectionInfo& p)
     {
         m_persProjInfo = p;
     }
-    void SetCamera(const QVector3D& Pos, const QVector3D& Target, const QVector3D& Up)
+    void setCamera(const QVector3D& Pos, const QVector3D& Target, const QVector3D& Up)
     {
         m_camera.Pos = Pos;
         m_camera.Target = Target;
         m_camera.Up = Up;
     }
-    
-    void SetCamera(const Camera& camera)
-    {
-        SetCamera(camera.GetPos(), camera.GetTarget(), camera.GetUp());
-    }
 
     const QMatrix4x4& GetWVTrans();
-    const QMatrix4x4& GetVPTrans();
-    const QMatrix4x4& GetWVPTrans();
+    const QMatrix4x4& getVPtrans();
+    const QMatrix4x4& getWVPtrans();
     const QMatrix4x4& GetWorldTrans();
     const QMatrix4x4& GetViewTrans();
     const QMatrix4x4& GetProjTrans();
@@ -93,7 +95,7 @@ private:
 	QQuaternion m_worldOrientation;
 	QVector3D m_worldPosition;
 
-    PersProjInfo m_persProjInfo;
+    PerspectiveProjectionInfo m_persProjInfo;
 
     struct {
 		QVector3D Pos;

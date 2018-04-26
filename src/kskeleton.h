@@ -8,7 +8,7 @@
 #include <Kinect.h>
 
 // Qt
-class QFile;
+#include <QtCore/QFile>
 
 // Standard C/C++
 #include <array>
@@ -16,6 +16,7 @@ class QFile;
 #include <iostream>
 
 #define INVALID_JOINT_ID -1
+#define NUM_LIMBS JointType_Count+10
 
 struct KNode
 {
@@ -132,9 +133,12 @@ struct KFrame
 		}
 	}
 
-	void print() const
+	QString toString() const
 	{
-		cout << "Serial=" << setw(4) << serial << " Timestamp=" << setw(10) << timestamp << endl;
+		QString s;
+		QTextStream qts(&s);
+		qts << "Serial=" << qSetFieldWidth(4) << serial << " Timestamp=" << qSetFieldWidth(10) << timestamp << flush;
+		return s;
 	}
 };
 
@@ -145,17 +149,18 @@ class KSkeleton
 {
 public:
 	KSkeleton();
+	~KSkeleton();
 	void addFrame(const Joint* joints, const JointOrientation* orientations, const double& time);
 	void processFrames();
 	void initJointHierarchy();
 	void printInfo() const;
 	void printJointHierarchy() const;
-	void printJoints() const;
-	void printSequenceInfo(const QVector<KFrame>& seq) const;
+	void printActiveJoints() const;
+	void printSequenceToLog(const QVector<KFrame>& seq);
 
 	// files
 	bool saveToTrc();
-	void saveFrameSequences() const;
+	void saveFrameSequences();
 	void loadFrameSequences();
 
 	void clearSequences();
@@ -177,39 +182,43 @@ public:
 	double m_recordingDuration;
 	void calculateLimbLengths(const QVector<KFrame>& sequence);
 	void printLimbLengths() const;
+	const array<KLimb, NUM_LIMBS>& limbs() const;
+
 private:
 	array<KNode, JointType_Count> m_nodes; // these define the kinect skeleton hierarchy
 	array<KJoint, JointType_Count> m_activeJoints;
-	QVector<KFrame> m_rawFrames;
-	QVector<KFrame> m_interpolatedFrames;
-	QVector<KFrame> m_filteredFrames;
-	QVector<KFrame> m_adjustedFrames;
+	QVector<KFrame> m_rawSequence;
+	QVector<KFrame> m_interpolatedSequence;
+	QVector<KFrame> m_filteredSequence;
+	QVector<KFrame> m_adjustedSequence;
+	QFile m_sequencesLog;
+	QTextStream m_forSequencesLog;
 
 	uint m_activeFrame = 0;
 
 	// trc file
 	QFile *m_trcFile;
-	QString m_markerData;
 	
 	uint m_activeJoint = JointType_SpineBase;
 
 	// Savitzky-Golay filter
 
-	// Coefficients (Symmetric), Cubic order, 1st element = 1/commonFactor
-	// #? should make them static?
+	// Coefficients (Symmetric), Cubic order, 1st element = 1/commonFactor #? should make them static?
 	static const uint m_framesDelayed = 12;
 	const array<float, 2*m_framesDelayed+2> m_sgCoefficients25 = { -253, -138, -33, 62, 147, 222, 287, 343, 387, 422, 447, 462, 467, 462, 447, 422, 387, 343, 278, 222, 147, 62, -33, -138, -253, 5175 };
 	array<KFrame, m_framesDelayed> m_firstRawFrames;
 	array<KFrame, m_framesDelayed> m_lastRawFrames;
 	uint m_firstFrameIndex = 0;
 
-	array<KLimb, 50> m_limbs;
+	array<KLimb, NUM_LIMBS> m_limbs;
 	void initLimbs();
 	void interpolateFrames();
 	void filterFrames();
 	void adjustFrames();
 	void adjustLimbLength(uint frameLocation, uint jointId, const QVector3D& direction, float factor); // recursively adjust joints
-	
+
+
+
 };
 
 #endif

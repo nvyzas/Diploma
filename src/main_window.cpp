@@ -20,13 +20,15 @@
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
-	cout << "MainWindow constructor start." << endl;
+	cout << "MainWindow class constructor start." << endl;
+	
 	ui = new Ui::MainWindow;
 	ui->setupUi(this);
 	setupObjects();
 	setupConnections();
 	//resize(QDesktopWidget().availableGeometry(this).size()*0.5);
-	cout << "MainWindow constructor end." << endl;
+	
+	cout << "MainWindow class constructor end.\n" << endl;
 }
 MainWindow::~MainWindow()
 {
@@ -178,8 +180,8 @@ void MainWindow::setupObjects()
 	ui->openGLWidget->setKSensor(m_ksensor);
 
 	ui->checkBox_axes->setChecked(ui->openGLWidget->renderAxes());
-	ui->checkBox_model->setChecked(ui->openGLWidget->renderModel());
-	ui->checkBox_skeleton->setChecked(ui->openGLWidget->renderSkeleton());
+	ui->checkBox_model->setChecked(ui->openGLWidget->renderSkinnedMesh());
+	ui->checkBox_skeleton->setChecked(ui->openGLWidget->renderKinectSkeleton());
 
 	QMenu *menuInfo = new QMenu(ui->pushButton_info);
 	menuInfo->addAction("Bone Transforms", this, SLOT(printActiveBoneTransforms()));

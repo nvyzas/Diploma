@@ -123,7 +123,7 @@ void Technique::enable()
 {
     glUseProgram(m_shaderProg);
 }
-bool Technique::InitDefault()
+bool Technique::initDefault()
 {
 	if (!Technique::Init()) {
 		printf("Cannot initialize default technique\n");

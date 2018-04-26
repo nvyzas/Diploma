@@ -22,7 +22,7 @@ public:
 
     void enable();
 
-	bool InitDefault();
+	bool initDefault();
 	void setMVP(const QMatrix4x4& MVP);
 	void setSpecific(const QMatrix4x4& MVP);
 

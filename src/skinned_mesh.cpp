@@ -11,16 +11,63 @@
 #include <sstream>
 #include <iomanip>
 
+void VertexBoneData::AddBoneData(uint BoneID, float Weight)
+{
+	for (uint i = 0; i < ARRAY_SIZE_IN_ELEMENTS(IDs); i++) {
+		if (Weights[i] == 0.0) {
+			IDs[i] = BoneID;
+			Weights[i] = Weight;
+			return;
+		}
+	}
+	cout << "Should never get here!" << endl;
+	system("PAUSE");
+	// should never get here - more bones than we have space for
+	assert(0);
+}
+void VertexBoneData::AdjustBoneData()
+{
+	float max = 0.0f;
+	for (uint i = 0; i < ARRAY_SIZE_IN_ELEMENTS(IDs); i++) {
+		if (Weights[i] > max) max = Weights[i];
+		OldWeights[i] = Weights[i]; // backup weights
+	}
+
+	for (uint i = 0; i < ARRAY_SIZE_IN_ELEMENTS(IDs); i++) {
+		if (Weights[i] >= max) {
+			Weights[i] = 1;
+			for (uint j = 0; j < ARRAY_SIZE_IN_ELEMENTS(IDs); j++)
+			{
+				if (j != i) Weights[j] = 0.0f;
+			}
+			return;
+		}
+	}
+	cout << "Should never get here!" << endl;
+	system("PAUSE");
+	// should never get here
+	assert(0);
+}
+void VertexBoneData::RestoreBoneData()
+{
+	for (uint i = 0; i < ARRAY_SIZE_IN_ELEMENTS(IDs); i++)
+	{
+		Weights[i] = OldWeights[i];
+	}
+}
+
 SkinnedMesh::SkinnedMesh()
 {
 	cout << "SkinnedMesh constructor start." << endl;
+	
 	clear();
-	m_SuccessfullyLoaded = false;
+	m_successfullyLoaded = false;
 	m_pScene = NULL;
 	loadMesh("cmu");
 	printInfo();
-	loadMotion("motion_1.mot");
-	cout << "SkinnedMesh constructor end." << endl;
+	loadMotion("motion.mot");
+	
+	cout << "SkinnedMesh constructor end.\n" << endl;
 }
 SkinnedMesh::~SkinnedMesh()
 {
@@ -42,21 +89,21 @@ bool SkinnedMesh::loadMesh(const string& basename)
 {
 	clear();
 
-    bool Ret = false;
+    bool ret = false;
 	string filename = "models/" + basename + ".dae";
     m_pScene = m_Importer.ReadFile(filename.c_str(), ASSIMP_LOAD_FLAGS);    
     if (m_pScene) {  
-        Ret = initFromScene(m_pScene, filename);
+        ret = initFromScene(m_pScene, filename);
     }
     else {
         printf("Error parsing '%s': '%s'\n", filename.c_str(), m_Importer.GetErrorString());
     }
 	
-	m_SuccessfullyLoaded = Ret;
-	if (m_SuccessfullyLoaded) {
+	m_successfullyLoaded = ret;
+	if (m_successfullyLoaded) {
 		cout << "Loaded SkinnedMesh from " << filename << endl;
 	}
-    return Ret;
+    return ret;
 }
 bool SkinnedMesh::initFromScene(const aiScene* pScene, const string& Filename)
 {  
@@ -90,7 +137,6 @@ bool SkinnedMesh::initFromScene(const aiScene* pScene, const string& Filename)
 	}
 
 	m_boneTransformInfo.resize(m_numBones);
-	m_controlVecs.resize(m_numBones);
 	m_controlQuats.resize(m_numBones);
 	m_controlMats.resize(m_numBones);
 	m_correctionVecs.resize(m_numBones);
@@ -208,50 +254,6 @@ bool SkinnedMesh::initImages(const aiScene* pScene, const string& Filename)
 	}
 	return ret;
 }
-void VertexBoneData::AddBoneData(uint BoneID, float Weight)
-{
-	for (uint i = 0; i < ARRAY_SIZE_IN_ELEMENTS(IDs); i++) {
-		if (Weights[i] == 0.0) {
-			IDs[i] = BoneID;
-			Weights[i] = Weight;
-			return;
-		}
-	}
-	cout << "Should never get here!" << endl;
-	system("PAUSE");
-	// should never get here - more bones than we have space for
-	assert(0);
-}
-void VertexBoneData::AdjustBoneData()
-{
-	float max = 0.0f;
-	for (uint i = 0; i < ARRAY_SIZE_IN_ELEMENTS(IDs); i++) {
-		if (Weights[i] > max) max = Weights[i];
-		OldWeights[i] = Weights[i]; // backup weights
-	}
-
-	for (uint i = 0; i < ARRAY_SIZE_IN_ELEMENTS(IDs); i++) {
-		if (Weights[i] >= max) {
-			Weights[i] = 1;
-			for (uint j = 0; j < ARRAY_SIZE_IN_ELEMENTS(IDs); j++)
-			{
-				if (j != i) Weights[j] = 0.0f;
-			}
-			return;
-		}	
-	}
-	cout << "Should never get here!" << endl;
-	system("PAUSE");
-	// should never get here
-	assert(0);
-}
-void VertexBoneData::RestoreBoneData()
-{
-	for (uint i = 0; i < ARRAY_SIZE_IN_ELEMENTS(IDs); i++)
-	{
-		Weights[i] = OldWeights[i];
-	}
-}
 void SkinnedMesh::printInfo() const
 {
 	if (m_pScene) {
@@ -334,17 +336,56 @@ void SkinnedMesh::initCorrectedMatrices()
 		m_boneInfo[i].corrected =  m_boneInfo[i].local * m_correctionMats[i]; // #? maybe opposite order of multiplication
 	}
 }
+void SkinnedMesh::calculateBoneLength(const aiNode* pNode)
+{
+	QString nodeName(pNode->mName.data);
+	const auto& it = m_boneMap.find(nodeName.toStdString());
+	if (it != m_boneMap.end()) {
+		//m_boneInfo[it->second].length = m_boneInfo[it->second].endPosition;
+	}
+
+	for (uint i = 0; i < pNode->mNumChildren; i++) {
+		calculateBoneLength(pNode->mChildren[i]);
+	}
+}
+void SkinnedMesh::initCorrectionVecs(const array<KLimb, NUM_LIMBS>& limbs)
+{
+	// init all as unit vectors
+	for (auto& p : m_boneMap) {
+		m_correctionVecs[p.second] = QVector3D(1.f, 1.f, 1.f);
+	}
+	uint i, j;
+	float meshLength, kinectLength, factor;
+
+	i = m_boneMap.find("Hips")->second;
+	j = m_boneMap.find("LowerBack")->second;
+	meshLength = m_boneInfo[i].endPosition.distanceToPoint(m_boneInfo[j].endPosition);
+	kinectLength = limbs[JointType_SpineBase].lengthAverage;
+
+	factor =  kinectLength / meshLength;
+	cout << "MeshLength=" << meshLength << " KinectLength=" << kinectLength << " Factor=" << factor << endl;
+
+	m_correctionVecs[m_boneMap.find("LowerBack")->second] = QVector3D(1.f, 1.f, 1.f);
+	m_correctionVecs[m_boneMap.find("RightArm")->second] = QVector3D(1.f, 1.f, 1.f);
+	for (int i = 0; i < m_numBones; i++) {
+		m_boneInfo[i].scaling.scale(m_correctionVecs[i]);
+	}
+}
+QVector3D SkinnedMesh::getOffset()
+{
+	float x = m_coordinateSequence[0][pelvis_tx];
+	float y = m_coordinateSequence[0][pelvis_ty];
+	float z = m_coordinateSequence[0][pelvis_tz];
+	return QVector3D(x, y, z);
+}
 void SkinnedMesh::initCorrectionQuats() // OpenSim crash if calling fromEulerAngles from instance
 {
-	QQuaternion q; // identity quaternion
+	// init all as identity quaternions
 	for (auto& p: m_boneMap) {
-		m_correctionQuats[p.second] = q;
+		m_correctionQuats[p.second] = QQuaternion();
 	}
+
 	// left side
-	// try 1
-	//m_correctionQuats[findBoneId("LeftArm")]      = QQuaternion::fromEulerAngles(0, 0, -25);
-	//m_correctionQuats[findBoneId("LeftForeArm")]  = QQuaternion::fromEulerAngles(0, 100, -50);
-	// try 2
 	m_correctionQuats[findBoneId("LeftArm")]	    = QQuaternion::fromEulerAngles(0, 0, -40); // #? z=-35
 	m_correctionQuats[findBoneId("LeftForeArm")]    = QQuaternion::fromEulerAngles(0, -90, 50);
 	m_correctionQuats[findBoneId("LeftUpLeg")]		= QQuaternion::fromEulerAngles(0, 0, 5);
@@ -353,18 +394,18 @@ void SkinnedMesh::initCorrectionQuats() // OpenSim crash if calling fromEulerAng
 	m_correctionQuats[findBoneId("RightForeArm")]	= QQuaternion::fromEulerAngles(0, 90, -50);
 	m_correctionQuats[findBoneId("RightUpLeg")]		= QQuaternion::fromEulerAngles(0, 0, -5);
 }
-QQuaternion SkinnedMesh::worldRotation()
+QQuaternion SkinnedMesh::pelvisRotation()
 {
 	QQuaternion q;
-	q = QQuaternion::fromEulerAngles(0, 0, m_modelCoordinates[pelvis_tilt]);
-	q *= QQuaternion::fromEulerAngles(m_modelCoordinates[pelvis_list], 0, 0);
-	q *= QQuaternion::fromEulerAngles(0, m_modelCoordinates[pelvis_rotation], 0);
+	q = QQuaternion::fromEulerAngles(0, 0, m_activeCoordinates[pelvis_tilt]);
+	q *= QQuaternion::fromEulerAngles(m_activeCoordinates[pelvis_list], 0, 0);
+	q *= QQuaternion::fromEulerAngles(0, m_activeCoordinates[pelvis_rotation], 0);
 	q *= QQuaternion::fromEulerAngles(0, 90, 0);
 	return q;
 }
-QVector3D SkinnedMesh::worldPosition()
+QVector3D SkinnedMesh::pelvisPosition()
 {
-	return QVector3D(m_modelCoordinates[pelvis_tx], m_modelCoordinates[pelvis_ty], m_modelCoordinates[pelvis_tz]);
+	return QVector3D(m_activeCoordinates[pelvis_tx], m_activeCoordinates[pelvis_ty], m_activeCoordinates[pelvis_tz]);
 }
 double SkinnedMesh::timestamp(uint index)
 {
@@ -373,112 +414,109 @@ double SkinnedMesh::timestamp(uint index)
 void SkinnedMesh::initCoordinates()
 {
 	// core
-	m_modelCoordinates[pelvis_tilt]		 = 0.f;
-	m_modelCoordinates[pelvis_list]		 = 0.f;
-	m_modelCoordinates[pelvis_rotation]  = 0.f;
-	m_modelCoordinates[pelvis_tx]		 = 0.f;
-	m_modelCoordinates[pelvis_ty]		 = 0.f;
-	m_modelCoordinates[pelvis_tz]		 = 0.f;
-
-	m_modelCoordinates[lumbar_extension] = 0.f; // 
-	m_modelCoordinates[lumbar_bending]	 = 0.f; // 
-	m_modelCoordinates[lumbar_rotation]  = 0.f; // 
+	m_activeCoordinates[pelvis_tilt]		 = 0.f;
+	m_activeCoordinates[pelvis_list]		 = 0.f;
+	m_activeCoordinates[pelvis_rotation]  = 0.f;
+	m_activeCoordinates[pelvis_tx]		 = 0.f;
+	m_activeCoordinates[pelvis_ty]		 = 0.f;
+	m_activeCoordinates[pelvis_tz]		 = 0.f;
+	m_activeCoordinates[lumbar_extension] = 0.f; // 
+	m_activeCoordinates[lumbar_bending]	 = 0.f; // 
+	m_activeCoordinates[lumbar_rotation]  = 0.f; // 
 	// left
-	m_modelCoordinates[hip_flexion_l]    = 0.f; //  LHipJoint -y (worse)
-	m_modelCoordinates[hip_adduction_l]  = 0.f; //  LHipJoint x (worse)
-	m_modelCoordinates[hip_rotation_l]   = 0.f; //  LHipJoint z (worse)
-	m_modelCoordinates[knee_angle_l]     = 0.f;
-	m_modelCoordinates[arm_flex_l]       = 0.f; // 
-	m_modelCoordinates[arm_add_l]        = 0.f; // 
-	m_modelCoordinates[arm_rot_l]        = 0.f; // 
-	m_modelCoordinates[elbow_flex_l]	 = 0.f;
-	m_modelCoordinates[pro_sup_l]		 = 0.f;
-	m_modelCoordinates[subtalar_angle_l] = 0.f; // #? not used
-	m_modelCoordinates[wrist_flex_l]	 = 0.f;
-	m_modelCoordinates[wrist_dev_l]		 = 0.f;
+	m_activeCoordinates[hip_flexion_l]    = 0.f; //  LHipJoint -y (worse)
+	m_activeCoordinates[hip_adduction_l]  = 0.f; //  LHipJoint x (worse)
+	m_activeCoordinates[hip_rotation_l]   = 0.f; //  LHipJoint z (worse)
+	m_activeCoordinates[knee_angle_l]     = 0.f;
+	m_activeCoordinates[arm_flex_l]       = 0.f; // 
+	m_activeCoordinates[arm_add_l]        = 0.f; // 
+	m_activeCoordinates[arm_rot_l]        = 0.f; // 
+	m_activeCoordinates[elbow_flex_l]	 = 0.f;
+	m_activeCoordinates[pro_sup_l]		 = 0.f;
+	m_activeCoordinates[subtalar_angle_l] = 0.f; // #? not used
+	m_activeCoordinates[wrist_flex_l]	 = 0.f;
+	m_activeCoordinates[wrist_dev_l]		 = 0.f;
 	// right
-	m_modelCoordinates[hip_flexion_r]    = 0.f; //  LHipJoint -y (worse)
-	m_modelCoordinates[hip_adduction_r]  = 0.f; //  LHipJoint x (worse)
-	m_modelCoordinates[hip_rotation_r]   = 0.f; //  LHipJoint z (worse)
-	m_modelCoordinates[knee_angle_r]     = 0.f;
-	m_modelCoordinates[arm_flex_r]       = 0.f; 
-	m_modelCoordinates[arm_add_r]        = 0.f;  
-	m_modelCoordinates[arm_rot_r]        = 0.f; 
-	m_modelCoordinates[elbow_flex_r]     = 0.f;
-	m_modelCoordinates[pro_sup_r]        = 0.f;
-	m_modelCoordinates[subtalar_angle_r] = 0.f; // #? not used
-	m_modelCoordinates[wrist_flex_r]	 = 0.f;
-	m_modelCoordinates[wrist_dev_r]		 = 0.f;
+	m_activeCoordinates[hip_flexion_r]    = 0.f; //  LHipJoint -y (worse)
+	m_activeCoordinates[hip_adduction_r]  = 0.f; //  LHipJoint x (worse)
+	m_activeCoordinates[hip_rotation_r]   = 0.f; //  LHipJoint z (worse)
+	m_activeCoordinates[knee_angle_r]     = 0.f;
+	m_activeCoordinates[arm_flex_r]       = 0.f; 
+	m_activeCoordinates[arm_add_r]        = 0.f;  
+	m_activeCoordinates[arm_rot_r]        = 0.f; 
+	m_activeCoordinates[elbow_flex_r]     = 0.f;
+	m_activeCoordinates[pro_sup_r]        = 0.f;
+	m_activeCoordinates[subtalar_angle_r] = 0.f; // #? not used
+	m_activeCoordinates[wrist_flex_r]	 = 0.f;
+	m_activeCoordinates[wrist_dev_r]		 = 0.f;
 }
 void SkinnedMesh::setActiveCoordinates(uint frameIndex)
 {
-	m_modelCoordinates = m_modelCoordinateSequence[frameIndex];
+	m_activeCoordinates = m_coordinateSequence[frameIndex];
 }
 uint SkinnedMesh::sequenceSize()
 {
-	return m_modelCoordinateSequence.size();
+	return m_coordinateSequence.size();
 }
-void SkinnedMesh::updateCoordinates()
-{
-}
+// #? make it a container rather than a function
 QQuaternion SkinnedMesh::boneOrientation(uint boneIndex)
 {
 	QQuaternion q;
 	// core
 	if (boneIndex == m_boneMap.find("LowerBack")->second) {
-		q = QQuaternion::fromEulerAngles(-m_modelCoordinates[lumbar_extension], 0, 0);
-		q *= QQuaternion::fromEulerAngles(0, 0, m_modelCoordinates[lumbar_bending]);
-		q *= QQuaternion::fromEulerAngles(0, m_modelCoordinates[lumbar_rotation], 0);
+		q = QQuaternion::fromEulerAngles(-m_activeCoordinates[lumbar_extension], 0, 0);
+		q *= QQuaternion::fromEulerAngles(0, 0, m_activeCoordinates[lumbar_bending]);
+		q *= QQuaternion::fromEulerAngles(0, m_activeCoordinates[lumbar_rotation], 0);
 	}
 	// left side
 	else if (boneIndex == m_boneMap.find("LeftUpLeg")->second) {
-		q = QQuaternion::fromEulerAngles(-m_modelCoordinates[hip_flexion_l], 0, 0);
-		q *= QQuaternion::fromEulerAngles(0, 0, m_modelCoordinates[hip_adduction_l]);
-		q *= QQuaternion::fromEulerAngles(0, m_modelCoordinates[hip_rotation_l], 0);
+		q = QQuaternion::fromEulerAngles(-m_activeCoordinates[hip_flexion_l], 0, 0);
+		q *= QQuaternion::fromEulerAngles(0, 0, m_activeCoordinates[hip_adduction_l]);
+		q *= QQuaternion::fromEulerAngles(0, m_activeCoordinates[hip_rotation_l], 0);
 	}
 	else if (boneIndex == m_boneMap.find("LeftLeg")->second) {
-		q = QQuaternion::fromEulerAngles(-m_modelCoordinates[knee_angle_l], 0, 0);
+		q = QQuaternion::fromEulerAngles(-m_activeCoordinates[knee_angle_l], 0, 0);
 	}
 	else if (boneIndex == m_boneMap.find("LeftFoot")->second) {
-		q = QQuaternion::fromEulerAngles(0, 0, m_modelCoordinates[subtalar_angle_l]);
+		q = QQuaternion::fromEulerAngles(0, 0, m_activeCoordinates[subtalar_angle_l]);
 	}
 	else if (boneIndex == m_boneMap.find("LeftArm")->second) {
-		q = QQuaternion::fromEulerAngles(m_modelCoordinates[arm_flex_l], 0, 0);
-		q *= QQuaternion::fromEulerAngles(0, 0, -m_modelCoordinates[arm_add_l]);
-		q *= QQuaternion::fromEulerAngles(0, m_modelCoordinates[arm_rot_l], 0);
+		q = QQuaternion::fromEulerAngles(m_activeCoordinates[arm_flex_l], 0, 0);
+		q *= QQuaternion::fromEulerAngles(0, 0, -m_activeCoordinates[arm_add_l]);
+		q *= QQuaternion::fromEulerAngles(0, m_activeCoordinates[arm_rot_l], 0);
 	}
 	else if (boneIndex == m_boneMap.find("LeftForeArm")->second) {
-		q = QQuaternion::fromEulerAngles(0, 0, -m_modelCoordinates[elbow_flex_l]);
-		q *= QQuaternion::fromEulerAngles(0, m_modelCoordinates[pro_sup_l], 0);
+		q = QQuaternion::fromEulerAngles(0, 0, -m_activeCoordinates[elbow_flex_l]);
+		q *= QQuaternion::fromEulerAngles(0, m_activeCoordinates[pro_sup_l], 0);
 	}
 	else if (boneIndex == m_boneMap.find("LeftHand")->second) {
-		q = QQuaternion::fromEulerAngles(0, 0, -m_modelCoordinates[wrist_flex_l]);
-		q *= QQuaternion::fromEulerAngles(-m_modelCoordinates[wrist_dev_l], 0, 0);
+		q = QQuaternion::fromEulerAngles(0, 0, -m_activeCoordinates[wrist_flex_l]);
+		q *= QQuaternion::fromEulerAngles(-m_activeCoordinates[wrist_dev_l], 0, 0);
 	}
 	// right side
 	else if (boneIndex == m_boneMap.find("RightUpLeg")->second) {
-		q = QQuaternion::fromEulerAngles(-m_modelCoordinates[hip_flexion_r], 0, 0);
-		q *= QQuaternion::fromEulerAngles(0, 0, -m_modelCoordinates[hip_adduction_r]);
-		q *= QQuaternion::fromEulerAngles(0, -m_modelCoordinates[hip_rotation_r], 0);
+		q = QQuaternion::fromEulerAngles(-m_activeCoordinates[hip_flexion_r], 0, 0);
+		q *= QQuaternion::fromEulerAngles(0, 0, -m_activeCoordinates[hip_adduction_r]);
+		q *= QQuaternion::fromEulerAngles(0, -m_activeCoordinates[hip_rotation_r], 0);
 	}
 	else if (boneIndex == m_boneMap.find("RightLeg")->second) {
-		q = QQuaternion::fromEulerAngles(-m_modelCoordinates[knee_angle_r], 0, 0);
+		q = QQuaternion::fromEulerAngles(-m_activeCoordinates[knee_angle_r], 0, 0);
 	}
 	else if (boneIndex == m_boneMap.find("RightFoot")->second) {
-		q = QQuaternion::fromEulerAngles(0, 0, m_modelCoordinates[subtalar_angle_r]);
+		q = QQuaternion::fromEulerAngles(0, 0, m_activeCoordinates[subtalar_angle_r]);
 	}
 	else if (boneIndex == m_boneMap.find("RightArm")->second) {
-		q = QQuaternion::fromEulerAngles(m_modelCoordinates[arm_flex_r], 0, 0);
-		q *= QQuaternion::fromEulerAngles(0, 0, m_modelCoordinates[arm_add_r]);
-		q *= QQuaternion::fromEulerAngles(0, -m_modelCoordinates[arm_rot_r], 0);
+		q = QQuaternion::fromEulerAngles(m_activeCoordinates[arm_flex_r], 0, 0);
+		q *= QQuaternion::fromEulerAngles(0, 0, m_activeCoordinates[arm_add_r]);
+		q *= QQuaternion::fromEulerAngles(0, -m_activeCoordinates[arm_rot_r], 0);
 	}
 	else if (boneIndex == m_boneMap.find("RightForeArm")->second) {
-		q = QQuaternion::fromEulerAngles(0, 0, m_modelCoordinates[elbow_flex_r]);
-		q *= QQuaternion::fromEulerAngles(0, -m_modelCoordinates[pro_sup_r], 0);
+		q = QQuaternion::fromEulerAngles(0, 0, m_activeCoordinates[elbow_flex_r]);
+		q *= QQuaternion::fromEulerAngles(0, -m_activeCoordinates[pro_sup_r], 0);
 	}
 	else if (boneIndex == m_boneMap.find("RightHand")->second) {
-		q = QQuaternion::fromEulerAngles(0, 0, m_modelCoordinates[wrist_flex_r]);
-		q *= QQuaternion::fromEulerAngles(-m_modelCoordinates[wrist_dev_r], 0, 0);
+		q = QQuaternion::fromEulerAngles(0, 0, m_activeCoordinates[wrist_flex_r]);
+		q *= QQuaternion::fromEulerAngles(-m_activeCoordinates[wrist_dev_r], 0, 0);
 	}
 	return q;
 }
@@ -499,38 +537,44 @@ void SkinnedMesh::traverseNodeHierarchy(const aiNode* pNode, const QMatrix4x4& P
 		QQuaternion q;
 		qts << "\n" << nodeName << " Index=" << i << endl;
 
-		q = extractQuaternion(m_boneInfo[i].local);
-		qts << "Local quaternion: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
+		//q = extractQuaternion(m_boneInfo[i].local);
+		//qts << "Local quaternion: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
 		qts << "Local transformation:\n" << toString(m_boneInfo[i].local);
 		
 		q = m_correctionQuats[i];
 		qts << "Correction quaternion: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
 		qts << "Correction transformation\n" << toString(m_correctionMats[i]);
 		
-		q = extractQuaternion(m_boneInfo[i].corrected);
-		qts << "Corrected quaternion: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
+		//q = extractQuaternion(m_boneInfo[i].corrected);
+		//qts << "Corrected quaternion: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
 		qts << "Corrected transformation:\n" << toString(m_boneInfo[i].corrected);
 		
 		q = m_controlQuats[i];
 		qts << "Control quaternion: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
 		qts << "Control transformation:\n" << toString(m_controlMats[i]);
 		
-		q = boneOrientation(i); // #todo make it a container rather than a function
+		q = boneOrientation(i); 
 		qts << "Quaternion from angles: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;		
 		
-		QMatrix4x4 opensimRot, controlRot, correctedLocal; // initialized as identity
-		if (m_parameters[1]) correctedLocal = m_boneInfo[i].corrected; else correctedLocal = m_boneInfo[i].local;
+		QMatrix4x4 opensimRot, controlRot, opensimScaling; // initialized as identity
+		QMatrix4x4 localTransformation = m_boneInfo[i].local; 
+		if (m_parameters[1]) localTransformation = m_boneInfo[i].corrected;
 		if (m_parameters[2]) opensimRot = fromRotation(q);
 		if (m_parameters[3]) controlRot = m_controlMats[i];
+		if (m_parameters[4]) opensimScaling = m_boneInfo[i].scaling;
 
-		// correctedLocal next to P, control near correctedLocal
-		if (m_parameters[4]) G = P * correctedLocal * controlRot * opensimRot; 
-		else G = P * controlRot * opensimRot * correctedLocal;
+		// localTransformation next to P, control next to localTransformation
+		G = P * localTransformation * controlRot * opensimRot * opensimScaling;
+
+
 		m_boneInfo[i].global = G;
 		m_boneInfo[i].combined = G * m_boneInfo[i].offset;
-		qts << "Bone Offset:\n" << toString(m_boneInfo[i].offset);
+		qts << "Offset transformation:\n" << toString(m_boneInfo[i].offset);
 		qts << "Global transformation:\n" << toString(G);
-		qts << "Final Transformation:\n" << toString(m_boneInfo[i].combined);
+		qts << "Combined transformation:\n" << toString(m_boneInfo[i].combined);
+		QVector3D positionGlobal = m_boneInfo[i].global * QVector3D(QVector4D(0.f, 0.f, 0.f, 1.f));
+		m_boneInfo[i].endPosition = positionGlobal;
+		qts << "Bone position (from global): " << toStringCartesian(positionGlobal);
 		qts << flush;
 		m_boneTransformInfo[findBoneId(nodeName)] = qs;
 	}
@@ -663,13 +707,17 @@ uint SkinnedMesh::numBones() const
 {
 	return m_numBones;
 }
-const map<string, uint>& SkinnedMesh::Bones() const
+const map<string, uint>& SkinnedMesh::boneMap() const
 {
 	return m_boneMap;
 }
 const QMatrix4x4& SkinnedMesh::boneGlobal(uint boneIndex) const
 {
 	return m_boneInfo[boneIndex].global;
+}
+const QVector3D& SkinnedMesh::boneEndPosition(uint boneIndex) const
+{
+	return m_boneInfo[boneIndex].endPosition;
 }
 bool SkinnedMesh::loadMotion(const QString& filename)
 {
@@ -679,47 +727,69 @@ bool SkinnedMesh::loadMotion(const QString& filename)
 		return false;
 	}
 
-	QString line;
 	QTextStream in(&file);
+	QString line;
 	QStringList list;
-
-	uint lineCounter = 0;
+	bool ok;
+	uint linesCounter = 0;
+	uint framesCounter = 0;
+	bool endOfHeaders = false;
 	do {
+		linesCounter++;
 		line = in.readLine();
-		lineCounter++;
 		list = line.split("\t");
 
-		bool ok;
-		list[0].toDouble(&ok);
-		if (!ok) {
-			cout << "StringList element could not be converted to double.";
-			cout << " Element=" << list[0].toStdString();
-			cout << " Index=0";
-			cout << " Line=" << lineCounter << endl;
+		if (list[0] == "time") {
+			endOfHeaders = true;
 			continue;
 		}
-		m_timestamps.push_back(list[0].toDouble(&ok));
-		array<float, m_numCoordinates> coords;
+		if (!endOfHeaders || list[0]=="") continue;
+
+		// Add timestamp
+		double timestamp = list[0].toDouble(&ok);
+		if (!ok) {
+			//*
+			cout << "Timestamp could not be converted to double.";
+			cout << " Element=" << list[0].toStdString();
+			cout << " Index=0";
+			cout << " Line=" << linesCounter << endl;
+			//*/
+			continue;
+		}
+		m_timestamps.push_back(timestamp);
+
+		// Add coordinates
+		array<float, m_numCoordinates> coordinates;
 		for (uint i = 0; i < m_numCoordinates; i++) {
-			coords[i] = list[i + 1].toFloat(&ok);
+			coordinates[i] = list[i + 1].toFloat(&ok);
 			if (!ok) {
-				cout << "StringList element could not be converted to double.";
+				//*
+				cout << "Coordinate could not be converted to double.";
 				cout << " Element=" << list[i+1].toStdString();
 				cout << " Index=0";
-				cout << " Line=" << lineCounter << endl;
+				cout << " Line=" << linesCounter << endl;
+				//*/
 				continue;
 			}
 		}
-		m_modelCoordinateSequence.push_back(coords);
-	} while (!line.isNull());
+		m_coordinateSequence.push_back(coordinates);
 
-	/*cout << "Lines in .mot file: " << lineCounter << endl;
-	cout << "Timestamp = " << m_timestamps[0] << endl;
-	cout << "Coordinates: " << list.size() << endl;
-	for (const auto& p : m_modelCoordinateSequence[0]) {
+		framesCounter++;
+	} while (!line.isNull()); //
+
+	//*
+	cout << "Loaded SkinnedMesh motion from " << filename.toStdString() << endl;
+	cout << "NumberOfLines=" << linesCounter << endl;
+	cout << "NumberOfFrames=" << framesCounter << endl;
+	cout << "Duration=" << m_timestamps.last() - m_timestamps.first() << endl;
+	cout << "Coordinates/Frame=" << list.size()-1 << endl;
+	cout << "Last frame:" << endl;
+	cout << "Timestamp=" << m_timestamps.last() << endl;
+	cout << "Coordinates=";
+	for (const auto& p : m_coordinateSequence.last()) {
 		cout << p << " ";
 	}
-	cout << endl;*/
-	cout << "Loaded SkinnedMesh motion from " << filename.toStdString() << endl;
+	cout << endl;
+	//*/
 	return true;
 }

@@ -66,10 +66,14 @@ struct BoneInfo
 	QMatrix4x4 offset;
 	QMatrix4x4 global;
 	QMatrix4x4 combined;
+	QMatrix4x4 scaling;
 
 	bool visible;
 	float xRot, yRot, zRot;
 	
+	QVector3D endPosition;
+	float length;
+
 	BoneInfo()
 	{
 		xRot = yRot = zRot = 0.f;
@@ -92,9 +96,8 @@ public:
 	void printNodeHierarchy(const aiNode* pNode) const;
 	void printParameters() const;
 	void printSceneInfo() const;
-
 	
-	bool m_SuccessfullyLoaded;
+	bool m_successfullyLoaded;
 
 	float boneRotationX(const QString &boneName) const;
 	float boneRotationY(const QString &boneName) const;
@@ -103,9 +106,11 @@ public:
 	void setBoneRotationY(const QString &boneName, float value);
 	void setBoneRotationZ(const QString &boneName, float value);
 	
-
 	uint numBones() const;
-	const map<string, uint>& Bones() const;
+	const map<string, uint>& boneMap() const;
+	const QMatrix4x4& boneGlobal(uint boneIndex) const;
+	const QVector3D& boneEndPosition(uint boneIndex) const;
+
 	uint findBoneId(const QString &boneName) const;
 	bool boneVisibility(uint boneIndex) const;
 	bool boneVisibility(const QString &boneName) const;
@@ -123,13 +128,13 @@ public:
 	vector<uint>& indices();	
 	vector<QImage>& images();
 
-	const QMatrix4x4& boneGlobal(uint boneIndex) const;
-
-	QQuaternion worldRotation();
-	QVector3D worldPosition();
+	QQuaternion pelvisRotation();
+	QVector3D pelvisPosition();
 	double timestamp(uint index);
 	void setActiveCoordinates(uint frameIndex);
 	uint sequenceSize();
+	void initCorrectionVecs(const array<KLimb, NUM_LIMBS>& limbs); // correct scaling
+	QVector3D getOffset();
 
 private:
 	void clear();
@@ -156,20 +161,20 @@ private:
 	const KJoint *m_pKBones = NULL;
 
 	// Control pose
-	vector<QVector3D> m_controlVecs; 
 	vector<QQuaternion> m_controlQuats; 
 	vector<QMatrix4x4> m_controlMats;
-	// Default pose
-	vector<QVector3D> m_correctionVecs; 
-	QVector<QQuaternion> m_correctionQuats;
-	vector<QMatrix4x4> m_correctionMats; 
+
+	// Correct pose
+	QVector<QVector3D> m_correctionVecs; // correct scaling
+	QVector<QQuaternion> m_correctionQuats; // correct rotations
+	vector<QMatrix4x4> m_correctionMats;
+
 	void initCorrectionQuats();
 	void initLocalMatrices(const aiNode* node);
 
 	vector<QString> m_boneTransformInfo;
 	vector<bool> m_hasCoordinates; // #?
 
-	static const uint m_numCoordinates = 37;
 	enum Coordinates{
 		pelvis_tilt, //z
 		pelvis_list, //x
@@ -214,8 +219,11 @@ private:
 		wrist_flex_l,
 		wrist_dev_l
 	};
-	array<float, m_numCoordinates> m_modelCoordinates;
-	QVector<array<float, m_numCoordinates>> m_modelCoordinateSequence;
+	static const uint m_numCoordinates = 37;
+
+	// Skinned Mesh Frame
+	array<float, m_numCoordinates> m_activeCoordinates;
+	QVector<array<float, m_numCoordinates>> m_coordinateSequence;
 	QVector<double> m_timestamps;
 
 	void initCoordinates();
@@ -231,12 +239,8 @@ private:
 	bitset<NUM_PARAMETERS> m_parameters = bitset<NUM_PARAMETERS>().set();
 	const string m_parameterInfo[NUM_PARAMETERS] = { "",  "Corrected Pose", "OpenSim Pose", "Controlled Pose" };	
 
-	GLuint m_axesVAO;
-	GLuint m_axesVBO;
-	GLuint m_axesIBO; 
-
+	void calculateBoneLength(const aiNode* pNode);
 	uint m_activeFrame = 0;
-	void updateCoordinates();
 };
 
 #endif	/* SKINNED_MESH_H */

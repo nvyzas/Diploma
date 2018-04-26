@@ -153,7 +153,7 @@ bool SkinningTechnique::Init()
 
     return true;
 }
-void SkinningTechnique::SetWVP(const QMatrix4x4& WVP)
+void SkinningTechnique::setWVP(const QMatrix4x4& WVP)
 {
     glUniformMatrix4fv(m_WVPLocation, 1, GL_TRUE, WVP.transposed().data());    
 }

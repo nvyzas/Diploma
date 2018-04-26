@@ -9,7 +9,7 @@ const QMatrix4x4& Pipeline::GetProjTrans()
 	m_ProjTransformation = perspectiveProjection();
     return m_ProjTransformation;
 }
-const QMatrix4x4& Pipeline::GetVPTrans()
+const QMatrix4x4& Pipeline::getVPtrans()
 {
     GetViewTrans();
     GetProjTrans();
@@ -82,10 +82,10 @@ const QMatrix4x4& Pipeline::GetViewTrans()
     return m_Vtransformation;
 }
 
-const QMatrix4x4& Pipeline::GetWVPTrans()
+const QMatrix4x4& Pipeline::getWVPtrans()
 {
     GetWorldTrans();
-    GetVPTrans();
+    getVPtrans();
 
     m_WVPtransformation = m_VPtransformation * m_Wtransformation;
     return m_WVPtransformation;

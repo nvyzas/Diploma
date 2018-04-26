@@ -20,18 +20,19 @@ template <class T> void safeRelease(T **ppT)
 KSensor::KSensor()
 {
 	cout << "KSensor constructor start." << endl;
+	
 	init();
 	open();
-
 	m_captureLog.setFileName("capture_log.txt");
 	if (!m_captureLog.open(QIODevice::WriteOnly | QIODevice::Text)) {
 		cout << "Could not open capture log file." << endl;
 		return;
 	}
 	m_forCaptureLog.setFieldAlignment(QTextStream::AlignLeft);
-	m_forCaptureLog.setRealNumberPrecision(8);
+	m_forCaptureLog.setRealNumberPrecision(10);
 	m_forCaptureLog.setDevice(&m_captureLog);
-	cout << "KSensor constructor end." << endl;
+
+	cout << "KSensor constructor end.\n" << endl;
 }
 KSensor::~KSensor()
 {

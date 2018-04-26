@@ -13,7 +13,7 @@ Camera::Camera()
 {
     m_windowWidth  = 512;
     m_windowHeight = 424;
-	m_rho		   = 2.0f;
+	m_rho		   = 3.0f;
 	m_theta		   = 90.0f;
 	m_phi		   = 90.0f;
 	updateCartesian();

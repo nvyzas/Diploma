@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 	format.setVersion(3, 3);
 	format.setProfile(QSurfaceFormat::CompatibilityProfile);
 	QSurfaceFormat::setDefaultFormat(format);
-	qDebug() << "Requested format:" << format;
+	qDebug() << "Requested format:" << format << endl;
 
 	QApplication app(argc, argv);
 	MainWindow mainWindow;
