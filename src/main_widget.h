@@ -133,7 +133,7 @@ private:
 	void drawSkinnedMeshJoints();
 
 
-	// Kinect skeleton
+	// kinect skeleton
 	GLuint m_skeletonVAO;
 	GLuint m_skeletonVBO;
 	void loadSkeleton();
@@ -141,27 +141,31 @@ private:
 	float m_skeletonData[2 * 3 * JointType_Count]; // 2 attributes x 3 components x JointType_Count joints
 	void drawSkeleton();
 
+	// arrow
 	GLuint m_arrowVAO;
 	void loadArrow();
 	void drawArrow();
 
+	// axes
 	GLuint m_axesVAO;
 	void loadAxes();
 	void drawAxes();
 
+	// cube
 	GLuint m_skeletonCubesVAO;
 	GLuint m_skeletonCubesVBO;
 	float m_skeletonCubesColorData[3 * 8];
 	void loadCube(float r);
 	void drawCube();
 
-	uint m_activeBone = 0;
-	uint m_activeFrame = 0;
-
 	QTimer m_timer;
 	bool m_shouldUpdate = false;
 	QVector3D m_skinnedMeshOffset;
 	QVector3D m_kinectSkeletonOffset;
+
+
+	uint m_activeBone = 0;
+	uint m_activeFrame = 0;
 };
 
 #endif /* MAIN_WIDGET_H */

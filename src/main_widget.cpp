@@ -166,46 +166,45 @@ void MainWidget::paintGL()
 
 	transformSkinnedMesh(false);
 
-	// enable skinning technique
-	m_skinningTechnique->enable();
-
-	// draw skinned mesh
+	// prepare pipeline for drawing skinned mesh related stuff
 	if (m_defaultPose) m_pipeline->setWorldRotation(QQuaternion());
 	else m_pipeline->setWorldRotation(m_skinnedMesh->pelvisRotation());
 	if (m_defaultPose) m_pipeline->setWorldPosition(QVector3D());
 	else m_pipeline->setWorldPosition(m_skinnedMesh->pelvisPosition() + m_skinnedMeshOffset);
 	m_skinningTechnique->setWVP(m_pipeline->getWVPtrans());
+
+	// enable skinning technique
+	m_skinningTechnique->enable();
+
+	// draw skinned mesh
 	if (m_modeOfOperation == Mode::PLAYBACK && m_renderSkinnedMesh && m_skinnedMesh->m_successfullyLoaded) {
 		drawSkinnedMesh();
 	}
 
 	// enable simple technique
 	m_technique->enable();
+	m_technique->setMVP(m_pipeline->getWVPtrans());
 
 	// draw skinned mesh bone axes
-	m_technique->setMVP(m_pipeline->getWVPtrans());
 	m_technique->setSpecific(m_skinnedMesh->boneGlobal(m_activeBone));
 	if (m_renderAxes) drawAxes();
 	
 	// draw skinned mesh joints
-	if (m_defaultPose) m_pipeline->setWorldRotation(QQuaternion()); else m_pipeline->setWorldRotation(m_skinnedMesh->pelvisRotation());
-	if (m_defaultPose) m_pipeline->setWorldPosition(QVector3D()); else m_pipeline->setWorldPosition(m_skinnedMeshOffset);
-	m_technique->setMVP(m_pipeline->getWVPtrans());
 	m_technique->setSpecific(QMatrix4x4());
-	if (m_renderSkinnedMeshJoints) {
-		drawSkinnedMeshJoints();
-	}
+	if (m_renderSkinnedMeshJoints) drawSkinnedMeshJoints();
 
 	// draw basic axes
-	m_technique->setMVP(m_pipeline->getVPtrans()); // only VP transformation! #! changed view transform to displace all
+	m_technique->setMVP(m_pipeline->getVPtrans()); // only VP transformation! 
 	m_technique->setSpecific(QMatrix4x4());
 	if (m_renderAxes) drawAxes();
 
-	// draw kinect skeleton
+	// Prepare pipeline to draw kinect skeleton related stuff
 	m_pipeline->setWorldRotation(QQuaternion());
 	if (m_defaultPose) m_pipeline->setWorldPosition(QVector3D());
 	else m_pipeline->setWorldPosition(m_kinectSkeletonOffset);
-	m_technique->setMVP(m_pipeline->getWVPtrans()); 
+	m_technique->setMVP(m_pipeline->getWVPtrans());
+
+	// draw kinect skeleton
 	if (m_renderSkeleton) {
 		drawSkeleton();
 		for (uint i = 0; i < JointType_Count; i++) {
@@ -218,18 +217,26 @@ void MainWidget::paintGL()
 	}
 
 	
-
 	// draw arrow
 	QVector3D leftHand = (m_ksensor->skeleton()->activeJoints())[JointType_HandLeft].position;
 	QVector3D rightHand = (m_ksensor->skeleton()->activeJoints())[JointType_HandRight].position;
 	QVector3D barDirection = rightHand - leftHand;
+	QMatrix4x4 S = fromScaling(QVector3D(1, (rightHand - leftHand).length(), 1));
+	QMatrix4x4 R = fromRotation(QQuaternion::rotationTo(QVector3D(0, 1, 0), barDirection));
+	QMatrix4x4 T = fromTranslation(leftHand);
+	m_technique->setSpecific(T * R * S);
+	drawArrow();
+
+	// calculate bar horizontal angle
 	m_barAngle = ToDegrees(atan2(barDirection.y(), sqrt(pow(barDirection.x(), 2) + pow(barDirection.z(), 2))));
 	
+	// calculate bar speed
 	static QVector3D previousBarPosition, currentBarPosition;
 	currentBarPosition = (leftHand + rightHand) * 0.5;
 	m_barSpeed = (currentBarPosition - previousBarPosition) / m_playbackInterval * 1000;
 	previousBarPosition = currentBarPosition;
 
+	// calculate knee angle
 	QVector3D hipRight = (m_ksensor->skeleton()->activeJoints())[JointType_HipRight].position;
 	QVector3D kneeRight = (m_ksensor->skeleton()->activeJoints())[JointType_KneeRight].position;
 	QVector3D ankleRight = (m_ksensor->skeleton()->activeJoints())[JointType_AnkleRight].position;
@@ -237,19 +244,6 @@ void MainWidget::paintGL()
 	QVector3D kneeToAnkle = (ankleRight - kneeRight).normalized();
 	m_kneeAngle = 180.f-ToDegrees(acos(QVector3D::dotProduct(kneeToHip, kneeToAnkle)));
 	
-	// Scaling
-	QMatrix4x4 S;
-	S.scale(1, (rightHand - leftHand).length(), 1);
-	// Rotation
-	QMatrix4x4 R;
-	R.rotate(QQuaternion::rotationTo(QVector3D(0, 1, 0), barDirection));
-	// Translation
-	QMatrix4x4 T;
-	T.translate(leftHand);
-
-	m_technique->setSpecific(T * R * S);
-	drawArrow();
-
 	if (m_play && m_shouldUpdate) {
 		if (++m_activeFrame > m_ksensor->skeleton()->m_activeSequence->size())  m_activeFrame = 0;
 		m_shouldUpdate = false;

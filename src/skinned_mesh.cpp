@@ -452,7 +452,12 @@ void SkinnedMesh::initCoordinates()
 }
 void SkinnedMesh::setActiveCoordinates(uint frameIndex)
 {
-	m_activeCoordinates = m_coordinateSequence[frameIndex];
+	if (frameIndex < m_coordinateSequence.size()) {
+		m_activeCoordinates = m_coordinateSequence[frameIndex];
+	}
+	else {
+		m_activeCoordinates = m_coordinateSequence.last();
+	}
 }
 uint SkinnedMesh::sequenceSize()
 {
