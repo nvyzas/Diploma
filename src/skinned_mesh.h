@@ -86,8 +86,8 @@ class SkinnedMesh
 public:
 	SkinnedMesh();
 	~SkinnedMesh();	
-	bool loadMesh(const string& basename);
-	bool loadMotion(const QString& filename);
+	bool initMeshFromFile(const string& basename);
+	bool initMotionFromFile(const QString& filename);
 
 	void getBoneTransforms(vector<QMatrix4x4>& transforms);
 	void traverseNodeHierarchy(const aiNode* pNode, const QMatrix4x4& P);
@@ -143,7 +143,7 @@ private:
 	bool initImages(const aiScene* pScene, const string& Filename);
 	bool initFromScene(const aiScene* pScene, const string& Filename);
 
-	// Data loaded in CPU by loadMesh		
+	// Data loaded in CPU by initMeshFromFile		
 	vector<MeshEntry> m_entries;
 	// Vertex Attributes
 	vector<QVector3D> m_positions;

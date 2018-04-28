@@ -63,27 +63,23 @@ void Camera::onKeyboardArrow(int key, bool print)
 		m_center += m_target;
 		updateVectors();
 		if (print) printInfo();
-		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " RTF=" << GetRTF().GetString() << " XYZ=" << GetXYZ().GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
 		return;
 	case Qt::Key_Down:
 		m_pos -= m_target;
 		m_center -= m_target;
 		updateVectors();
 		if (print) printInfo();
-		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " RTF=" << GetRTF().GetString() << " XYZ=" << GetXYZ().GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
 		return;
 	case Qt::Key_Left:
 		rotateRight(-rotateStep);
 		if (print) printInfo();
-		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " RTF=" << GetRTF().GetString() << " XYZ=" << GetXYZ().GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
 		return;
 	case Qt::Key_Right:
 		rotateRight(+rotateStep);
 		if (print) printInfo();
-		//if (print) cout << "Camera: Pos=" << m_pos.GetString() << " RTF=" << GetRTF().GetString() << " XYZ=" << GetXYZ().GetString() << " Distance=" << m_pos.DistanceFrom(m_center) << endl;
 		return;
 	default:
-		cout << "none of the arrows was pressed" << endl;
+		cout << "Camera::oKeyboardArrow(): none of the arrows was pressed" << endl;
 		return;
 	}
 }

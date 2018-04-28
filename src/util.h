@@ -21,7 +21,7 @@ using namespace std;
 #define INVALID_UNIFORM_LOCATION 0xffffffff
 #define INVALID_OGL_VALUE 0xffffffff
 #define SAFE_DELETE(p) if (p) { delete p; p = NULL; }
-#define GLCheckError() (glGetError() == GL_NO_ERROR)
+#define GLNoError() (glGetError() == GL_NO_ERROR)
 #define GLPrintError()																					\
 {																										\
 	int error=glGetError();																				\
@@ -52,8 +52,7 @@ using namespace std;
 #define ToRadians(x) (float)(((x) * PI / 180.f))
 #define ToDegrees(x) (float)(((x) * 180.f / PI))
 
-bool ReadFile(const char* fileName, std::string& outFile);
-uint Mod(uint start, uint edge, int step);
+bool readFile(const char* fileName, std::string& outFile);
 inline bool getBit(int number, int position)
 {
 	return (number >> position) & 0;

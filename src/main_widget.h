@@ -75,39 +75,37 @@ protected:
 	void wheelEvent(QWheelEvent *event) override;
 
 private:
-	enum class Mode
-	{
-		CAPTURE,
-		PLAYBACK
-	};
 
-	Mode m_modeOfOperation;
-
-	KSensor* m_ksensor;
-
+	KSensor * m_ksensor;
 	SkinnedMesh* m_skinnedMesh;
 	Camera* m_camera;
 	Technique* m_technique;
 	SkinningTechnique* m_skinningTechnique;
 	Pipeline* m_pipeline;
 	OpenSimModel m_osm;
+
+	enum class Mode
+	{
+		CAPTURE,
+		PLAYBACK
+	};
+	Mode m_modeOfOperation;
 	
 	QPoint m_lastMousePosition;
-
-	bool m_renderAxes = true;
-	bool m_renderSkeleton = true;
-	bool m_renderSkinnedMesh = true;
-	bool m_renderSkinnedMeshJoints = true;
-
 	bool m_play = true;	
-
-	
+	QTimer m_timer;
+	bool m_shouldUpdate = false;
 	void setup();
 
+	uint m_activeBone = 0;
+	uint m_activeFrame = 0;
+
 	// Skinned mesh
-	bool m_modelSkinning = true;
-	QString m_modelName;
-	bool loadSkinnedMesh(const string& basename);
+	QString m_skinnedMeshModelName;
+	QVector3D m_skinnedMeshOffset;
+	bool m_skinningEnabled = true;
+	bool m_renderSkinnedMesh = true;
+	void loadSkinnedMesh();
 	void unloadSkinnedMesh();
 	enum VB_TYPES {
 		INDEX_BUFFER,
@@ -117,29 +115,29 @@ private:
 		BONE_VB,
 		NUM_VBs
 	};
-	GLuint m_VAO;
-	GLuint m_Buffers[NUM_VBs];
+	GLuint m_skinnedMeshVAO;
+	GLuint m_skinnedMeshVBOs[NUM_VBs];
 	vector<QOpenGLTexture*> m_textures;
 	void drawSkinnedMesh();
 	bool m_defaultPose = false;
 
 	// Skinned mesh joint dots
-#define NUM_BONES 10
-	GLuint m_meshJointsVAO;
-	GLuint m_meshJointsVBO;
-	void loadMeshJoints();
-	void updateSkinnedMeshJoints();
+#define NUM_BONES 31
+	bool m_renderSkinnedMeshJoints = true;
+	GLuint m_skinnedMeshJointsVAO;
+	GLuint m_skinnedMeshJointsVBO;
+	void loadSkinnedMeshJoints();
 	float m_skinnedMeshJoints[2 * 3 * NUM_BONES];
 	void drawSkinnedMeshJoints();
 
-
 	// kinect skeleton
-	GLuint m_skeletonVAO;
-	GLuint m_skeletonVBO;
-	void loadSkeleton();
-	void updateSkeletonData();
-	float m_skeletonData[2 * 3 * JointType_Count]; // 2 attributes x 3 components x JointType_Count joints
-	void drawSkeleton();
+	bool m_renderKinectSkeleton = true;
+	QVector3D m_kinectSkeletonOffset;
+	GLuint m_kinectSkeletonJointsVAO;
+	GLuint m_kinectSkeletonJointsVBO;
+	void loadKinectSkeletonJoints();
+	float m_kinectSkeletonJoints[2 * 3 * JointType_Count]; // 2 attributes x 3 components x JointType_Count joints
+	void drawKinectSkeletonJoints();
 
 	// arrow
 	GLuint m_arrowVAO;
@@ -147,25 +145,17 @@ private:
 	void drawArrow();
 
 	// axes
+	bool m_renderAxes = true;
 	GLuint m_axesVAO;
 	void loadAxes();
 	void drawAxes();
 
 	// cube
-	GLuint m_skeletonCubesVAO;
-	GLuint m_skeletonCubesVBO;
-	float m_skeletonCubesColorData[3 * 8];
+	GLuint m_cubeVAO;
+	GLuint m_cubeVBO;
+	float m_cubeColors[3 * 8];
 	void loadCube(float r);
 	void drawCube();
-
-	QTimer m_timer;
-	bool m_shouldUpdate = false;
-	QVector3D m_skinnedMeshOffset;
-	QVector3D m_kinectSkeletonOffset;
-
-
-	uint m_activeBone = 0;
-	uint m_activeFrame = 0;
 };
 
 #endif /* MAIN_WIDGET_H */

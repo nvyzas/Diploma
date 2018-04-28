@@ -47,7 +47,7 @@ bool Technique::AddShader(GLenum ShaderType, const char* pFilename)
 {
     std::string s;
     
-    if (!ReadFile(pFilename, s)) {
+    if (!readFile(pFilename, s)) {
         return false;
     }
     
@@ -116,8 +116,8 @@ bool Technique::Finalize()
     }
 
     m_shaderObjList.clear();
-	GLCheckError();
-    return GLCheckError();
+	GLNoError();
+    return GLNoError();
 }
 void Technique::enable()
 {

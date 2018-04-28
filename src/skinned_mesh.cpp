@@ -57,16 +57,14 @@ void VertexBoneData::RestoreBoneData()
 }
 
 SkinnedMesh::SkinnedMesh()
+	:
+	m_successfullyLoaded(false),
+	m_pScene(NULL)
 {
 	cout << "SkinnedMesh constructor start." << endl;
-	
-	clear();
-	m_successfullyLoaded = false;
-	m_pScene = NULL;
-	loadMesh("cmu");
+	initMeshFromFile("cmu.dae");
+	initMotionFromFile("motion.mot");
 	printInfo();
-	loadMotion("motion.mot");
-	
 	cout << "SkinnedMesh constructor end.\n" << endl;
 }
 SkinnedMesh::~SkinnedMesh()
@@ -85,23 +83,23 @@ void SkinnedMesh::clear()
 	m_images.clear();
 	m_boneInfo.clear();
 }
-bool SkinnedMesh::loadMesh(const string& basename)
+bool SkinnedMesh::initMeshFromFile(const string& fileName)
 {
 	clear();
 
     bool ret = false;
-	string filename = "models/" + basename + ".dae";
-    m_pScene = m_Importer.ReadFile(filename.c_str(), ASSIMP_LOAD_FLAGS);    
+	string filePath = "models/" + fileName;
+    m_pScene = m_Importer.ReadFile(filePath.c_str(), ASSIMP_LOAD_FLAGS);    
     if (m_pScene) {  
-        ret = initFromScene(m_pScene, filename);
+        ret = initFromScene(m_pScene, filePath);
     }
     else {
-        printf("Error parsing '%s': '%s'\n", filename.c_str(), m_Importer.GetErrorString());
+        printf("Error parsing '%s': '%s'\n", filePath.c_str(), m_Importer.GetErrorString());
     }
 	
 	m_successfullyLoaded = ret;
 	if (m_successfullyLoaded) {
-		cout << "Loaded SkinnedMesh from " << filename << endl;
+		cout << "Loaded SkinnedMesh from " << filePath << endl;
 	}
     return ret;
 }
@@ -670,6 +668,10 @@ bool SkinnedMesh::boneVisibility(const QString &boneName) const
 }
 void SkinnedMesh::setBoneVisibility(uint boneIndex, bool state)
 {
+	if (boneIndex > m_boneInfo.size() || boneIndex < 0) {
+		cout << "setBoneVisibility: bone index out of bounds! Index=" << boneIndex << endl;
+		return;
+	}
 	m_boneInfo[boneIndex].visible = state;
 }
 void SkinnedMesh::setBoneVisibility(const QString &boneName, bool state)
@@ -718,13 +720,21 @@ const map<string, uint>& SkinnedMesh::boneMap() const
 }
 const QMatrix4x4& SkinnedMesh::boneGlobal(uint boneIndex) const
 {
+	if (boneIndex > m_boneInfo.size() || boneIndex < 0) {
+		cout << "boneGlobal: bone index out of bounds! Index=" << boneIndex << endl;
+		return QMatrix4x4();
+	}
 	return m_boneInfo[boneIndex].global;
 }
 const QVector3D& SkinnedMesh::boneEndPosition(uint boneIndex) const
 {
+	if (boneIndex > m_boneInfo.size() || boneIndex < 0) {
+		cout << "boneEndPosition: bone index out of bounds! Index=" << boneIndex << endl;
+		return QVector3D();
+	}
 	return m_boneInfo[boneIndex].endPosition;
 }
-bool SkinnedMesh::loadMotion(const QString& filename)
+bool SkinnedMesh::initMotionFromFile(const QString& filename)
 {
 	QFile file(filename);
 	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {

@@ -111,7 +111,6 @@ void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientatio
 			m_firstRawFrames[m_firstFrameIndex] = kframe;
 			m_firstFrameIndex = addedFrames % m_framesDelayed;
 		}
-		//cout << "First frame index = " << m_firstFrameIndex << endl;
 	}
 }
 void KSkeleton::interpolateFrames()

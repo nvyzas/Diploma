@@ -34,7 +34,6 @@ MainWindow::~MainWindow()
 {
 	delete ui;
 }
-
 void MainWindow::loadActiveBoneInfo()
 {
 	const QString &boneName = ui->comboBox_activeBone->currentText();

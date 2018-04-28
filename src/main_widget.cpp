@@ -25,26 +25,36 @@
 MainWidget::MainWidget(QWidget *parent)
 	: 
 	QOpenGLWidget(parent),
-	m_skinnedMesh(new SkinnedMesh())
+	m_skinnedMesh(new SkinnedMesh()),
+	m_camera(new Camera()),
+	m_pipeline(new Pipeline())
 {
 	cout << "MainWidget class constructor start." << endl;
-	
-	m_VAO = 0;
-	ZERO_MEM(m_Buffers);
-
 	cout << "MainWidget class constructor end.\n" << endl;
 }
 MainWidget::~MainWidget()
 {
-	makeCurrent();
-	unloadSkinnedMesh();
-	doneCurrent();
-
-	delete m_skinnedMesh;
 	delete m_camera;
+	delete m_pipeline;
+	delete m_skinnedMesh;
+
+	makeCurrent();
+
+	unloadSkinnedMesh();
 	delete m_technique;
 	delete m_skinningTechnique;
-	delete m_pipeline;
+
+	glDeleteVertexArrays(1, &m_axesVAO);
+	glDeleteVertexArrays(1, &m_arrowVAO);
+	glDeleteVertexArrays(1, &m_kinectSkeletonJointsVAO);
+	glDeleteVertexArrays(1, &m_skinnedMeshJointsVAO);
+	glDeleteVertexArrays(1, &m_cubeVAO);
+
+	glDeleteBuffers(1, &m_kinectSkeletonJointsVBO);
+	glDeleteBuffers(1, &m_skinnedMeshJointsVBO);
+	glDeleteBuffers(1, &m_cubeVBO);
+
+	doneCurrent();
 }
 // This virtual function is called once before the first call to paintGL() or resizeGL().
 void MainWidget::initializeGL()
@@ -54,18 +64,18 @@ void MainWidget::initializeGL()
 	qDebug() << "Obtained format:" << format();
 	initializeOpenGLFunctions();
 
-	m_camera = new Camera();
-	m_technique = new Technique();
+	// instantiate context dependent classes
+	m_technique = new Technique(); 
 	m_skinningTechnique = new SkinningTechnique();
-	m_pipeline = new Pipeline();
+	loadSkinnedMesh();
 	loadAxes();
 	loadArrow();
-	loadSkeleton();
-	loadMeshJoints();
+	loadKinectSkeletonJoints();
+	loadSkinnedMeshJoints();
 	loadCube(0.03);
 	
 	glEnable(GL_TEXTURE_2D);
-	glClearColor(0.0f, 0.0f, 0.0f, 0.5f);               
+	glClearColor(0.0f, 0.0f, 0.0f, 1.f);               
 	glClearDepth(1.0f);									
 	glEnable(GL_POINT_SMOOTH);							
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
@@ -98,7 +108,6 @@ void MainWidget::setup()
 	cout << "MainWidget setup start." << endl;
 
 	// Init SkinnedMesh
-	loadSkinnedMesh("cmu_test");
 	vector<QMatrix4x4> transforms;
 	m_skinnedMesh->getBoneTransforms(transforms);
 	m_skinnedMesh->initCorrectionVecs(m_ksensor->skeleton()->limbs());
@@ -205,8 +214,8 @@ void MainWidget::paintGL()
 	m_technique->setMVP(m_pipeline->getWVPtrans());
 
 	// draw kinect skeleton
-	if (m_renderSkeleton) {
-		drawSkeleton();
+	if (m_renderKinectSkeleton) {
+		drawKinectSkeletonJoints();
 		for (uint i = 0; i < JointType_Count; i++) {
 			m_technique->setSpecific(fromTranslation(m_ksensor->skeleton()->activeJoints()[i].position));
 			drawCube();
@@ -401,7 +410,7 @@ void MainWidget::wheelEvent(QWheelEvent *event)
 {
 	QPoint degrees = event->angleDelta() / 8;
 	//cout << degrees.x() << " " << degrees.y() << endl;
-	m_camera->onMouseWheel(degrees.y(), true);
+	m_camera->onMouseWheel(degrees.y(), false);
 
 	m_pipeline->setCamera(m_camera->GetPos(), m_camera->GetTarget(), m_camera->GetUp());
 	m_skinningTechnique->enable();
@@ -413,18 +422,14 @@ void MainWidget::wheelEvent(QWheelEvent *event)
 }
 void MainWidget::transformSkinnedMesh(bool print)
 {
-	//if (!print) cout.setstate(std::ios_base::failbit);
 	if (print) cout << "Transforming bones." << endl;
 	vector<QMatrix4x4> transforms;
-	m_skinnedMesh->getBoneTransforms(transforms); // update bone transforms from kinect
+	m_skinnedMesh->getBoneTransforms(transforms);
 	m_skinningTechnique->enable();
 	for (uint i = 0; i < transforms.size(); i++) {
-		m_skinningTechnique->setBoneTransform(i, transforms[i]); // send transforms to vertex shader
+		m_skinningTechnique->setBoneTransform(i, transforms[i]);
 	}
-	//if (!print) cout.clear();
 }
-//*/
-
 void MainWidget::setRenderAxes(bool state)
 {
 	if (m_renderAxes != state) {
@@ -441,8 +446,8 @@ void MainWidget::setRenderModel(bool state)
 }
 void MainWidget::setRenderSkeleton(bool state)
 {
-	if (m_renderSkeleton != state) {
-		m_renderSkeleton = state;
+	if (m_renderKinectSkeleton != state) {
+		m_renderKinectSkeleton = state;
 		update();
 	}
 }
@@ -456,11 +461,11 @@ bool MainWidget::renderSkinnedMesh() const
 }
 bool MainWidget::renderKinectSkeleton() const
 {
-	return m_renderSkeleton;
+	return m_renderKinectSkeleton;
 }
 bool MainWidget::modelSkinning() const
 {
-	return m_modelSkinning;
+	return m_skinningEnabled;
 }
 QStringList MainWidget::modelBoneList() const
 {
@@ -470,7 +475,7 @@ QStringList MainWidget::modelBoneList() const
 }
 void MainWidget::setModelName(const QString &modelName)
 {
-	m_modelName = modelName;
+	m_skinnedMeshModelName = modelName;
 }
 void MainWidget::setModelSkinning(bool state)
 {
@@ -496,13 +501,13 @@ void MainWidget::unloadSkinnedMesh()
 		SAFE_DELETE(m_textures[i]);
 	}
 
-	if (m_Buffers[0] != 0) {
-		glDeleteBuffers(ARRAY_SIZE_IN_ELEMENTS(m_Buffers), m_Buffers);
+	if (m_skinnedMeshVBOs[0] != 0) {
+		glDeleteBuffers(ARRAY_SIZE_IN_ELEMENTS(m_skinnedMeshVBOs), m_skinnedMeshVBOs);
 	}
 
-	if (m_VAO != 0) {
-		glDeleteVertexArrays(1, &m_VAO);
-		m_VAO = 0;
+	if (m_skinnedMeshVAO != 0) {
+		glDeleteVertexArrays(1, &m_skinnedMeshVAO);
+		m_skinnedMeshVAO = 0;
 	}
 }
 void MainWidget::updateIndirect()
@@ -543,20 +548,23 @@ void MainWidget::setActiveBone(const QString& boneName)
 {
 	m_activeBone = m_skinnedMesh->findBoneId(boneName);
 }
-bool MainWidget::loadSkinnedMesh(const string& basename)
+void MainWidget::loadSkinnedMesh()
 {
 	// Release the previously loaded mesh (if it exists)
 	unloadSkinnedMesh();
 
-	bool Ret = false;
 	for (int i = 0; i < m_skinnedMesh->images().size(); i++) m_textures.push_back(new QOpenGLTexture(m_skinnedMesh->images()[i]));
 
 	// Create the VAO
-	glGenVertexArrays(1, &m_VAO);
-	glBindVertexArray(m_VAO);
+	glGenVertexArrays(1, &m_skinnedMeshVAO);
+	cout << "skinnedMeshVAO=" << m_skinnedMeshVAO << endl;
+	glBindVertexArray(m_skinnedMeshVAO);
 
 	// Create the buffers for the vertices attributes
-	glGenBuffers(ARRAY_SIZE_IN_ELEMENTS(m_Buffers), m_Buffers);
+	glGenBuffers(ARRAY_SIZE_IN_ELEMENTS(m_skinnedMeshVBOs), m_skinnedMeshVBOs);
+	for (uint i = 0; i < ARRAY_SIZE_IN_ELEMENTS(m_skinnedMeshVBOs); i++) {
+		cout << "skinnedMeshVBO=" << m_skinnedMeshVBOs[i] << endl;
+	}
 
 #define POSITION_LOCATION    0
 #define TEX_COORD_LOCATION   1
@@ -564,65 +572,68 @@ bool MainWidget::loadSkinnedMesh(const string& basename)
 #define BONE_ID_LOCATION     3
 #define BONE_WEIGHT_LOCATION 4
 
-	const auto& Positions = m_skinnedMesh->positions();
-	const auto& TexCoords = m_skinnedMesh->texCoords();
-	const auto& Normals = m_skinnedMesh->normals();
-	const auto& Bones = m_skinnedMesh->vertexBoneData();
-	const auto& Indices = m_skinnedMesh->indices();
+	const auto& positions = m_skinnedMesh->positions();
+	const auto& texCoords = m_skinnedMesh->texCoords();
+	const auto& normals = m_skinnedMesh->normals();
+	const auto& vertexBoneData = m_skinnedMesh->vertexBoneData();
+	const auto& indices = m_skinnedMesh->indices();
 
 	// Generate and populate the buffers with vertex attributes and the indices
-	glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[POS_VB]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Positions[0]) * Positions.size(), &Positions[0], GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, m_skinnedMeshVBOs[POS_VB]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(positions[0]) * positions.size(), &positions[0], GL_STATIC_DRAW);
 	glEnableVertexAttribArray(POSITION_LOCATION);
 	glVertexAttribPointer(POSITION_LOCATION, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[TEXCOORD_VB]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(TexCoords[0]) * TexCoords.size(), TexCoords.constData(), GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, m_skinnedMeshVBOs[TEXCOORD_VB]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(texCoords[0]) * texCoords.size(), texCoords.constData(), GL_STATIC_DRAW);
 	glEnableVertexAttribArray(TEX_COORD_LOCATION);
 	glVertexAttribPointer(TEX_COORD_LOCATION, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[NORMAL_VB]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Normals[0]) * Normals.size(), &Normals[0], GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, m_skinnedMeshVBOs[NORMAL_VB]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(normals[0]) * normals.size(), &normals[0], GL_STATIC_DRAW);
 	glEnableVertexAttribArray(NORMAL_LOCATION);
 	glVertexAttribPointer(NORMAL_LOCATION, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_Buffers[BONE_VB]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Bones[0]) * Bones.size(), &Bones[0], GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, m_skinnedMeshVBOs[BONE_VB]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertexBoneData[0]) * vertexBoneData.size(), &vertexBoneData[0], GL_STATIC_DRAW);
 	glEnableVertexAttribArray(BONE_ID_LOCATION);
 	glVertexAttribIPointer(BONE_ID_LOCATION, 4, GL_INT, sizeof(VertexBoneData), (const GLvoid*)0);
 	glEnableVertexAttribArray(BONE_WEIGHT_LOCATION);
 	glVertexAttribPointer(BONE_WEIGHT_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(VertexBoneData), (const GLvoid*)16);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_Buffers[INDEX_BUFFER]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Indices[0]) * Indices.size(), &Indices[0], GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_skinnedMeshVBOs[INDEX_BUFFER]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices[0]) * indices.size(), &indices[0], GL_STATIC_DRAW);
 
-	// Make sure the VAO is not changed from the outside
 	glBindVertexArray(0);
 
-	Ret = GLCheckError();
-	if (Ret) cout << "Successfully loaded SkinnedMesh to GPU (MainWidget)" << endl;
-	return Ret;
+	if (GLNoError()) {
+		cout << "Successfully loaded SkinnedMesh to GPU" << endl;
+	}
+	else {
+		cout << "Error loading SkinnedMesh to GPU" << endl;
+		GLPrintError();
+	}
 }
 void MainWidget::drawSkinnedMesh()
 {
-	glBindVertexArray(m_VAO);
-	auto Entries = m_skinnedMesh->entries();
-	for (uint i = 0; i < Entries.size(); i++) {
-		const uint MaterialIndex = Entries[i].MaterialIndex;
+	glBindVertexArray(m_skinnedMeshVAO);
 
-		assert(MaterialIndex < m_textures.size());
+	auto meshEntries = m_skinnedMesh->entries();
+	for (uint i = 0; i < meshEntries.size(); i++) {
+		const uint materialIndex = meshEntries[i].MaterialIndex;
 
-		if (m_textures[MaterialIndex]) {
-			m_textures[MaterialIndex]->bind();
+		assert(materialIndex < m_textures.size());
+
+		if (m_textures[materialIndex]) {
+			m_textures[materialIndex]->bind();
 		}
 		glDrawElementsBaseVertex(GL_TRIANGLES,
-			Entries[i].NumIndices,
+			meshEntries[i].NumIndices,
 			GL_UNSIGNED_INT,
-			(void*)(sizeof(uint) * Entries[i].BaseIndex),
-			Entries[i].BaseVertex);
+			(void*)(sizeof(uint) * meshEntries[i].BaseIndex),
+			meshEntries[i].BaseVertex);
 	}
 
-	// Make sure the VAO is not changed from the outside    
 	glBindVertexArray(0);
 }
 void MainWidget::loadArrow()
@@ -657,15 +668,18 @@ void MainWidget::loadArrow()
 		1, 5,
 	};
 	glGenVertexArrays(1, &m_arrowVAO);
+	cout << "arrowVAO=" << m_arrowVAO << endl;
 	glBindVertexArray(m_arrowVAO);
 
 	GLuint arrowIBO;
 	glGenBuffers(1, &arrowIBO);
+	cout << "arrowIBO=" << arrowIBO << endl;
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, arrowIBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
 
 	GLuint arrowVBO;
 	glGenBuffers(1, &arrowVBO);
+	cout << "arrowVBO=" << arrowVBO << endl;
 	glBindBuffer(GL_ARRAY_BUFFER, arrowVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0], GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
@@ -673,7 +687,7 @@ void MainWidget::loadArrow()
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, BUFFER_OFFSET(sizeof(GLfloat) * 3));
 
-	glBindVertexArray(0); // break the existing vertex array object binding
+	glBindVertexArray(0);
 }
 void MainWidget::drawArrow()
 {
@@ -704,14 +718,17 @@ void MainWidget::loadAxes()
 
 	glGenVertexArrays(1, &m_axesVAO);
 	glBindVertexArray(m_axesVAO);
+	cout << "axesVAO=" << m_axesVAO << endl;
 
 	GLuint axesIBO;
 	glGenBuffers(1, &axesIBO);
+	cout << "axesIBO=" << axesIBO << endl;
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, axesIBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
 
 	GLuint axesVBO;
 	glGenBuffers(1, &axesVBO);
+	cout << "axesVBO=" << axesVBO << endl;
 	glBindBuffer(GL_ARRAY_BUFFER, axesVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0], GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
@@ -727,7 +744,7 @@ void MainWidget::drawAxes()
 	glDrawElements(GL_LINES, 6, GL_UNSIGNED_SHORT, 0);
 	glBindVertexArray(0);
 }
-void MainWidget::loadSkeleton()
+void MainWidget::loadKinectSkeletonJoints()
 {
 	GLushort indices[] =
 	{
@@ -760,17 +777,19 @@ void MainWidget::loadSkeleton()
 		JointType_AnkleRight   , JointType_FootRight
 	};
 
-	glGenVertexArrays(1, &m_skeletonVAO);
-	glBindVertexArray(m_skeletonVAO);
+	glGenVertexArrays(1, &m_kinectSkeletonJointsVAO);
+	glBindVertexArray(m_kinectSkeletonJointsVAO);
+	cout << "kinectSkeletonJointsVAO=" << m_kinectSkeletonJointsVAO << endl;
 
 	GLuint skeletonIBO;
 	glGenBuffers(1, &skeletonIBO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skeletonIBO);
+	cout << "kinectSkeletonJointsIBO=" << skeletonIBO << endl;
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
 
-	GLuint skeletonVBO;
-	glGenBuffers(1, &m_skeletonVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_skeletonVBO);
+	glGenBuffers(1, &m_kinectSkeletonJointsVBO);
+	cout << "kinectSkeletonJointsVBO=" << m_kinectSkeletonJointsVBO << endl;
+	glBindBuffer(GL_ARRAY_BUFFER, m_kinectSkeletonJointsVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 2 * 3 * JointType_Count, NULL, GL_STREAM_DRAW);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
@@ -779,35 +798,33 @@ void MainWidget::loadSkeleton()
 
 	glBindVertexArray(0);
 }
-void MainWidget::updateSkeletonData()
-{
-	glBindBuffer(GL_ARRAY_BUFFER, m_skeletonVBO);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(m_skeletonData), m_skeletonData);
-}
-void MainWidget::drawSkeleton()
+void MainWidget::drawKinectSkeletonJoints()
 {
 	for (uint i = 0; i < JointType_Count; i++) {
-		m_skeletonData[6 * i    ] = m_ksensor->skeleton()->activeJoints()[i].position.x();
-		m_skeletonData[6 * i + 1] = m_ksensor->skeleton()->activeJoints()[i].position.y();
-		m_skeletonData[6 * i + 2] = m_ksensor->skeleton()->activeJoints()[i].position.z();
-		m_skeletonData[6 * i + 3] = (m_ksensor->skeleton()->activeJoints()[i].trackingState == TrackingState_NotTracked ? 255.f : 0.f);
-		m_skeletonData[6 * i + 4] = (m_ksensor->skeleton()->activeJoints()[i].trackingState == TrackingState_Tracked ? 255.f : 0.f);
-		m_skeletonData[6 * i + 5] = (m_ksensor->skeleton()->activeJoints()[i].trackingState == TrackingState_Inferred ? 255.f : 0.f);
+		m_kinectSkeletonJoints[6 * i    ] = m_ksensor->skeleton()->activeJoints()[i].position.x();
+		m_kinectSkeletonJoints[6 * i + 1] = m_ksensor->skeleton()->activeJoints()[i].position.y();
+		m_kinectSkeletonJoints[6 * i + 2] = m_ksensor->skeleton()->activeJoints()[i].position.z();
+		m_kinectSkeletonJoints[6 * i + 3] = (m_ksensor->skeleton()->activeJoints()[i].trackingState == TrackingState_NotTracked ? 255.f : 0.f);
+		m_kinectSkeletonJoints[6 * i + 4] = (m_ksensor->skeleton()->activeJoints()[i].trackingState == TrackingState_Tracked ? 255.f : 0.f);
+		m_kinectSkeletonJoints[6 * i + 5] = (m_ksensor->skeleton()->activeJoints()[i].trackingState == TrackingState_Inferred ? 255.f : 0.f);
 	}
-	updateSkeletonData();
+	//makeCurrent();
+	glBindBuffer(GL_ARRAY_BUFFER, m_kinectSkeletonJointsVBO);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(m_kinectSkeletonJoints), m_kinectSkeletonJoints);
 
-	glBindVertexArray(m_skeletonVAO);
+	glBindVertexArray(m_kinectSkeletonJointsVAO);
 	glDrawElements(GL_LINES, 48, GL_UNSIGNED_SHORT, 0);
 	glBindVertexArray(0);
 }
-void MainWidget::loadMeshJoints()
+void MainWidget::loadSkinnedMeshJoints()
 {
-	glGenVertexArrays(1, &m_meshJointsVAO);
-	glBindVertexArray(m_meshJointsVAO);
+	glGenVertexArrays(1, &m_skinnedMeshJointsVAO);
+	glBindVertexArray(m_skinnedMeshJointsVAO);
+	cout << "skinnedMeshJointsVAO=" << m_skinnedMeshJointsVAO << endl;
 
-	GLuint m_meshJointsVBO;
-	glGenBuffers(1, &m_meshJointsVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_meshJointsVBO);
+	glGenBuffers(1, &m_skinnedMeshJointsVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_skinnedMeshJointsVBO);
+	cout << "skinnedMeshJointsVBO=" << m_skinnedMeshJointsVBO << endl;
 	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 2 * 3 * NUM_BONES, NULL, GL_STREAM_DRAW);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
@@ -815,11 +832,6 @@ void MainWidget::loadMeshJoints()
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, BUFFER_OFFSET(sizeof(GLfloat) * 3));
 
 	glBindVertexArray(0);
-}
-void MainWidget::updateSkinnedMeshJoints()
-{
-	glBindBuffer(GL_ARRAY_BUFFER, m_meshJointsVBO);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(m_skinnedMeshJoints), m_skinnedMeshJoints);
 }
 void MainWidget::drawSkinnedMeshJoints()
 {
@@ -831,9 +843,11 @@ void MainWidget::drawSkinnedMeshJoints()
 		m_skinnedMeshJoints[6 * i + 4] = 255.f;
 		m_skinnedMeshJoints[6 * i + 5] = 0.f;	 
 	}
-	updateSkinnedMeshJoints();
 
-	glBindVertexArray(m_meshJointsVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_skinnedMeshJointsVBO);
+
+	glBindVertexArray(m_skinnedMeshJointsVAO);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(m_skinnedMeshJoints), m_skinnedMeshJoints);
 	glDrawArrays(GL_POINTS, 0, NUM_BONES*60);
 	glBindVertexArray(0);
 }
@@ -869,16 +883,19 @@ void MainWidget::loadCube(float r)
 		0, 4, 7, 3
 	};
 
-	glGenVertexArrays(1, &m_skeletonCubesVAO);
-	glBindVertexArray(m_skeletonCubesVAO);
+	glGenVertexArrays(1, &m_cubeVAO);
+	glBindVertexArray(m_cubeVAO);
+	cout << "cubeVAO=" << m_cubeVAO << endl;
 
-	GLuint skeletonCubesIBO;
-	glGenBuffers(1, &skeletonCubesIBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skeletonCubesIBO);
+	GLuint cubeIBO;
+	glGenBuffers(1, &cubeIBO);
+	cout << "cubeIBO=" << cubeIBO << endl;
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
 
-	glGenBuffers(1, &m_skeletonCubesVBO);
-	glBindBuffer(GL_ARRAY_BUFFER, m_skeletonCubesVBO);
+	glGenBuffers(1, &m_cubeVBO);
+	cout << "cubeVBO=" << m_cubeVBO << endl;
+	glBindBuffer(GL_ARRAY_BUFFER, m_cubeVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0], GL_STATIC_DRAW);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, 0);
@@ -895,16 +912,16 @@ void MainWidget::drawCube()
 		else if (m_ksensor->skeleton()->activeJoints()[i].trackingState == TrackingState_Tracked) color.setY(255.f);
 		else color.setZ(255.f);
 		for (uint j = 0; j < 8; j++) {
-			m_skeletonCubesColorData[3 * j + 0] = color.x();
-			m_skeletonCubesColorData[3 * j + 1] = color.y();
-			m_skeletonCubesColorData[3 * j + 2] = color.z();
+			m_cubeColors[3 * j + 0] = color.x();
+			m_cubeColors[3 * j + 1] = color.y();
+			m_cubeColors[3 * j + 2] = color.z();
 		}
 	}
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_skeletonCubesVBO);
-	glBufferSubData(GL_ARRAY_BUFFER, sizeof(m_skeletonCubesColorData), sizeof(m_skeletonCubesColorData), m_skeletonCubesColorData);
+	glBindBuffer(GL_ARRAY_BUFFER, m_cubeVBO);
+	glBufferSubData(GL_ARRAY_BUFFER, sizeof(m_cubeColors), sizeof(m_cubeColors), m_cubeColors);
 
-	glBindVertexArray(m_skeletonCubesVAO);
+	glBindVertexArray(m_cubeVAO);
 	glDrawElements(GL_TRIANGLE_STRIP, 24, GL_UNSIGNED_SHORT, 0);
 	glBindVertexArray(0);
 }
