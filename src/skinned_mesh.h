@@ -138,14 +138,14 @@ public:
 
 private:
 	void clear();
-	void initMesh(uint MeshIndex, const aiMesh* paiMesh);
-	void loadBones(uint MeshIndex, const aiMesh* paiMesh, vector<VertexBoneData>& Bones);
-	bool initImages(const aiScene* pScene, const string& Filename);
-	bool initFromScene(const aiScene* pScene, const string& Filename);
+	void initMesh(uint meshIndex, const aiMesh* paiMesh);
+	void loadBones(uint meshIndex, const aiMesh* paiMesh, vector<VertexBoneData>& bones);
+	bool initImages(const aiScene* pScene, const string& filename);
+	bool initFromScene(const aiScene* pScene, const string& filename);
 
 	// Data loaded in CPU by initMeshFromFile		
 	vector<MeshEntry> m_entries;
-	// Vertex Attributes
+	// Vertex attributes
 	vector<QVector3D> m_positions;
 	vector<QVector3D> m_normals;
 	QVector<QVector2D> m_texCoords;

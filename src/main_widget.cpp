@@ -109,36 +109,21 @@ void MainWidget::initializeGL()
 	qDebug() << "Obtained format:" << format();
 	initializeOpenGLFunctions();
 
-	// Init plane shaders
-	QOpenGLShader planeVS(QOpenGLShader::Vertex);
-	QOpenGLShader planeFS(QOpenGLShader::Fragment);
-	planeVS.compileSourceFile("shaders/plane.vs");
-	planeFS.compileSourceFile("shaders/plane.fs");
+	glEnable(GL_TEXTURE_2D);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.f);
+	glClearDepth(1.0f);
+	glEnable(GL_POINT_SMOOTH);
+	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
-	m_shaderProgram = new QOpenGLShaderProgram(context());
-	if (m_shaderProgram->addShader(&planeVS)) cout << "Added plane vertex shader." << endl;
-	else cout << "Could not add plane vertex shader." << endl;
-	qDebug() << m_shaderProgram->log();
-	if (m_shaderProgram->addShader(&planeFS)) cout << "Added plane fragment shader." << endl;
-	else cout << "Could not add plane fragment shader." << endl;
-	qDebug() << m_shaderProgram->log();
-	if (m_shaderProgram->link()) cout << "Linked plane vertex shader." << endl;
-	else cout << "Could not link plane vertex shader." << endl;
-	qDebug() << m_shaderProgram->log();
-	if (m_shaderProgram->bind()) cout << "Bound plane vertex shader." << endl;
-	else cout << "Could not bind plane vertex shader." << endl;
+	glDepthFunc(GL_LEQUAL);
+	glEnable(GL_DEPTH_TEST);
 
-	cout << "Shader program id: " << m_shaderProgram->programId() << endl;
-	cout << "Is supported by system? " << m_shaderProgram->hasOpenGLShaderPrograms() << endl;
-	m_positionLocation  = m_shaderProgram->attributeLocation("inPosition");
-	m_colorLocation		= m_shaderProgram->attributeLocation("inColor");
-	m_mvpLocation		= m_shaderProgram->uniformLocation("gMVP");
-	m_specificLocation  = m_shaderProgram->uniformLocation("gSpecific");
-	cout << "Locations in shader program:" << endl;
-	cout << m_positionLocation << " ";
-	cout << m_colorLocation << " ";
-	cout << m_mvpLocation << " ";
-	cout << m_specificLocation << endl;
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
+
+	glFrontFace(GL_CCW);
+	glCullFace(GL_BACK);
+	glEnable(GL_CULL_FACE);
 
 	// Init technique
 	m_technique = new Technique();
@@ -166,6 +151,42 @@ void MainWidget::initializeGL()
 		m_skinningTechnique->setBoneVisibility(i, m_skinnedMesh->boneVisibility(i));
 	}
 	
+	// Init plane shaders
+	QOpenGLShader planeVS(QOpenGLShader::Vertex);
+	QOpenGLShader planeFS(QOpenGLShader::Fragment);
+	planeVS.compileSourceFile("shaders/plane.vs");
+	planeFS.compileSourceFile("shaders/plane.fs");
+
+	m_shaderProgram = new QOpenGLShaderProgram(context());
+	if (m_shaderProgram->addShader(&planeVS)) cout << "Added plane vertex shader." << endl;
+	else cout << "Could not add plane vertex shader." << endl;
+	qDebug() << m_shaderProgram->log();
+	if (m_shaderProgram->addShader(&planeFS)) cout << "Added plane fragment shader." << endl;
+	else cout << "Could not add plane fragment shader." << endl;
+	qDebug() << m_shaderProgram->log();
+	if (m_shaderProgram->link()) cout << "Linked plane vertex shader." << endl;
+	else cout << "Could not link plane vertex shader." << endl;
+	qDebug() << m_shaderProgram->log();
+	if (m_shaderProgram->bind()) cout << "Bound plane vertex shader." << endl;
+	else cout << "Could not bind plane vertex shader." << endl;
+
+	cout << "Shader program id: " << m_shaderProgram->programId() << endl;
+	cout << "Is supported by system? " << m_shaderProgram->hasOpenGLShaderPrograms() << endl;
+	m_positionLocation = m_shaderProgram->attributeLocation("inPosition");
+	m_colorLocation = m_shaderProgram->attributeLocation("inColor");
+	m_mvpLocation = m_shaderProgram->uniformLocation("gMVP");
+	m_specificLocation = m_shaderProgram->uniformLocation("gSpecific");
+	cout << "Locations in shader program:" << endl;
+	cout << m_positionLocation << " ";
+	cout << m_colorLocation << " ";
+	cout << m_mvpLocation << " ";
+	cout << m_specificLocation << endl;
+	float skinnedMeshFeet;
+	skinnedMeshFeet = m_skinnedMesh->boneEndPosition(m_skinnedMesh->findBoneId("LeftFoot")).y();
+	skinnedMeshFeet += m_skinnedMesh->boneEndPosition(m_skinnedMesh->findBoneId("RightFoot")).y();
+	skinnedMeshFeet /= 2;
+	m_shaderProgram->setUniformValue(m_specificLocation, fromTranslation(QVector3D(0, skinnedMeshFeet, 0)));
+
 	loadSkinnedMesh();
 	loadAxes();
 	loadArrow();
@@ -173,29 +194,9 @@ void MainWidget::initializeGL()
 	loadSkinnedMeshJoints();
 	loadCube(0.03);
 	loadPlane();
-
-	glEnable(GL_TEXTURE_2D);
-	glClearColor(0.0f, 0.0f, 0.0f, 1.f);               
-	glClearDepth(1.0f);									
-	glEnable(GL_POINT_SMOOTH);							
-	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-
-	glDepthFunc(GL_LEQUAL);
-	glEnable(GL_DEPTH_TEST);
-
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_BLEND);
-
-	glFrontFace(GL_CCW);
-	glCullFace(GL_BACK);
-	glEnable(GL_CULL_FACE);
 	
-	// glShadeModel(GL_SMOOTH); // #? deprecated
-
-	//transformSkinnedMesh(true);
 	cout << "MainWidget initializeGL end." << endl;
 }
-// #? must enable corresponding shading technique before using each drawing function. bad design?
 void MainWidget::paintGL()
 {
 	glClearColor(0.f, 0.f, 0.f, 1.f);
@@ -213,17 +214,16 @@ void MainWidget::paintGL()
 	}
 	m_time = m_skinnedMesh->timestamp(m_activeFrame);
 
-	transformSkinnedMesh(false);
+	// enable skinning technique
+	m_skinningTechnique->enable();
 
 	// prepare pipeline for drawing skinned mesh related stuff
+	transformSkinnedMesh(false);
 	if (m_defaultPose) m_pipeline->setWorldRotation(QQuaternion());
 	else m_pipeline->setWorldRotation(m_skinnedMesh->pelvisRotation());
 	if (m_defaultPose) m_pipeline->setWorldPosition(QVector3D());
 	else m_pipeline->setWorldPosition(m_skinnedMesh->pelvisPosition() + m_skinnedMeshOffset);
 	m_skinningTechnique->setWVP(m_pipeline->getWVPtrans());
-
-	// enable skinning technique
-	m_skinningTechnique->enable();
 
 	// draw skinned mesh
 	if (m_mode == Mode::PLAYBACK && m_renderSkinnedMesh && m_skinnedMesh->m_successfullyLoaded) {
@@ -247,7 +247,7 @@ void MainWidget::paintGL()
 	m_technique->setSpecific(QMatrix4x4());
 	if (m_renderAxes) drawAxes();
 
-	// Prepare pipeline to draw kinect skeleton related stuff
+	// prepare pipeline to draw kinect skeleton related stuff
 	m_pipeline->setWorldRotation(QQuaternion());
 	if (m_defaultPose) m_pipeline->setWorldPosition(QVector3D());
 	else m_pipeline->setWorldPosition(m_kinectSkeletonOffset);
@@ -264,7 +264,6 @@ void MainWidget::paintGL()
 		m_technique->setSpecific(fromTranslation(HipsMid));
 		drawCube();
 	}
-
 	
 	// draw arrow
 	QVector3D leftHand = (m_ksensor->skeleton()->activeJoints())[JointType_HandLeft].position;
@@ -276,8 +275,14 @@ void MainWidget::paintGL()
 	m_technique->setSpecific(T * R * S);
 	drawArrow();
 
+	// enable plane shaders
+	m_shaderProgram->bind();
+	
 	// draw planes
-	drawPlanes();
+	m_pipeline->setWorldPosition(QVector3D());
+	m_pipeline->setWorldRotation(QQuaternion());
+	m_shaderProgram->setUniformValue(m_mvpLocation, m_pipeline->getWVPtrans());
+	drawPlane();
 
 	// calculate bar horizontal angle
 	m_barAngle = ToDegrees(atan2(barDirection.y(), sqrt(pow(barDirection.x(), 2) + pow(barDirection.z(), 2))));
@@ -549,8 +554,8 @@ Technique* MainWidget::technique()
 }
 void MainWidget::unloadSkinnedMesh()
 {
-	for (uint i = 0; i < m_textures.size(); i++) {
-		SAFE_DELETE(m_textures[i]);
+	for (uint i = 0; i < m_skinnedMeshTextures.size(); i++) {
+		SAFE_DELETE(m_skinnedMeshTextures[i]);
 	}
 
 	if (m_skinnedMeshVBOs[0] != 0) {
@@ -597,17 +602,16 @@ void MainWidget::setActiveBone(const QString& boneName)
 }
 void MainWidget::loadSkinnedMesh()
 {
-	// Release the previously loaded mesh (if it exists)
 	unloadSkinnedMesh();
 
-	for (int i = 0; i < m_skinnedMesh->images().size(); i++) m_textures.push_back(new QOpenGLTexture(m_skinnedMesh->images()[i]));
+	for (int i = 0; i < m_skinnedMesh->images().size(); i++) {
+		m_skinnedMeshTextures.push_back(new QOpenGLTexture(m_skinnedMesh->images()[i]));
+	}
 
-	// Create the VAO
 	glGenVertexArrays(1, &m_skinnedMeshVAO);
 	cout << "skinnedMeshVAO=" << m_skinnedMeshVAO << endl;
 	glBindVertexArray(m_skinnedMeshVAO);
 
-	// Create the buffers for the vertices attributes
 	glGenBuffers(ARRAY_SIZE_IN_ELEMENTS(m_skinnedMeshVBOs), m_skinnedMeshVBOs);
 	for (uint i = 0; i < ARRAY_SIZE_IN_ELEMENTS(m_skinnedMeshVBOs); i++) {
 		cout << "skinnedMeshVBO=" << m_skinnedMeshVBOs[i] << endl;
@@ -625,7 +629,6 @@ void MainWidget::loadSkinnedMesh()
 	const auto& vertexBoneData = m_skinnedMesh->vertexBoneData();
 	const auto& indices = m_skinnedMesh->indices();
 
-	// Generate and populate the buffers with vertex attributes and the indices
 	glBindBuffer(GL_ARRAY_BUFFER, m_skinnedMeshVBOs[POS_VB]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(positions[0]) * positions.size(), &positions[0], GL_STATIC_DRAW);
 	glEnableVertexAttribArray(POSITION_LOCATION);
@@ -665,20 +668,18 @@ void MainWidget::drawSkinnedMesh()
 {
 	glBindVertexArray(m_skinnedMeshVAO);
 
-	auto meshEntries = m_skinnedMesh->entries();
+	const auto& meshEntries = m_skinnedMesh->entries();
 	for (uint i = 0; i < meshEntries.size(); i++) {
 		const uint materialIndex = meshEntries[i].MaterialIndex;
-
-		assert(materialIndex < m_textures.size());
-
-		if (m_textures[materialIndex]) {
-			m_textures[materialIndex]->bind();
-		}
-		glDrawElementsBaseVertex(GL_TRIANGLES,
-			meshEntries[i].NumIndices,
-			GL_UNSIGNED_INT,
+		assert(materialIndex < m_skinnedMeshTextures.size());
+		m_skinnedMeshTextures[materialIndex]->bind();
+		glDrawElementsBaseVertex(
+			GL_TRIANGLES									,
+			meshEntries[i].NumIndices						,
+			GL_UNSIGNED_INT									,
 			(void*)(sizeof(uint) * meshEntries[i].BaseIndex),
-			meshEntries[i].BaseVertex);
+			meshEntries[i].BaseVertex
+		);
 	}
 
 	glBindVertexArray(0);
@@ -686,24 +687,23 @@ void MainWidget::drawSkinnedMesh()
 void MainWidget::loadArrow()
 {
 	const float head = 0.1f;
-	const float colorRed = 255.f;
-	const float colorBlue = 255.f;
+	const float colorRed   = 255.f;
+	const float colorBlue  = 255.f;
 	const float colorGreen = 255.f;
-
 	const GLfloat vertices[] =
 	{
-		0         ,   0, 0, // start
-		colorRed  , colorGreen, colorBlue,
-		0         ,   1, 0, // end
-		colorRed  , colorGreen, colorBlue,
-		head      , 1 - head, 0, // +x
-		colorRed  , colorGreen, colorBlue,
-		-head     , 1 - head, 0, // -x
-		colorRed  , colorGreen, colorBlue,
-		0         , 1 - head, head, // +z
-		colorRed  , colorGreen, colorBlue,
-		0         , 1 - head, -head, // -z
-		colorRed  , colorGreen, colorBlue,
+		0       , 0			, 0		   , // start
+		colorRed, colorGreen, colorBlue,
+		0       , 1			, 0		   , // end
+		colorRed, colorGreen, colorBlue,
+		head    , 1 - head  , 0		   , // +x
+		colorRed, colorGreen, colorBlue,
+		-head   , 1 - head  , 0		   , // -x
+		colorRed, colorGreen, colorBlue,
+		0       , 1 - head  , head	   , // +z
+		colorRed, colorGreen, colorBlue,
+		0       , 1 - head  , -head	   , // -z
+		colorRed, colorGreen, colorBlue,
 	};
 
 	const GLushort indices[] =
@@ -714,6 +714,7 @@ void MainWidget::loadArrow()
 		1, 4,
 		1, 5,
 	};
+
 	glGenVertexArrays(1, &m_arrowVAO);
 	cout << "arrowVAO=" << m_arrowVAO << endl;
 	glBindVertexArray(m_arrowVAO);
@@ -739,7 +740,9 @@ void MainWidget::loadArrow()
 void MainWidget::drawArrow()
 {
 	glBindVertexArray(m_arrowVAO);
+
 	glDrawElements(GL_LINES, 10, GL_UNSIGNED_SHORT, 0);
+
 	glBindVertexArray(0);
 }
 void MainWidget::loadAxes()
@@ -788,7 +791,9 @@ void MainWidget::loadAxes()
 void MainWidget::drawAxes()
 {
 	glBindVertexArray(m_axesVAO);
+
 	glDrawElements(GL_LINES, 6, GL_UNSIGNED_SHORT, 0);
+
 	glBindVertexArray(0);
 }
 void MainWidget::loadKinectSkeletonJoints()
@@ -860,7 +865,9 @@ void MainWidget::drawKinectSkeletonJoints()
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(m_kinectSkeletonJoints), m_kinectSkeletonJoints);
 
 	glBindVertexArray(m_kinectSkeletonJointsVAO);
+
 	glDrawElements(GL_LINES, 48, GL_UNSIGNED_SHORT, 0);
+
 	glBindVertexArray(0);
 }
 void MainWidget::loadSkinnedMeshJoints()
@@ -891,11 +898,13 @@ void MainWidget::drawSkinnedMeshJoints()
 		m_skinnedMeshJoints[6 * i + 5] = 0.f;	 
 	}
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_skinnedMeshJointsVBO);
 
 	glBindVertexArray(m_skinnedMeshJointsVAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_skinnedMeshJointsVBO);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(m_skinnedMeshJoints), m_skinnedMeshJoints);
 	glDrawArrays(GL_POINTS, 0, NUM_BONES*60);
+
 	glBindVertexArray(0);
 }
 void MainWidget::loadCube(float r)
@@ -965,11 +974,12 @@ void MainWidget::drawCube()
 		}
 	}
 
+	glBindVertexArray(m_cubeVAO);
+
 	glBindBuffer(GL_ARRAY_BUFFER, m_cubeVBO);
 	glBufferSubData(GL_ARRAY_BUFFER, sizeof(m_cubeColors), sizeof(m_cubeColors), m_cubeColors);
-
-	glBindVertexArray(m_cubeVAO);
 	glDrawElements(GL_TRIANGLE_STRIP, 24, GL_UNSIGNED_SHORT, 0);
+
 	glBindVertexArray(0);
 }
 void MainWidget::loadPlane()
@@ -998,22 +1008,19 @@ void MainWidget::loadPlane()
 
 	glBindVertexArray(0);
 
-	m_shaderProgram->bind();
-	m_shaderProgram->setAttributeArray(m_positionLocation, m_planePositions, 3, 0);
-	m_shaderProgram->setAttributeArray(m_colorLocation, m_planeColors, 3, 0);
-	m_shaderProgram->release();
+	// Init plane texture
+	QImage image;
+	if (!image.load("plane/wood.jpg")) cout << "Wood.jpg load failed" << endl;
+	m_planeTexture = new QOpenGLTexture(image.mirrored());
+	m_planeTexture->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
+	m_planeTexture->setMagnificationFilter(QOpenGLTexture::Linear);
 }
-
-void MainWidget::drawPlanes()
+void MainWidget::drawPlane()
 {
-	//m_shaderProgram->bind();
-	m_shaderProgram->setUniformValue(m_mvpLocation, m_pipeline->getWVPtrans());
-	m_shaderProgram->setUniformValue(m_specificLocation, QMatrix4x4());
-
 	glBindVertexArray(m_planeVAO);
-	glDrawArrays(GL_LINE_LOOP, 0, 3);
-	glBindVertexArray(0);
 
-	m_shaderProgram->disableAttributeArray(m_positionLocation);
-	m_shaderProgram->disableAttributeArray(m_colorLocation);
+	m_planeTexture->bind();
+	glDrawArrays(GL_TRIANGLE_FAN, 0, PLANE_VERTICES);
+
+	glBindVertexArray(0);
 }

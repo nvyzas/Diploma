@@ -103,7 +103,7 @@ bool SkinnedMesh::initMeshFromFile(const string& fileName)
 	}
     return ret;
 }
-bool SkinnedMesh::initFromScene(const aiScene* pScene, const string& Filename)
+bool SkinnedMesh::initFromScene(const aiScene* pScene, const string& filename)
 {  
     m_entries.resize(pScene->mNumMeshes);
        
@@ -148,11 +148,11 @@ bool SkinnedMesh::initFromScene(const aiScene* pScene, const string& Filename)
 	initCorrectionQuats();
 	initCorrectedMatrices();
 	initCoordinates();
-	initImages(m_pScene, Filename);
+	initImages(m_pScene, filename);
 
 	return true;
 }
-void SkinnedMesh::initMesh(uint MeshIndex, const aiMesh* paiMesh)
+void SkinnedMesh::initMesh(uint meshIndex, const aiMesh* paiMesh)
 {
 	const aiVector3D Zero3D(0.0f, 0.0f, 0.0f);
 
@@ -167,11 +167,11 @@ void SkinnedMesh::initMesh(uint MeshIndex, const aiMesh* paiMesh)
 		m_texCoords.push_back(QVector2D(pTexCoord->x, pTexCoord->y));
 	}
 
-	loadBones(MeshIndex, paiMesh, m_vertexBoneData);
+	loadBones(meshIndex, paiMesh, m_vertexBoneData);
 	bool SumNot1 = false;
 	for (uint i = 0; i < paiMesh->mNumVertices; i++) {
 		float sum = 0;
-		uint VertexID = m_entries[MeshIndex].BaseVertex + i;
+		uint VertexID = m_entries[meshIndex].BaseVertex + i;
 		for (uint i = 0; i < NUM_BONES_PER_VERTEX; i++) {
 			sum += m_vertexBoneData[VertexID].Weights[i];
 		}
@@ -188,7 +188,7 @@ void SkinnedMesh::initMesh(uint MeshIndex, const aiMesh* paiMesh)
 		m_indices.push_back(Face.mIndices[2]);
 	}
 }
-void SkinnedMesh::loadBones(uint MeshIndex, const aiMesh* pMesh, vector<VertexBoneData>& Bones)
+void SkinnedMesh::loadBones(uint meshIndex, const aiMesh* pMesh, vector<VertexBoneData>& bones)
 {
 	for (uint i = 0; i < pMesh->mNumBones; i++) {
 		uint BoneIndex = 0;
@@ -207,45 +207,43 @@ void SkinnedMesh::loadBones(uint MeshIndex, const aiMesh* pMesh, vector<VertexBo
 		m_boneInfo[BoneIndex].offset = toQMatrix(pMesh->mBones[i]->mOffsetMatrix);
 
 		for (uint j = 0; j < pMesh->mBones[i]->mNumWeights; j++) {
-			uint VertexID = m_entries[MeshIndex].BaseVertex + pMesh->mBones[i]->mWeights[j].mVertexId;
+			uint VertexID = m_entries[meshIndex].BaseVertex + pMesh->mBones[i]->mWeights[j].mVertexId;
 			float Weight = pMesh->mBones[i]->mWeights[j].mWeight;
-			Bones[VertexID].AddBoneData(BoneIndex, Weight);
+			bones[VertexID].AddBoneData(BoneIndex, Weight);
 		}
 	}
 }
-bool SkinnedMesh::initImages(const aiScene* pScene, const string& Filename)
+bool SkinnedMesh::initImages(const aiScene* pScene, const string& fileName)
 {
 	// Extract the directory part from the file name
-	string::size_type SlashIndex = Filename.find_last_of("/");
-	string Dir;
+	string::size_type slashIndex = fileName.find_last_of("/");
+	string directory;
 
-	if (SlashIndex == string::npos) {
-		Dir = ".";
+	if (slashIndex == string::npos) {
+		directory = ".";
 	}
-	else if (SlashIndex == 0) {
-		Dir = "/";
+	else if (slashIndex == 0) {
+		directory = "/";
 	}
 	else {
-		Dir = Filename.substr(0, SlashIndex);
+		directory = fileName.substr(0, slashIndex);
 	}
 
 	bool ret;
-
 	// Initialize the materials
 	for (uint i = 0; i < pScene->mNumMaterials; i++) {
 		ret = false;
 		const aiMaterial* pMaterial = pScene->mMaterials[i];
 		if (pMaterial->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
-			aiString Path;
-			if (pMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS) {
-				string p(Path.data);
+			aiString path;
+			if (pMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS) {
+				string p(path.data);
 				if (p.substr(0, 2) == ".\\") {
 					p = p.substr(2, p.size() - 2);
 				}
-				string foolPath(Dir + "\\" + p);
-				QString fullPath = QString::fromLocal8Bit(foolPath.c_str());
-				cout << "Loading image: " << foolPath << endl;
-				m_images.push_back(QImage(QString(fullPath)));
+				string fullPath = string(directory + "\\" + p).c_str();
+				cout << "Loading image: " << fullPath << endl;
+				m_images.push_back(QImage(QString::fromStdString(fullPath)));
 				ret = true;
 			}
 		}
