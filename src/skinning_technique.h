@@ -68,12 +68,12 @@ public:
     void setWVP(const QMatrix4x4& WVP);
     void SetWorldMatrix(const QMatrix4x4& world);
     void SetColorTextureUnit(uint TextureUnit);
-    void SetDirectionalLight(const DirectionalLight& Light);
+    void setDirectionalLight(const DirectionalLight& Light);
     void SetPointLights(uint NumLights, const PointLight* pLights);
     void SetSpotLights(uint NumLights, const SpotLight* pLights);
     void SetEyeWorldPos(const QVector3D& EyeWorldPos);
-    void SetMatSpecularIntensity(float Intensity);
-    void SetMatSpecularPower(float Power);
+    void setMatSpecularIntensity(float Intensity);
+    void setMatSpecularPower(float Power);
     void setBoneTransform(uint index, const QMatrix4x4& transform);
 	void setSkinning(int value);
 	void setBoneVisibility(uint Index, const bool& Visibility);

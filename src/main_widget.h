@@ -30,17 +30,6 @@ public:
 	MainWidget(QWidget *parent = Q_NULLPTR);
 	~MainWidget();
 	
-	// get functions
-	SkinnedMesh* skinnedMesh();
-	SkinningTechnique* skinningTechnique();
-	Technique* technique();
-	bool renderAxes() const;
-	bool renderSkinnedMesh() const;
-	bool renderKinectSkeleton() const;
-	bool modelSkinning() const;
-	QStringList modelBoneList() const;
-
-	void transformSkinnedMesh(bool print);
 
 	// #todo #? make private and create get/set functions
 	const uint m_captureInterval = 10; // in milliseconds
@@ -52,6 +41,20 @@ public:
 	QVector3D m_barSpeed;
 	double m_time;
 
+	void transformSkinnedMesh(bool print);
+
+	// get functions
+	SkinnedMesh* skinnedMesh();
+	SkinningTechnique* skinningTechnique();
+	Technique* technique();
+	KSensor* ksensor();
+	bool renderAxes() const;
+	bool renderSkinnedMesh() const;
+	bool renderKinectSkeleton() const;
+	bool modelSkinning() const;
+	QStringList modelBoneList() const;
+	QString mode() const;
+
 public slots:
 	void setRenderAxes(bool state);
 	void setRenderModel(bool state);
@@ -59,7 +62,6 @@ public slots:
 	void setModelName(const QString& modelName);
 	void setModelSkinning(bool state);
 	void setBoneAxes(const QString& boneName);
-	void setKSensor(KSensor& ksensor);
 	void changeMode();
 	void updateIndirect(); // #todo replace it with something else
 	void setActiveFrame(uint index);
@@ -75,8 +77,7 @@ protected:
 	void wheelEvent(QWheelEvent *event) override;
 
 private:
-
-	KSensor * m_ksensor;
+	KSensor* m_ksensor;
 	SkinnedMesh* m_skinnedMesh;
 	Camera* m_camera;
 	Technique* m_technique;
@@ -89,7 +90,7 @@ private:
 		CAPTURE,
 		PLAYBACK
 	};
-	Mode m_modeOfOperation;
+	Mode m_mode;
 	
 	QPoint m_lastMousePosition;
 	bool m_play = true;	

@@ -25,11 +25,13 @@
 MainWidget::MainWidget(QWidget *parent)
 	: 
 	QOpenGLWidget(parent),
+	m_ksensor(new KSensor()),
 	m_skinnedMesh(new SkinnedMesh()),
 	m_camera(new Camera()),
 	m_pipeline(new Pipeline())
 {
 	cout << "MainWidget class constructor start." << endl;
+	setup();
 	cout << "MainWidget class constructor end.\n" << endl;
 }
 MainWidget::~MainWidget()
@@ -49,6 +51,7 @@ MainWidget::~MainWidget()
 	glDeleteVertexArrays(1, &m_kinectSkeletonJointsVAO);
 	glDeleteVertexArrays(1, &m_skinnedMeshJointsVAO);
 	glDeleteVertexArrays(1, &m_cubeVAO);
+	glDeleteVertexArrays(1, &m_planeVAO);
 
 	glDeleteBuffers(1, &m_kinectSkeletonJointsVBO);
 	glDeleteBuffers(1, &m_skinnedMeshJointsVBO);
@@ -56,7 +59,49 @@ MainWidget::~MainWidget()
 
 	doneCurrent();
 }
+void MainWidget::setup()
+{
+	cout << "MainWidget setup start." << endl;
+
+	// Setup mode
+	m_mode = Mode::PLAYBACK;
+	cout << "Mode: " << mode().toStdString() << endl;
+
+	// Setup timer
+	connect(&m_timer, SIGNAL(timeout()), this, SLOT(updateIndirect()));
+	m_timer.setTimerType(Qt::PreciseTimer);
+	m_playbackInterval = m_ksensor->skeleton()->m_interpolationInterval * 1000;
+	cout << "Playback interval: " << m_playbackInterval << endl;
+	m_timer.setInterval(m_playbackInterval);
+	m_timer.start();
+
+	// Setup skinned mesh
+	vector<QMatrix4x4> transforms;
+	m_skinnedMesh->getBoneTransforms(transforms);
+	m_skinnedMesh->initCorrectionVecs(m_ksensor->skeleton()->limbs());
+
+	// #todo: Setup camera
+	m_camera->printInfo();
+
+	// Setup pipeline
+	PerspectiveProjectionInfo perspectiveProjectionInfo;
+	perspectiveProjectionInfo.fieldOfView = 60.f;
+	perspectiveProjectionInfo.aspectRatio = m_camera->windowWidth() / m_camera->windowHeight();
+	perspectiveProjectionInfo.nearPlane = 0.1f;
+	perspectiveProjectionInfo.farPlane = 1000.f;
+	m_pipeline->setPersProjInfo(perspectiveProjectionInfo);
+	m_pipeline->setCamera(m_camera->GetPos(), m_camera->GetTarget(), m_camera->GetUp());
+
+	// Setup offsets
+	m_kinectSkeletonOffset = -m_ksensor->skeleton()->m_activeSequence->at(0).joints[JointType_SpineBase].position;
+	cout << "Kinect skeleton offset=" << toStringCartesian(m_kinectSkeletonOffset).toStdString() << endl;
+	m_skinnedMeshOffset = -m_skinnedMesh->getOffset();
+	cout << "Skinned mesh offset=" << toStringCartesian(m_skinnedMeshOffset).toStdString() << endl;
+
+	cout << "MainWidget setup end." << endl;
+}
 // This virtual function is called once before the first call to paintGL() or resizeGL().
+// Instantiate and initialize context dependent classes in it.
 void MainWidget::initializeGL()
 {
 	cout << "MainWidget initializeGL start." << endl;
@@ -64,7 +109,7 @@ void MainWidget::initializeGL()
 	qDebug() << "Obtained format:" << format();
 	initializeOpenGLFunctions();
 
-	//
+	// Init plane shaders
 	QOpenGLShader planeVS(QOpenGLShader::Vertex);
 	QOpenGLShader planeFS(QOpenGLShader::Fragment);
 	planeVS.compileSourceFile("shaders/plane.vs");
@@ -95,10 +140,32 @@ void MainWidget::initializeGL()
 	cout << m_mvpLocation << " ";
 	cout << m_specificLocation << endl;
 
+	// Init technique
+	m_technique = new Technique();
+	m_technique->initDefault();
+	m_technique->enable();
+	m_technique->setMVP(m_pipeline->getWVPtrans());
+	m_technique->setSpecific(QMatrix4x4());
 
-	// instantiate context dependent classes
-	m_technique = new Technique(); 
+	// Init skinning technique
 	m_skinningTechnique = new SkinningTechnique();
+	m_skinningTechnique->Init();
+	m_skinningTechnique->enable();
+	m_skinningTechnique->SetColorTextureUnit(0);
+	DirectionalLight directionalLight;
+	directionalLight.Color = QVector3D(1.f, 1.f, 1.f);
+	directionalLight.AmbientIntensity = 0.7f;
+	directionalLight.DiffuseIntensity = 0.9f;
+	directionalLight.Direction = QVector3D(0.f, -1.f, 0.f);
+	m_skinningTechnique->setDirectionalLight(directionalLight);
+	m_skinningTechnique->setMatSpecularIntensity(0.0f);
+	m_skinningTechnique->setMatSpecularPower(0);
+	m_skinningTechnique->setSkinning(true);
+	m_skinningTechnique->setWVP(m_pipeline->getWVPtrans());
+	for (uint i = 0; i < m_skinnedMesh->numBones(); i++) {
+		m_skinningTechnique->setBoneVisibility(i, m_skinnedMesh->boneVisibility(i));
+	}
+	
 	loadSkinnedMesh();
 	loadAxes();
 	loadArrow();
@@ -124,68 +191,9 @@ void MainWidget::initializeGL()
 	glEnable(GL_CULL_FACE);
 	
 	// glShadeModel(GL_SMOOTH); // #? deprecated
-	setup();
 
-	m_timer.setTimerType(Qt::PreciseTimer);
-	connect(&m_timer, SIGNAL(timeout()), this, SLOT(updateIndirect()));
-	m_modeOfOperation = Mode::PLAYBACK;
-	m_playbackInterval = m_ksensor->skeleton()->m_interpolationInterval * 1000;
-	cout << "Playback interval: " << m_playbackInterval << endl;
-	m_timer.setInterval(m_playbackInterval);
-	m_timer.start();
-
+	//transformSkinnedMesh(true);
 	cout << "MainWidget initializeGL end." << endl;
-}
-void MainWidget::setup()
-{
-	cout << "MainWidget setup start." << endl;
-
-	// Init SkinnedMesh
-	vector<QMatrix4x4> transforms;
-	m_skinnedMesh->getBoneTransforms(transforms);
-	m_skinnedMesh->initCorrectionVecs(m_ksensor->skeleton()->limbs());
-	m_skinnedMeshOffset    = -m_skinnedMesh->getOffset();
-	m_kinectSkeletonOffset = -m_ksensor->skeleton()->m_activeSequence->at(0).joints[JointType_SpineBase].position;
-
-	// Init Pipeline
-	cout << "Kinect skeleton offset=" << toStringCartesian(m_kinectSkeletonOffset).toStdString() << endl;
-	cout << "Skinned mesh offset=" << toStringCartesian(m_skinnedMeshOffset).toStdString() << endl;
-	m_pipeline->setCamera(m_camera->GetPos(), m_camera->GetTarget(), m_camera->GetUp());
-	m_camera->printInfo();
-
-	PerspectiveProjectionInfo perspectiveProjectionInfo;
-	perspectiveProjectionInfo.fieldOfView = 60.f;
-	perspectiveProjectionInfo.aspectRatio = m_camera->windowWidth() / m_camera->windowHeight();
-	perspectiveProjectionInfo.nearPlane = 0.1f;
-	perspectiveProjectionInfo.farPlane = 1000.f;
-	m_pipeline->setPersProjInfo(perspectiveProjectionInfo);
-
-	// Init Technique
-	m_technique->initDefault();
-	m_technique->enable();
-	m_technique->setMVP(m_pipeline->getWVPtrans());
-	m_technique->setSpecific(QMatrix4x4());
-
-	// Init SkinningTechnique
-	m_skinningTechnique->Init();
-	m_skinningTechnique->enable();
-	m_skinningTechnique->SetColorTextureUnit(0);
-	DirectionalLight directionalLight;
-	directionalLight.Color = QVector3D(1.f, 1.f, 1.f);
-	directionalLight.AmbientIntensity = 0.7f;
-	directionalLight.DiffuseIntensity = 0.9f;
-	directionalLight.Direction = QVector3D(0.f, -1.f, 0.f);
-	m_skinningTechnique->SetDirectionalLight(directionalLight);
-	m_skinningTechnique->SetMatSpecularIntensity(0.0f);
-	m_skinningTechnique->SetMatSpecularPower(0);
-	m_skinningTechnique->setSkinning(true);
-	m_skinningTechnique->setWVP(m_pipeline->getWVPtrans());
-	for (uint i = 0; i < m_skinnedMesh->numBones(); i++) {
-		m_skinningTechnique->setBoneVisibility(i, m_skinnedMesh->boneVisibility(i));
-	}
-	transformSkinnedMesh(true);
-
-	cout << "MainWidget setup end." << endl;
 }
 // #? must enable corresponding shading technique before using each drawing function. bad design?
 void MainWidget::paintGL()
@@ -193,10 +201,10 @@ void MainWidget::paintGL()
 	glClearColor(0.f, 0.f, 0.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	if (m_modeOfOperation == Mode::CAPTURE) {
+	if (m_mode == Mode::CAPTURE) {
 		m_ksensor->getBodyFrame();
 	}
-	else if (m_modeOfOperation == Mode::PLAYBACK){
+	else if (m_mode == Mode::PLAYBACK){
 		m_ksensor->skeleton()->setActiveJoints(m_activeFrame);
 		m_skinnedMesh->setActiveCoordinates(m_activeFrame);
 	}
@@ -218,7 +226,7 @@ void MainWidget::paintGL()
 	m_skinningTechnique->enable();
 
 	// draw skinned mesh
-	if (m_modeOfOperation == Mode::PLAYBACK && m_renderSkinnedMesh && m_skinnedMesh->m_successfullyLoaded) {
+	if (m_mode == Mode::PLAYBACK && m_renderSkinnedMesh && m_skinnedMesh->m_successfullyLoaded) {
 		drawSkinnedMesh();
 	}
 
@@ -390,7 +398,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		}
 		break;
 	case Qt::Key_R:
-		if (m_modeOfOperation==Mode::CAPTURE) m_ksensor->record();
+		if (m_mode==Mode::CAPTURE) m_ksensor->record();
 		else cout << "Record does not work in this mode." << endl;
 		break;
 	case Qt::Key_S:
@@ -473,6 +481,10 @@ void MainWidget::setRenderAxes(bool state)
 		update();
 	}
 }
+KSensor * MainWidget::ksensor()
+{
+	return m_ksensor;
+}
 void MainWidget::setRenderModel(bool state)
 {
 	if (m_renderSkinnedMesh != state) {
@@ -508,6 +520,10 @@ QStringList MainWidget::modelBoneList() const
 	QStringList qsl;
 	for (const auto& it : m_skinnedMesh->boneMap()) qsl << QString::fromLocal8Bit(it.first.c_str());
 	return qsl;
+}
+QString MainWidget::mode() const
+{
+	return QString(m_mode==Mode::PLAYBACK ? "PLAYBACK" : "CAPTURE");
 }
 void MainWidget::setModelName(const QString &modelName)
 {
@@ -557,21 +573,16 @@ void MainWidget::setActiveFrame(uint index)
 }
 void MainWidget::changeMode()
 {
-		if (m_modeOfOperation == Mode::CAPTURE) {
-			m_modeOfOperation = Mode::PLAYBACK;
+		if (m_mode == Mode::CAPTURE) {
+			m_mode = Mode::PLAYBACK;
 			m_timer.setInterval(m_playbackInterval);
-			cout << "Mode: PLAYBACK" << endl;
 		}
 		else {
-			m_modeOfOperation = Mode::CAPTURE;
+			m_mode = Mode::CAPTURE;
 			m_timer.setInterval(m_captureInterval);
-			cout << "Mode: CAPTURE" << endl;
 		}
+		cout << "Mode: " << mode().toStdString() << endl;
 		m_timer.start();
-}
-void MainWidget::setKSensor(KSensor& ksensor)
-{
-	m_ksensor = &ksensor;
 }
 void MainWidget::setBoneAxes(const QString &boneName)
 {

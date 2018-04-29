@@ -47,7 +47,7 @@ private:
 	Ui::MainWindow *ui;
 
 	// Kinect
-	KSensor m_ksensor;	
+	KSensor* m_sensor;	
 	QTimer* m_guiTimer;
 
 	// Status Bar

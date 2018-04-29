@@ -165,7 +165,7 @@ void SkinningTechnique::SetColorTextureUnit(uint TextureUnit)
 {
     glUniform1i(m_colorTextureLocation, TextureUnit);
 }
-void SkinningTechnique::SetDirectionalLight(const DirectionalLight& Light)
+void SkinningTechnique::setDirectionalLight(const DirectionalLight& Light)
 {
     glUniform3f(m_dirLightLocation.Color, Light.Color.x(), Light.Color.y(), Light.Color.z());
     glUniform1f(m_dirLightLocation.AmbientIntensity, Light.AmbientIntensity);
@@ -178,11 +178,11 @@ void SkinningTechnique::SetEyeWorldPos(const QVector3D& EyeWorldPos)
 {
     glUniform3f(m_eyeWorldPosLocation, EyeWorldPos.x(), EyeWorldPos.y(), EyeWorldPos.z());
 }
-void SkinningTechnique::SetMatSpecularIntensity(float Intensity)
+void SkinningTechnique::setMatSpecularIntensity(float Intensity)
 {
     glUniform1f(m_matSpecularIntensityLocation, Intensity);
 }
-void SkinningTechnique::SetMatSpecularPower(float Power)
+void SkinningTechnique::setMatSpecularPower(float Power)
 {
     glUniform1f(m_matSpecularPowerLocation, Power);
 }

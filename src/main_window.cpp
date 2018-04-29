@@ -18,7 +18,9 @@
 // Standard C/C++
 #include <iomanip>
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
+MainWindow::MainWindow(QWidget *parent)
+	: 
+	QMainWindow(parent)
 {
 	cout << "MainWindow class constructor start." << endl;
 	
@@ -166,6 +168,8 @@ void MainWindow::loadActiveBoneRotationZ()
 }
 void MainWindow::setupObjects()
 {
+	cout << "MainWindow: Setting up objects" << endl;
+
 	// Skinned Mesh
 	for (const auto& fi : QDir("models/", "*.dae").entryInfoList()) {
 		ui->comboBox_activeModel->addItem(fi.baseName());
@@ -176,7 +180,7 @@ void MainWindow::setupObjects()
 	loadActiveBoneInfo();
 
 	ui->openGLWidget->setModelName(ui->comboBox_activeModel->currentText());
-	ui->openGLWidget->setKSensor(m_ksensor);
+	m_sensor = ui->openGLWidget->ksensor();
 
 	ui->checkBox_axes->setChecked(ui->openGLWidget->renderAxes());
 	ui->checkBox_model->setChecked(ui->openGLWidget->renderSkinnedMesh());
@@ -201,6 +205,8 @@ void MainWindow::setActiveBoneAxes() {
 }
 void MainWindow::setupConnections()
 {
+	cout << "MainWindow: Setting up connections" << endl;
+
 	// active model
 	connect(ui->comboBox_activeModel, SIGNAL(currentIndexChanged(QString)), ui->openGLWidget, SLOT(setModelName(QString)));
 	// skinning on
