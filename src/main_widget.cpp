@@ -64,6 +64,38 @@ void MainWidget::initializeGL()
 	qDebug() << "Obtained format:" << format();
 	initializeOpenGLFunctions();
 
+	//
+	QOpenGLShader planeVS(QOpenGLShader::Vertex);
+	QOpenGLShader planeFS(QOpenGLShader::Fragment);
+	planeVS.compileSourceFile("shaders/plane.vs");
+	planeFS.compileSourceFile("shaders/plane.fs");
+
+	m_shaderProgram = new QOpenGLShaderProgram(context());
+	if (m_shaderProgram->addShader(&planeVS)) cout << "Added plane vertex shader." << endl;
+	else cout << "Could not add plane vertex shader." << endl;
+	qDebug() << m_shaderProgram->log();
+	if (m_shaderProgram->addShader(&planeFS)) cout << "Added plane fragment shader." << endl;
+	else cout << "Could not add plane fragment shader." << endl;
+	qDebug() << m_shaderProgram->log();
+	if (m_shaderProgram->link()) cout << "Linked plane vertex shader." << endl;
+	else cout << "Could not link plane vertex shader." << endl;
+	qDebug() << m_shaderProgram->log();
+	if (m_shaderProgram->bind()) cout << "Bound plane vertex shader." << endl;
+	else cout << "Could not bind plane vertex shader." << endl;
+
+	cout << "Shader program id: " << m_shaderProgram->programId() << endl;
+	cout << "Is supported by system? " << m_shaderProgram->hasOpenGLShaderPrograms() << endl;
+	m_positionLocation  = m_shaderProgram->attributeLocation("inPosition");
+	m_colorLocation		= m_shaderProgram->attributeLocation("inColor");
+	m_mvpLocation		= m_shaderProgram->uniformLocation("gMVP");
+	m_specificLocation  = m_shaderProgram->uniformLocation("gSpecific");
+	cout << "Locations in shader program:" << endl;
+	cout << m_positionLocation << " ";
+	cout << m_colorLocation << " ";
+	cout << m_mvpLocation << " ";
+	cout << m_specificLocation << endl;
+
+
 	// instantiate context dependent classes
 	m_technique = new Technique(); 
 	m_skinningTechnique = new SkinningTechnique();
@@ -73,7 +105,8 @@ void MainWidget::initializeGL()
 	loadKinectSkeletonJoints();
 	loadSkinnedMeshJoints();
 	loadCube(0.03);
-	
+	loadPlane();
+
 	glEnable(GL_TEXTURE_2D);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.f);               
 	glClearDepth(1.0f);									
@@ -115,11 +148,10 @@ void MainWidget::setup()
 	m_kinectSkeletonOffset = -m_ksensor->skeleton()->m_activeSequence->at(0).joints[JointType_SpineBase].position;
 
 	// Init Pipeline
-	//QVector3D spineBase = (m_ksensor->skeleton()->activeJoints())[JointType_SpineBase].position;
-	//m_camera->setOffset(spineBase);
+	cout << "Kinect skeleton offset=" << toStringCartesian(m_kinectSkeletonOffset).toStdString() << endl;
 	cout << "Skinned mesh offset=" << toStringCartesian(m_skinnedMeshOffset).toStdString() << endl;
-	m_camera->printInfo();
 	m_pipeline->setCamera(m_camera->GetPos(), m_camera->GetTarget(), m_camera->GetUp());
+	m_camera->printInfo();
 
 	PerspectiveProjectionInfo perspectiveProjectionInfo;
 	perspectiveProjectionInfo.fieldOfView = 60.f;
@@ -236,6 +268,9 @@ void MainWidget::paintGL()
 	m_technique->setSpecific(T * R * S);
 	drawArrow();
 
+	// draw planes
+	drawPlanes();
+
 	// calculate bar horizontal angle
 	m_barAngle = ToDegrees(atan2(barDirection.y(), sqrt(pow(barDirection.x(), 2) + pow(barDirection.z(), 2))));
 	
@@ -258,6 +293,7 @@ void MainWidget::paintGL()
 		m_shouldUpdate = false;
 		calculateFPS();
 	}
+
 }
 void MainWidget::calculateFPS()
 {
@@ -924,4 +960,49 @@ void MainWidget::drawCube()
 	glBindVertexArray(m_cubeVAO);
 	glDrawElements(GL_TRIANGLE_STRIP, 24, GL_UNSIGNED_SHORT, 0);
 	glBindVertexArray(0);
+}
+void MainWidget::loadPlane()
+{
+	glGenVertexArrays(1, &m_planeVAO);
+	glBindVertexArray(m_planeVAO);
+	cout << "planeVAO=" << m_planeVAO << endl;
+
+	//GLuint planeIBO;
+	//glGenBuffers(1, &cubeIBO);
+	//cout << "cubeIBO=" << cubeIBO << endl;
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIBO);
+	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
+
+	GLuint planeVBO;
+	glGenBuffers(1, &planeVBO);
+	cout << "m_planeVBO=" << planeVBO << endl;
+	glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(m_planePositions)+sizeof(m_planeColors), NULL, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, 0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, BUFFER_OFFSET(sizeof(m_planePositions)));
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(m_planePositions), m_planePositions);
+	glBufferSubData(GL_ARRAY_BUFFER, sizeof(m_planeColors), sizeof(m_planeColors), m_planeColors);
+
+	glBindVertexArray(0);
+
+	m_shaderProgram->bind();
+	m_shaderProgram->setAttributeArray(m_positionLocation, m_planePositions, 3, 0);
+	m_shaderProgram->setAttributeArray(m_colorLocation, m_planeColors, 3, 0);
+	m_shaderProgram->release();
+}
+
+void MainWidget::drawPlanes()
+{
+	//m_shaderProgram->bind();
+	m_shaderProgram->setUniformValue(m_mvpLocation, m_pipeline->getWVPtrans());
+	m_shaderProgram->setUniformValue(m_specificLocation, QMatrix4x4());
+
+	glBindVertexArray(m_planeVAO);
+	glDrawArrays(GL_LINE_LOOP, 0, 3);
+	glBindVertexArray(0);
+
+	m_shaderProgram->disableAttributeArray(m_positionLocation);
+	m_shaderProgram->disableAttributeArray(m_colorLocation);
 }

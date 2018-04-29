@@ -156,6 +156,18 @@ private:
 	float m_cubeColors[3 * 8];
 	void loadCube(float r);
 	void drawCube();
+
+	QOpenGLShaderProgram* m_shaderProgram;
+	GLuint m_planeVAO;
+	int m_positionLocation;
+	int m_colorLocation;
+	int m_mvpLocation;
+	int m_specificLocation;
+	void loadPlane();
+	void drawPlanes();
+#define PLANE_VERTICES 3
+	GLfloat m_planePositions[PLANE_VERTICES * 3] = { 0,0,0,0,1,0,1,0,0 };
+	GLfloat m_planeColors[PLANE_VERTICES * 3] = { 255.f,255.f,0,255,255.f,0,255,255.f,0 };
 };
 
 #endif /* MAIN_WIDGET_H */

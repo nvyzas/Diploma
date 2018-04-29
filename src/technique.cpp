@@ -7,6 +7,7 @@
 // Standard C/C++
 #include <stdio.h>
 #include <string.h>
+#include <iostream>
 
 Technique::Technique()
 {
@@ -116,7 +117,7 @@ bool Technique::Finalize()
     }
 
     m_shaderObjList.clear();
-	GLNoError();
+	
     return GLNoError();
 }
 void Technique::enable()
@@ -131,12 +132,12 @@ bool Technique::initDefault()
 	}
 
 	if (!AddShader(GL_VERTEX_SHADER, "shaders/simple.vs")) {
-		printf("Cannot add lines vertex shader\n");
+		printf("Cannot add simple vertex shader\n");
 		return false;
 	}
 
 	if (!AddShader(GL_FRAGMENT_SHADER, "shaders/simple.fs")) {
-		printf("Cannot add lines fragment shader\n");
+		printf("Cannot add simple fragment shader\n");
 		return false;
 	}
 	
@@ -146,7 +147,9 @@ bool Technique::initDefault()
 	}
 
 	m_locationMVP = GetUniformLocation("gMVP");
+	cout << "Technique: gMVP location = " << m_locationMVP << endl;
 	m_locationSpecific = GetUniformLocation("gSpecific");
+	cout << "Technique: gSpecific location = " << m_locationSpecific << endl;
 
 	return true;
 }
