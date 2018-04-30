@@ -162,6 +162,7 @@ private:
 	QOpenGLShaderProgram* m_shaderProgram;
 
 	// plane
+#define PLANE_VERTICES 4
 	QOpenGLTexture* m_planeTexture;
 	GLuint m_planeVAO;
 	int m_positionLocation;
@@ -170,9 +171,6 @@ private:
 	int m_specificLocation;
 	void loadPlane();
 	void drawPlane();
-#define PLANE_VERTICES 4
-	GLfloat m_planePositions[PLANE_VERTICES * 3] = { 1,0,0, 0,0,-1, -1,0,0, 0,0,1 };
-	GLfloat m_planeColors[PLANE_VERTICES * 3] = { 255,0,0, 0,255,0, 0,0,255, 0,0,0 };
 };
 
 #endif /* MAIN_WIDGET_H */

@@ -45,6 +45,8 @@ MainWidget::~MainWidget()
 	unloadSkinnedMesh();
 	delete m_technique;
 	delete m_skinningTechnique;
+	delete m_shaderProgram;
+	delete m_planeTexture;
 
 	glDeleteVertexArrays(1, &m_axesVAO);
 	glDeleteVertexArrays(1, &m_arrowVAO);
@@ -185,14 +187,17 @@ void MainWidget::initializeGL()
 	skinnedMeshFeet = m_skinnedMesh->boneEndPosition(m_skinnedMesh->findBoneId("LeftFoot")).y();
 	skinnedMeshFeet += m_skinnedMesh->boneEndPosition(m_skinnedMesh->findBoneId("RightFoot")).y();
 	skinnedMeshFeet /= 2;
-	m_shaderProgram->setUniformValue(m_specificLocation, fromTranslation(QVector3D(0, skinnedMeshFeet, 0)));
+	QMatrix4x4 S = fromScaling(QVector3D(2.f, 1.f, 2.f));
+	QMatrix4x4 R = fromRotation(QQuaternion::fromEulerAngles(QVector3D(0.f, 45.f, 0.f)));
+	QMatrix4x4 T = fromTranslation(QVector3D(0, skinnedMeshFeet, 0));
+	m_shaderProgram->setUniformValue(m_specificLocation, T * R * S);
 
 	loadSkinnedMesh();
 	loadAxes();
 	loadArrow();
 	loadKinectSkeletonJoints();
 	loadSkinnedMeshJoints();
-	loadCube(0.03);
+	loadCube(0.02);
 	loadPlane();
 	
 	cout << "MainWidget initializeGL end." << endl;
@@ -911,14 +916,14 @@ void MainWidget::loadCube(float r)
 {
 	GLfloat vertices[] =
 	{
-		+r / 2, -r / 2, +r / 2, // 0
-		+r / 2, +r / 2, +r / 2, // 1
-		-r / 2, +r / 2, +r / 2, // 2
-		-r / 2, -r / 2, +r / 2, // 3
-		+r / 2, -r / 2, -r / 2, // 4
-		+r / 2, +r / 2, -r / 2, // 5
-		-r / 2, +r / 2, -r / 2, // 6
-		-r / 2, -r / 2, -r / 2, // 7
+		   +r,    -r,    +r, // 0
+		   +r,    +r,    +r, // 1
+		   -r,    +r,    +r, // 2
+		   -r,    -r,    +r, // 3
+		   +r,    -r,    -r, // 4
+		   +r,    +r,    -r, // 5
+		   -r,    +r,    -r, // 6
+		   -r,    -r,    -r, // 7
 		255.f, 255.f, 255.f,
 		255.f, 255.f, 255.f,
 		255.f, 255.f, 255.f,
@@ -984,27 +989,40 @@ void MainWidget::drawCube()
 }
 void MainWidget::loadPlane()
 {
+	const GLfloat l = 1.f; // hypotenuse length
+	GLfloat planePositions[PLANE_VERTICES * 3] = {
+		  l, 0.f, 0.f,
+		0.f, 0.f,  -l,
+		 -l, 0.f, 0.f,
+		0.f, 0.f,   l
+	};
+
+	GLfloat planeTexCoords[PLANE_VERTICES * 2] = {
+		0.f, 0.f,
+		0.f, 1.f,
+		1.f, 1.f,
+		1.f, 0.f
+	};
+	GLfloat planeNormals[PLANE_VERTICES * 3] = { 255,0,0, 0,255,0, 0,0,255, 0,0,0 };
+
 	glGenVertexArrays(1, &m_planeVAO);
 	glBindVertexArray(m_planeVAO);
 	cout << "planeVAO=" << m_planeVAO << endl;
-
-	//GLuint planeIBO;
-	//glGenBuffers(1, &cubeIBO);
-	//cout << "cubeIBO=" << cubeIBO << endl;
-	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIBO);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
 
 	GLuint planeVBO;
 	glGenBuffers(1, &planeVBO);
 	cout << "m_planeVBO=" << planeVBO << endl;
 	glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(m_planePositions)+sizeof(m_planeColors), NULL, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(planePositions) + sizeof(planeTexCoords) + sizeof(planeNormals), NULL, GL_STATIC_DRAW);
+	glBufferSubData(GL_ARRAY_BUFFER,											   0, sizeof(planePositions), planePositions);
+	glBufferSubData(GL_ARRAY_BUFFER,						  sizeof(planePositions), sizeof(planeTexCoords), planeTexCoords);
+	glBufferSubData(GL_ARRAY_BUFFER, sizeof(planePositions) + sizeof(planeTexCoords), sizeof(planeNormals)  , planeNormals);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(planePositions)));
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(planePositions) + sizeof(planeTexCoords)));
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, 0);
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, BUFFER_OFFSET(sizeof(m_planePositions)));
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(m_planePositions), m_planePositions);
-	glBufferSubData(GL_ARRAY_BUFFER, sizeof(m_planeColors), sizeof(m_planeColors), m_planeColors);
+	glEnableVertexAttribArray(2);
 
 	glBindVertexArray(0);
 
@@ -1012,7 +1030,7 @@ void MainWidget::loadPlane()
 	QImage image;
 	if (!image.load("plane/wood.jpg")) cout << "Wood.jpg load failed" << endl;
 	m_planeTexture = new QOpenGLTexture(image.mirrored());
-	m_planeTexture->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
+	m_planeTexture->setMinificationFilter(QOpenGLTexture::Linear);
 	m_planeTexture->setMagnificationFilter(QOpenGLTexture::Linear);
 }
 void MainWidget::drawPlane()
