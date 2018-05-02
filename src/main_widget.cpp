@@ -135,7 +135,7 @@ void MainWidget::initializeGL()
 
 	glFrontFace(GL_CCW);
 	glCullFace(GL_BACK);
-	glDisable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
 
 	// Init technique
 	m_technique = new Technique();
@@ -339,7 +339,6 @@ void MainWidget::paintGL()
 	m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
 	m_lighting->setUniformValue(m_modelViewLocation, m_pipeline->GetWVTrans());
 	m_lighting->setUniformValue(m_projectionLocation, m_pipeline->GetProjTrans());
-	drawPlane();
 	drawBarbell();
 
 	if (m_play && m_shouldUpdate) {
@@ -1081,17 +1080,17 @@ void MainWidget::drawPlane()
 }
 void MainWidget::loadBarbell()
 {
-// aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices  | aiProcess_LimitBoneWeights 
 	Assimp::Importer importer;
 	const aiScene* scene = importer.ReadFile(
-		"models/barbell blendered.dae",
-		aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices
+		"models/barbell blendered.obj",
+		aiProcess_Triangulate
 	);
 
 	if (!scene) {
 		cout << "Could not import the barbell model." << endl;
 		return;
 	}
+	m_barbellScene = scene;
 
 	// Count vertices and indices and update mesh entries
 	uint numVertices = 0;
@@ -1104,7 +1103,9 @@ void MainWidget::loadBarbell()
 		m_barbellMeshEntries[i].baseIndex = numIndices;
 		numVertices += scene->mMeshes[i]->mNumVertices;
 		numIndices += scene->mMeshes[i]->mNumFaces * 3;
+		m_barbellMeshEntries[i].print();
 	}
+	cout << "Totals: NumVertices:" << numVertices << " NumIndices:" << numIndices << endl;
 
 	// Reserve appropriate container space and push back vertex attributes
 	QVector<QVector3D> positions;
@@ -1143,9 +1144,9 @@ void MainWidget::loadBarbell()
 			if (hasNormals) normals.push_back(QVector3D(normal->x, normal->y, normal->z));
 			else normals.push_back(QVector3D(0.f, 1.f, 0.f));
 			m_barbellMeshEntries[i].baseVertex = scene->mMeshes[i]->mNumVertices;
-			cout << position->x << " " << position->y << " " << position->z << "\n";
+			//cout << normal->x << " " << normal ->y << " " << normal->z << "\n";
 		}
-		cout << endl;
+
 		// Push back indices
 		for (uint j = 0; j < scene->mMeshes[i]->mNumFaces; j++) {
 			const aiFace& face = scene->mMeshes[i]->mFaces[j];
@@ -1153,8 +1154,11 @@ void MainWidget::loadBarbell()
 			indices.push_back(face.mIndices[0]);
 			indices.push_back(face.mIndices[1]);
 			indices.push_back(face.mIndices[2]);
+			//cout << face.mIndices[0] << " " << face.mIndices[1] << " " << face.mIndices[2] << endl;
 		}
 	}
+
+	traverseBarbellSceneNodes(scene->mRootNode);
 
 	cout << "Vector lengths:";
 	cout << positions.length() << " ";
@@ -1170,7 +1174,7 @@ void MainWidget::loadBarbell()
 	cout << " Animations:" << setw(3) << scene->mNumAnimations;
 	cout << endl;
 	for (uint i = 0; i < scene->mNumMeshes; i++) {
-		cout << "MeshId:" << i;
+		cout << "Mesh:" << i;
 		cout << " Name:" << setw(15) << scene->mMeshes[i]->mName.C_Str();
 		cout << " Vertices:" << setw(6) << scene->mMeshes[i]->mNumVertices;
 		cout << " Faces:" << setw(6) << scene->mMeshes[i]->mNumFaces;
@@ -1219,31 +1223,37 @@ void MainWidget::loadBarbell()
 	glGenBuffers(1, &barbellIBO);
 	cout << "barbellIBO=" << barbellIBO << endl;
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, barbellIBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices[0])*indices.size(), indices.constData(), GL_STATIC_DRAW);
 
+	GLsizeiptr sizeInBytes = sizeof(positions[0])*positions.size() + sizeof(texCoords[0])*texCoords.size() + sizeof(normals[0])*normals.size();
+	cout << "Total size in bytes:" << sizeInBytes << endl;
 	GLuint barbellVBO;
 	glGenBuffers(1, &barbellVBO);
 	cout << "barbellVBO=" << barbellVBO << endl;
 	glBindBuffer(GL_ARRAY_BUFFER, barbellVBO);
 	glBufferData(
 		GL_ARRAY_BUFFER,
-		sizeof(positions[0])*positions.size() + sizeof(texCoords[0])*texCoords.size() + sizeof(normals[0])*normals.size(),
+		sizeInBytes,
 		NULL,
 		GL_STATIC_DRAW
 	);
+	
 	GLsizeiptr offset = 0;
+	cout << "Offset size in bytes:" << offset << endl;
 
 	glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(positions[0]) * positions.size(), positions.constData());
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(offset));
 	glEnableVertexAttribArray(0);
 
 	offset += sizeof(positions[0]) * positions.size();
+	cout << "Offset size in bytes:" << offset << endl;
 
 	glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(texCoords[0]) * texCoords.size(), texCoords.constData());
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(offset));
 	glEnableVertexAttribArray(1);
 
 	offset += sizeof(texCoords[0]) * texCoords.size();
+	cout << "Offset size in bytes:" << offset << endl;
 
 	glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(normals[0]) * normals.size(), normals.constData());
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(offset));
@@ -1269,4 +1279,20 @@ void MainWidget::drawBarbell()
 	}
 
 	glBindVertexArray(0);
+}
+
+void MainWidget::traverseBarbellSceneNodes(aiNode * node)
+{
+	cout << "NodeName=" << node->mName.data;
+	cout << " NumMeshes=" << node->mNumMeshes << endl;
+	cout << "Children=";
+	for (uint i = 0; i < node->mNumChildren; i++) {
+		cout << node->mChildren[i]->mName.data << " ";
+	}
+	cout << endl;
+	const QMatrix4x4& local = toQMatrix(node->mTransformation);
+	cout << toString(local).toStdString() << endl;
+	for (uint i = 0; i < node->mNumChildren; i++) {
+		traverseBarbellSceneNodes(node->mChildren[i]);
+	}
 }

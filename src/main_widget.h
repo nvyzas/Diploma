@@ -181,6 +181,9 @@ private:
 	GLuint m_barbellVAO;
 	void loadBarbell();
 	void drawBarbell();
+	const aiScene* m_barbellScene;
+	QVector<QMatrix4x4> globals;
+	void traverseBarbellSceneNodes(aiNode* node);
 
 	// shaders for material lighting
 	QOpenGLShaderProgram* m_lighting;

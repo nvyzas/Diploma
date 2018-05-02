@@ -58,6 +58,14 @@ struct MeshEntry {
 	uint baseVertex;
 	uint baseIndex;
 	uint materialIndex;
+
+	void print() {
+		cout << "MeshEntry: ";
+		cout << " numIndices=" << numIndices;
+		cout << " baseVertex=" << baseVertex;
+		cout << " baseIndex=" << baseIndex;
+		cout << " materialIndex=" << materialIndex << endl;
+	}
 };
 struct BoneInfo
 {

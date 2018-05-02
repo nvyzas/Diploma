@@ -167,11 +167,11 @@ void SkinnedMesh::initMesh(uint meshIndex, const aiMesh* paiMesh)
 
 	// Populate the index buffer
 	for (uint i = 0; i < paiMesh->mNumFaces; i++) {
-		const aiFace& Face = paiMesh->mFaces[i];
-		assert(Face.mNumIndices == 3);
-		m_indices.push_back(Face.mIndices[0]);
-		m_indices.push_back(Face.mIndices[1]);
-		m_indices.push_back(Face.mIndices[2]);
+		const aiFace& face = paiMesh->mFaces[i];
+		assert(face.mNumIndices == 3);
+		m_indices.push_back(face.mIndices[0]);
+		m_indices.push_back(face.mIndices[1]);
+		m_indices.push_back(face.mIndices[2]);
 	}
 }
 void SkinnedMesh::loadBones(uint meshIndex, const aiMesh* pMesh, QVector<VertexBoneData>& vertexBoneData)
