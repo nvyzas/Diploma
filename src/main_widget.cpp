@@ -1143,8 +1143,6 @@ void MainWidget::loadBarbell()
 			else texCoords.push_back(QVector2D(0.f, 0.f));
 			if (hasNormals) normals.push_back(QVector3D(normal->x, normal->y, normal->z));
 			else normals.push_back(QVector3D(0.f, 1.f, 0.f));
-			m_barbellMeshEntries[i].baseVertex = scene->mMeshes[i]->mNumVertices;
-			//cout << normal->x << " " << normal ->y << " " << normal->z << "\n";
 		}
 
 		// Push back indices
@@ -1154,9 +1152,9 @@ void MainWidget::loadBarbell()
 			indices.push_back(face.mIndices[0]);
 			indices.push_back(face.mIndices[1]);
 			indices.push_back(face.mIndices[2]);
-			//cout << face.mIndices[0] << " " << face.mIndices[1] << " " << face.mIndices[2] << endl;
 		}
 	}
+	cout << endl;
 
 	traverseBarbellSceneNodes(scene->mRootNode);
 
