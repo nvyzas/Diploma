@@ -135,7 +135,7 @@ void MainWidget::initializeGL()
 
 	glFrontFace(GL_CCW);
 	glCullFace(GL_BACK);
-	glEnable(GL_CULL_FACE);
+	glDisable(GL_CULL_FACE);
 
 	// Init technique
 	m_technique = new Technique();
@@ -336,11 +336,11 @@ void MainWidget::paintGL()
 	// draw barbell
 	m_pipeline->setWorldPosition(QVector3D());
 	m_pipeline->setWorldRotation(QQuaternion());
-	//m_pipeline->setWorldScale(QVector3D(0.1f, 0.1f, 0.1f));
+	m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
 	m_lighting->setUniformValue(m_modelViewLocation, m_pipeline->GetWVTrans());
 	m_lighting->setUniformValue(m_projectionLocation, m_pipeline->GetProjTrans());
 	drawPlane();
-	//drawBarbell();
+	drawBarbell();
 
 	if (m_play && m_shouldUpdate) {
 		if (++m_activeFrame > m_ksensor->skeleton()->m_activeSequence->size())  m_activeFrame = 0;
@@ -667,7 +667,7 @@ void MainWidget::loadSkinnedMesh()
 	const auto& indices = m_skinnedMesh->indices();
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_skinnedMeshVBOs[POS_VB]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(positions[0]) * positions.size(), &positions[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(positions[0]) * positions.size(), positions.constData(), GL_STATIC_DRAW);
 	glEnableVertexAttribArray(POSITION_LOCATION);
 	glVertexAttribPointer(POSITION_LOCATION, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
@@ -677,19 +677,19 @@ void MainWidget::loadSkinnedMesh()
 	glVertexAttribPointer(TEX_COORD_LOCATION, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_skinnedMeshVBOs[NORMAL_VB]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(normals[0]) * normals.size(), &normals[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(normals[0]) * normals.size(), normals.constData(), GL_STATIC_DRAW);
 	glEnableVertexAttribArray(NORMAL_LOCATION);
 	glVertexAttribPointer(NORMAL_LOCATION, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_skinnedMeshVBOs[BONE_VB]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertexBoneData[0]) * vertexBoneData.size(), &vertexBoneData[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertexBoneData[0]) * vertexBoneData.size(), vertexBoneData.constData(), GL_STATIC_DRAW);
 	glEnableVertexAttribArray(BONE_ID_LOCATION);
 	glVertexAttribIPointer(BONE_ID_LOCATION, 4, GL_INT, sizeof(VertexBoneData), (const GLvoid*)0);
 	glEnableVertexAttribArray(BONE_WEIGHT_LOCATION);
 	glVertexAttribPointer(BONE_WEIGHT_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(VertexBoneData), (const GLvoid*)16);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_skinnedMeshVBOs[INDEX_BUFFER]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices[0]) * indices.size(), &indices[0], GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices[0]) * indices.size(), indices.constData(), GL_STATIC_DRAW);
 
 	glBindVertexArray(0);
 
@@ -1084,7 +1084,7 @@ void MainWidget::loadBarbell()
 // aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices  | aiProcess_LimitBoneWeights 
 	Assimp::Importer importer;
 	const aiScene* scene = importer.ReadFile(
-		"models/barbell.obj",
+		"models/barbell blendered.dae",
 		aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices
 	);
 
@@ -1143,8 +1143,9 @@ void MainWidget::loadBarbell()
 			if (hasNormals) normals.push_back(QVector3D(normal->x, normal->y, normal->z));
 			else normals.push_back(QVector3D(0.f, 1.f, 0.f));
 			m_barbellMeshEntries[i].baseVertex = scene->mMeshes[i]->mNumVertices;
+			cout << position->x << " " << position->y << " " << position->z << "\n";
 		}
-
+		cout << endl;
 		// Push back indices
 		for (uint j = 0; j < scene->mMeshes[i]->mNumFaces; j++) {
 			const aiFace& face = scene->mMeshes[i]->mFaces[j];
@@ -1224,15 +1225,28 @@ void MainWidget::loadBarbell()
 	glGenBuffers(1, &barbellVBO);
 	cout << "barbellVBO=" << barbellVBO << endl;
 	glBindBuffer(GL_ARRAY_BUFFER, barbellVBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(positions) + sizeof(texCoords) + sizeof(normals), NULL, GL_STATIC_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER,								     0, sizeof(positions), &positions[0]);
-	glBufferSubData(GL_ARRAY_BUFFER,					 sizeof(positions), sizeof(texCoords), &texCoords[0]);
-	glBufferSubData(GL_ARRAY_BUFFER, sizeof(positions) + sizeof(texCoords),   sizeof(normals),   &normals[0]);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(positions)));
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(positions)+sizeof(texCoords)));
+	glBufferData(
+		GL_ARRAY_BUFFER,
+		sizeof(positions[0])*positions.size() + sizeof(texCoords[0])*texCoords.size() + sizeof(normals[0])*normals.size(),
+		NULL,
+		GL_STATIC_DRAW
+	);
+	GLsizeiptr offset = 0;
+
+	glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(positions[0]) * positions.size(), positions.constData());
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(offset));
 	glEnableVertexAttribArray(0);
+
+	offset += sizeof(positions[0]) * positions.size();
+
+	glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(texCoords[0]) * texCoords.size(), texCoords.constData());
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(offset));
 	glEnableVertexAttribArray(1);
+
+	offset += sizeof(texCoords[0]) * texCoords.size();
+
+	glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(normals[0]) * normals.size(), normals.constData());
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(offset));
 	glEnableVertexAttribArray(2);
 
 	glBindVertexArray(0);
