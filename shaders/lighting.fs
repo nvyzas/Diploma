@@ -4,8 +4,6 @@
 in VS_OUT
 {
 	vec3 color;
-	vec2 texCoord;
-	vec3 normal;
 } fs_in;
 
 // Output

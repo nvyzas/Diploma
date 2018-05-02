@@ -22,7 +22,7 @@ void VertexBoneData::AddBoneData(uint BoneID, float Weight)
 	}
 	cout << "Should never get here!" << endl;
 	system("PAUSE");
-	// should never get here - more bones than we have space for
+	// should never get here - more vertexBoneData than we have space for
 	assert(0);
 }
 void VertexBoneData::AdjustBoneData()
@@ -74,7 +74,7 @@ SkinnedMesh::~SkinnedMesh()
 // delete container contents and resize to 0
 void SkinnedMesh::clear()
 {	
-	m_entries.clear();
+	m_meshEntries.clear();
 	m_positions.clear();
 	m_normals.clear();
 	m_texCoords.clear();
@@ -105,44 +105,40 @@ bool SkinnedMesh::loadFromFile(const string& fileName)
 }
 bool SkinnedMesh::initFromScene(const aiScene* pScene, const string& filename)
 {  
-    m_entries.resize(pScene->mNumMeshes);
-       
-    uint NumVertices = 0;
-    uint NumIndices = 0;
-    
-    // Count the number of vertices and indices
-    for (uint i = 0 ; i < m_entries.size() ; i++) {
-        m_entries[i].MaterialIndex = pScene->mMeshes[i]->mMaterialIndex;        
-        m_entries[i].NumIndices    = pScene->mMeshes[i]->mNumFaces * 3;
-        m_entries[i].BaseVertex    = NumVertices;
-        m_entries[i].BaseIndex     = NumIndices;	
-        NumVertices += pScene->mMeshes[i]->mNumVertices;
-        NumIndices  += m_entries[i].NumIndices;
+	// Update mesh entries
+	uint numVertices = 0;
+    uint numIndices = 0;
+	m_meshEntries.resize(pScene->mNumMeshes);
+	for (uint i = 0 ; i < m_meshEntries.size() ; i++) {
+        m_meshEntries[i].materialIndex = pScene->mMeshes[i]->mMaterialIndex;        
+        m_meshEntries[i].numIndices    = pScene->mMeshes[i]->mNumFaces * 3;
+        m_meshEntries[i].baseVertex    = numVertices;
+        m_meshEntries[i].baseIndex     = numIndices;	
+        numVertices += pScene->mMeshes[i]->mNumVertices;
+        numIndices  += m_meshEntries[i].numIndices;
     }
-	m_numVertices = NumVertices;
+	m_numVertices = numVertices;
 
 	// Reserve space in the vectors for the vertex attributes and indices
-	m_positions.reserve(NumVertices);
-	m_normals.reserve(NumVertices);
-	m_texCoords.reserve(NumVertices);
-	m_vertexBoneData.resize(NumVertices);
-	m_indices.reserve(NumIndices);
+	m_positions.reserve(numVertices);
+	m_normals.reserve(numVertices);
+	m_texCoords.reserve(numVertices);
+	m_indices.reserve(numIndices);
+	m_vertexBoneData.resize(numVertices); // elements will be accessed without being push_backed first
 
 	// Initialize the meshes in the scene one by one
-	for (uint i = 0; i < m_entries.size(); i++) {
+	for (uint i = 0; i < m_meshEntries.size(); i++) {
 		const aiMesh* paiMesh = pScene->mMeshes[i];
 		initMesh(i, paiMesh);
 	}
 
-	m_boneTransformInfo.resize(m_numBones);
 	m_controlQuats.resize(m_numBones);
 	m_controlMats.resize(m_numBones);
 	m_correctionVecs.resize(m_numBones);
 	m_correctionQuats.resize(m_numBones);
 	m_correctionMats.resize(m_numBones);
-
-	m_hasCoordinates.resize(m_numBones);
 	m_boneInfo.resize(m_numBones);
+	m_boneTransformInfo.resize(m_numBones);
 
 	initLocalMatrices(m_pScene->mRootNode);
 	initCorrectionQuats();
@@ -161,23 +157,13 @@ void SkinnedMesh::initMesh(uint meshIndex, const aiMesh* paiMesh)
 		const aiVector3D* pPos = &(paiMesh->mVertices[i]);
 		const aiVector3D* pNormal = &(paiMesh->mNormals[i]);
 		const aiVector3D* pTexCoord = paiMesh->HasTextureCoords(0) ? &(paiMesh->mTextureCoords[0][i]) : &Zero3D;
-
 		m_positions.push_back(QVector3D(pPos->x, pPos->y, pPos->z));
 		m_normals.push_back(QVector3D(pNormal->x, pNormal->y, pNormal->z));
 		m_texCoords.push_back(QVector2D(pTexCoord->x, pTexCoord->y));
 	}
 
 	loadBones(meshIndex, paiMesh, m_vertexBoneData);
-	bool SumNot1 = false;
-	for (uint i = 0; i < paiMesh->mNumVertices; i++) {
-		float sum = 0;
-		uint VertexID = m_entries[meshIndex].BaseVertex + i;
-		for (uint i = 0; i < NUM_BONES_PER_VERTEX; i++) {
-			sum += m_vertexBoneData[VertexID].Weights[i];
-		}
-		if (sum<0.99 || sum >1.01) SumNot1 = true; // Must be equal to 1
-	}
-	if (SumNot1) cout << "Sum of weights is not 1 for all vertices!" << endl;
+	checkWeights(meshIndex, paiMesh);
 
 	// Populate the index buffer
 	for (uint i = 0; i < paiMesh->mNumFaces; i++) {
@@ -188,7 +174,7 @@ void SkinnedMesh::initMesh(uint meshIndex, const aiMesh* paiMesh)
 		m_indices.push_back(Face.mIndices[2]);
 	}
 }
-void SkinnedMesh::loadBones(uint meshIndex, const aiMesh* pMesh, vector<VertexBoneData>& bones)
+void SkinnedMesh::loadBones(uint meshIndex, const aiMesh* pMesh, vector<VertexBoneData>& vertexBoneData)
 {
 	for (uint i = 0; i < pMesh->mNumBones; i++) {
 		uint BoneIndex = 0;
@@ -207,11 +193,23 @@ void SkinnedMesh::loadBones(uint meshIndex, const aiMesh* pMesh, vector<VertexBo
 		m_boneInfo[BoneIndex].offset = toQMatrix(pMesh->mBones[i]->mOffsetMatrix);
 
 		for (uint j = 0; j < pMesh->mBones[i]->mNumWeights; j++) {
-			uint VertexID = m_entries[meshIndex].BaseVertex + pMesh->mBones[i]->mWeights[j].mVertexId;
+			uint VertexID = m_meshEntries[meshIndex].baseVertex + pMesh->mBones[i]->mWeights[j].mVertexId;
 			float Weight = pMesh->mBones[i]->mWeights[j].mWeight;
-			bones[VertexID].AddBoneData(BoneIndex, Weight);
+			vertexBoneData[VertexID].AddBoneData(BoneIndex, Weight);
 		}
 	}
+}
+void SkinnedMesh::checkWeights(uint meshIndex, const aiMesh* pMesh) {
+	bool SumNot1 = false;
+	for (uint i = 0; i < pMesh->mNumVertices; i++) {
+		float sum = 0;
+		uint VertexID = m_meshEntries[meshIndex].baseVertex + i;
+		for (uint i = 0; i < NUM_BONES_PER_VERTEX; i++) {
+			sum += m_vertexBoneData[VertexID].Weights[i];
+		}
+		if (sum<0.99 || sum >1.01) SumNot1 = true; // Must be equal to 1
+	}
+	if (SumNot1) cout << "Sum of weights is not 1 for all vertices!" << endl;
 }
 bool SkinnedMesh::initImages(const aiScene* pScene, const string& fileName)
 {
@@ -705,7 +703,7 @@ vector<QImage>& SkinnedMesh::images()
 }
 vector<MeshEntry>& SkinnedMesh::meshEntries()
 {
-	return m_entries;
+	return m_meshEntries;
 }
 uint SkinnedMesh::numBones() const
 {

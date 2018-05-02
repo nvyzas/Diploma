@@ -339,7 +339,7 @@ void MainWidget::paintGL()
 	m_lighting->setUniformValue(m_modelViewLocation, m_pipeline->GetWVTrans());
 	m_lighting->setUniformValue(m_projectionLocation, m_pipeline->GetProjTrans());
 	drawPlane();
-	drawBarbell();
+	//drawBarbell();
 
 	if (m_play && m_shouldUpdate) {
 		if (++m_activeFrame > m_ksensor->skeleton()->m_activeSequence->size())  m_activeFrame = 0;
@@ -710,15 +710,15 @@ void MainWidget::drawSkinnedMesh()
 
 	const auto& meshEntries = m_skinnedMesh->meshEntries();
 	for (uint i = 0; i < meshEntries.size(); i++) {
-		const uint materialIndex = meshEntries[i].MaterialIndex;
+		const uint materialIndex = meshEntries[i].materialIndex;
 		assert(materialIndex < m_skinnedMeshTextures.size());
 		m_skinnedMeshTextures[materialIndex]->bind();
 		glDrawElementsBaseVertex(
 			GL_TRIANGLES									,
-			meshEntries[i].NumIndices						,
+			meshEntries[i].numIndices						,
 			GL_UNSIGNED_INT									,
-			(void*)(sizeof(uint) * meshEntries[i].BaseIndex),
-			meshEntries[i].BaseVertex
+			(void*)(sizeof(uint) * meshEntries[i].baseIndex),
+			meshEntries[i].baseVertex
 		);
 	}
 
@@ -1078,26 +1078,45 @@ void MainWidget::drawPlane()
 
 	glBindVertexArray(0);
 }
-
 void MainWidget::loadBarbell()
 {
+// aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices  | aiProcess_LimitBoneWeights 
 	Assimp::Importer importer;
 	const aiScene* scene = importer.ReadFile(
-		"models/barbell.obj",
-		aiProcess_Triangulate | aiProcess_FlipUVs
+		"models/barbell blendered.dae",
+		aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices
 	);
 
 	if (!scene) {
 		cout << "Could not import the barbell model." << endl;
 		return;
 	}
-	
+	cout << "Num meshes:" << scene->mNumMeshes << endl;
+
+	// Count vertices and indices and update mesh entries
+	uint numVertices = 0;
+	uint numIndices = 0;
+	m_barbellMeshEntries.resize(scene->mNumMeshes);
+	for (uint i = 0; i < scene->mNumMeshes; i++) {
+		m_barbellMeshEntries[i].materialIndex = scene->mMeshes[i]->mMaterialIndex;
+		m_barbellMeshEntries[i].numIndices = scene->mMeshes[i]->mNumFaces * 3;
+		m_barbellMeshEntries[i].baseVertex = numVertices;
+		m_barbellMeshEntries[i].baseIndex = numIndices;
+		numVertices += scene->mMeshes[i]->mNumVertices;
+		numIndices += scene->mMeshes[i]->mNumFaces * 3;
+	}
+
+	// Reserve appropriate container space and push back vertex attributes
 	QVector<QVector3D> positions;
 	QVector<QVector2D> texCoords;
 	QVector<QVector3D> normals;
 	QVector<uint> indices;
-	cout << "Num meshes:" << scene->mNumMeshes << endl;
+	positions.reserve(numVertices);
+	texCoords.reserve(numVertices);
+	normals.reserve(numVertices);
+	indices.reserve(numIndices);
 	for (uint i = 0; i < scene->mNumMeshes; i++) {
+		// Push back vertices
 		bool hasPositions = true;
 		bool hasTexCoords = true;
 		bool hasNormals = true;
@@ -1123,20 +1142,27 @@ void MainWidget::loadBarbell()
 			else texCoords.push_back(QVector2D(0.f, 0.f));
 			if (hasNormals) normals.push_back(QVector3D(normal->x, normal->y, normal->z));
 			else normals.push_back(QVector3D(0.f, 1.f, 0.f));
+			m_barbellMeshEntries[i].baseVertex = scene->mMeshes[i]->mNumVertices;
 		}
-		cout << "Vector lengths:" << positions.length() << " " << texCoords.length() << " " << normals.length() << endl;
+
+		// Push back indices
 		for (uint j = 0; j < scene->mMeshes[i]->mNumFaces; j++) {
 			const aiFace& face = scene->mMeshes[i]->mFaces[j];
 			assert(face.mNumIndices == 3);
 			indices.push_back(face.mIndices[0]);
 			indices.push_back(face.mIndices[1]);
 			indices.push_back(face.mIndices[2]);
-			m_barbellNumIndices += 3;
 		}
 	}
 
+	cout << "Vector lengths:";
+	cout << positions.length() << " ";
+	cout << texCoords.length() << " ";
+	cout << normals.length() << " ";
+	cout << indices.length() << endl;
+
 	cout << "Scene info: ";
-	cout << " MeshEntries:" << setw(3) << scene->mNumMeshes;
+	cout << " Meshes:" << setw(3) << scene->mNumMeshes;
 	cout << " Materials:" << setw(3) << scene->mNumMaterials;
 	cout << " Textures:" << setw(3) << scene->mNumTextures;
 	cout << " Lights:" << setw(3) << scene->mNumLights;
@@ -1146,7 +1172,6 @@ void MainWidget::loadBarbell()
 		cout << "MeshId:" << i;
 		cout << " Name:" << setw(15) << scene->mMeshes[i]->mName.C_Str();
 		cout << " Vertices:" << setw(6) << scene->mMeshes[i]->mNumVertices;
-		cout << " UVcomponents:" << setw(6) << scene->mMeshes[i]->mNumUVComponents;
 		cout << " Faces:" << setw(6) << scene->mMeshes[i]->mNumFaces;
 		cout << " Bones:" << setw(6) << scene->mMeshes[i]->mNumBones;
 		cout << endl;
@@ -1200,9 +1225,9 @@ void MainWidget::loadBarbell()
 	cout << "barbellVBO=" << barbellVBO << endl;
 	glBindBuffer(GL_ARRAY_BUFFER, barbellVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(positions) + sizeof(texCoords) + sizeof(normals), NULL, GL_STATIC_DRAW);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(positions), positions.constData());
-	glBufferSubData(GL_ARRAY_BUFFER, sizeof(positions), sizeof(texCoords), texCoords.constData());
-	glBufferSubData(GL_ARRAY_BUFFER, sizeof(positions) + sizeof(texCoords), sizeof(normals), normals.constData());
+	glBufferSubData(GL_ARRAY_BUFFER,								     0, sizeof(positions), &positions[0]);
+	glBufferSubData(GL_ARRAY_BUFFER,					 sizeof(positions), sizeof(texCoords), &texCoords[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, sizeof(positions) + sizeof(texCoords),   sizeof(normals),   &normals[0]);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(positions)));
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(sizeof(positions)+sizeof(texCoords)));
@@ -1216,20 +1241,18 @@ void MainWidget::drawBarbell()
 {
 	glBindVertexArray(m_barbellVAO);
 
-	/*const auto& meshEntries = m_skinnedMesh->meshEntries();
 	for (uint i = 0; i < m_barbellMeshEntries.size(); i++) {
-		const uint materialIndex = m_barbellMeshEntries[i].MaterialIndex;
-		assert(materialIndex < m_skinnedMeshTextures.size());
-		m_skinnedMeshTextures[materialIndex]->bind();
+		//const uint materialIndex = m_barbellMeshEntries[i].materialIndex;
+		//assert(materialIndex < m_skinnedMeshTextures.size());
+		//m_skinnedMeshTextures[materialIndex]->bind();
 		glDrawElementsBaseVertex(
 			GL_TRIANGLES,
-			meshEntries[i].NumIndices,
+			m_barbellMeshEntries[i].numIndices,
 			GL_UNSIGNED_INT,
-			(void*)(sizeof(uint) * meshEntries[i].BaseIndex),
-			meshEntries[i].BaseVertex
+			(void*)(sizeof(uint) * m_barbellMeshEntries[i].baseIndex),
+			m_barbellMeshEntries[i].baseVertex
 		);
-	}*/
-	glDrawElements(GL_TRIANGLES, 100, GL_UNSIGNED_INT, 0);
+	}
 
 	glBindVertexArray(0);
 }

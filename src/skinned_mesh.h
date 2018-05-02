@@ -48,16 +48,16 @@ struct VertexBoneData
 struct MeshEntry {
 	MeshEntry()
 	{
-		NumIndices = 0;
-		BaseVertex = 0;
-		BaseIndex = 0;
-		MaterialIndex = INVALID_MATERIAL;
+		numIndices = 0;
+		baseVertex = 0;
+		baseIndex = 0;
+		materialIndex = INVALID_MATERIAL;
 	}
 
-	uint NumIndices;
-	uint BaseVertex;
-	uint BaseIndex;
-	uint MaterialIndex;
+	uint numIndices;
+	uint baseVertex;
+	uint baseIndex;
+	uint materialIndex;
 };
 struct BoneInfo
 {
@@ -140,11 +140,12 @@ private:
 	void clear();
 	void initMesh(uint meshIndex, const aiMesh* paiMesh);
 	void loadBones(uint meshIndex, const aiMesh* paiMesh, vector<VertexBoneData>& bones);
+	void checkWeights(uint meshIndex, const aiMesh* pMesh);
 	bool initImages(const aiScene* pScene, const string& filename);
 	bool initFromScene(const aiScene* pScene, const string& filename);
 
 	// Data loaded in CPU by loadFromFile		
-	vector<MeshEntry> m_entries;
+	vector<MeshEntry> m_meshEntries;
 	// Vertex attributes
 	vector<QVector3D> m_positions;
 	vector<QVector3D> m_normals;
@@ -173,7 +174,6 @@ private:
 	void initLocalMatrices(const aiNode* node);
 
 	vector<QString> m_boneTransformInfo;
-	vector<bool> m_hasCoordinates; // #?
 
 	enum Coordinates{
 		pelvis_tilt, //z

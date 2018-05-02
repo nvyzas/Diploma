@@ -20,8 +20,6 @@ uniform vec3 ambient = vec3(0.1, 0.1, 0.1);
 out VS_OUT
 {
 	vec3 color;
-	vec2 texCoord;
-	vec3 normal;
 } vs_out;
 
 void main()
