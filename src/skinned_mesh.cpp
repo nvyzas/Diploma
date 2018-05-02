@@ -62,7 +62,7 @@ SkinnedMesh::SkinnedMesh()
 	m_pScene(NULL)
 {
 	cout << "SkinnedMesh constructor start." << endl;
-	initMeshFromFile("cmu.dae");
+	loadFromFile("cmu.dae");
 	initMotionFromFile("motion.mot");
 	printInfo();
 	cout << "SkinnedMesh constructor end.\n" << endl;
@@ -83,7 +83,7 @@ void SkinnedMesh::clear()
 	m_images.clear();
 	m_boneInfo.clear();
 }
-bool SkinnedMesh::initMeshFromFile(const string& fileName)
+bool SkinnedMesh::loadFromFile(const string& fileName)
 {
 	clear();
 
@@ -94,7 +94,7 @@ bool SkinnedMesh::initMeshFromFile(const string& fileName)
         ret = initFromScene(m_pScene, filePath);
     }
     else {
-        printf("Error parsing '%s': '%s'\n", filePath.c_str(), m_Importer.GetErrorString());
+       cout << "Error parsing '" << filePath << "' -> '\n" << string(m_Importer.GetErrorString()) << endl;
     }
 	
 	m_successfullyLoaded = ret;
@@ -177,7 +177,7 @@ void SkinnedMesh::initMesh(uint meshIndex, const aiMesh* paiMesh)
 		}
 		if (sum<0.99 || sum >1.01) SumNot1 = true; // Must be equal to 1
 	}
-	if (SumNot1) cout << "Sum of weights for some vertices is different than 1!" << endl;
+	if (SumNot1) cout << "Sum of weights is not 1 for all vertices!" << endl;
 
 	// Populate the index buffer
 	for (uint i = 0; i < paiMesh->mNumFaces; i++) {
@@ -265,20 +265,19 @@ void SkinnedMesh::printInfo() const
 }
 void SkinnedMesh::printSceneInfo() const
 {
-	cout << "Scene info:" << endl;
-	cout << "Mesh:";
-	cout << " Entries:" << m_pScene->mNumMeshes;
-	cout << " Materials:" << m_pScene->mNumMaterials;
-	cout << " Textures:" << m_pScene->mNumTextures;
-	cout << " Lights:" << m_pScene->mNumLights;
-	cout << " Animations:" << m_pScene->mNumAnimations;
+	cout << "Scene info: ";
+	cout << " MeshEntries:"	 << setw( 3) << m_pScene->mNumMeshes;
+	cout << " Materials:"	 << setw( 3) << m_pScene->mNumMaterials;
+	cout << " Textures:"	 << setw( 3) << m_pScene->mNumTextures;
+	cout << " Lights:"		 << setw( 3) << m_pScene->mNumLights;
+	cout << " Animations:"   << setw( 3) << m_pScene->mNumAnimations;
 	cout << endl;
 	for (uint i = 0; i < m_pScene->mNumMeshes; i++) {
-		cout << "Entry " << i << ":";
-		cout << " Name:" << setw(15) << m_pScene->mMeshes[i]->mName.C_Str();
-		cout << " Vertices:" << setw(6) << m_pScene->mMeshes[i]->mNumVertices;
-		cout << " Faces:" << setw(6) << m_pScene->mMeshes[i]->mNumFaces;
-		cout << " Bones:" << setw(3) << m_pScene->mMeshes[i]->mNumBones;
+		cout << "MeshId:"	 << i;
+		cout << " Name:"	 << setw(15) << m_pScene->mMeshes[i]->mName.C_Str();
+		cout << " Vertices:" << setw( 6) << m_pScene->mMeshes[i]->mNumVertices;
+		cout << " Faces:"	 << setw( 6) << m_pScene->mMeshes[i]->mNumFaces;
+		cout << " Bones:"	 << setw( 6) << m_pScene->mMeshes[i]->mNumBones;
 		cout << endl;
 	}
 	cout << "Total: Vertices:" << m_numVertices << " Bones:" << m_numBones;
@@ -704,7 +703,7 @@ vector<QImage>& SkinnedMesh::images()
 {
 	return m_images;
 }
-vector<MeshEntry>& SkinnedMesh::entries()
+vector<MeshEntry>& SkinnedMesh::meshEntries()
 {
 	return m_entries;
 }

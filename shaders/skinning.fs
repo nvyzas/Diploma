@@ -14,7 +14,6 @@ struct VSOutput
     vec3 WorldPos;                                                                 
 };
 
-
 struct BaseLight
 {
     vec3 Color;

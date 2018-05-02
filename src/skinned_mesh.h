@@ -86,7 +86,7 @@ class SkinnedMesh
 public:
 	SkinnedMesh();
 	~SkinnedMesh();	
-	bool initMeshFromFile(const string& basename);
+	bool loadFromFile(const string& basename);
 	bool initMotionFromFile(const QString& filename);
 
 	void getBoneTransforms(vector<QMatrix4x4>& transforms);
@@ -120,7 +120,7 @@ public:
 	void flipParameter(uint i);
 
 	// Get vertex attribute functions
-	vector<MeshEntry>& entries();
+	vector<MeshEntry>& meshEntries();
 	vector<QVector3D>& positions();
 	vector<QVector3D>& normals();
 	QVector<QVector2D>& texCoords();
@@ -143,7 +143,7 @@ private:
 	bool initImages(const aiScene* pScene, const string& filename);
 	bool initFromScene(const aiScene* pScene, const string& filename);
 
-	// Data loaded in CPU by initMeshFromFile		
+	// Data loaded in CPU by loadFromFile		
 	vector<MeshEntry> m_entries;
 	// Vertex attributes
 	vector<QVector3D> m_positions;
@@ -231,7 +231,6 @@ private:
 
 	uint m_numBones = 0; // crash if not 0
 	uint m_numVertices; // total number of vertices
-	unsigned long long m_vertexArrayBytes;
 
 	const aiScene* m_pScene;
 	Assimp::Importer m_Importer;

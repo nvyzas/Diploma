@@ -4,15 +4,20 @@
 // Project
 class KSensor;
 class Camera;
-class SkinnedMesh;
 class Technique;
 class SkinningTechnique;
 class Pipeline;
 #include "opensim_model.h"
 #include "util.h"
+#include "skinned_mesh.h"
 
 // Kinect
 #include <Kinect.h>
+
+// Assimp
+#include <assimp\Importer.hpp>      
+#include <assimp\scene.h>			
+#include <assimp\postprocess.h>     
 
 // Qt
 #include <QtCore\QTimer>
@@ -116,8 +121,8 @@ private:
 		BONE_VB,
 		NUM_VBs
 	};
-	GLuint m_skinnedMeshVAO;
 	GLuint m_skinnedMeshVBOs[NUM_VBs];
+	GLuint m_skinnedMeshVAO;
 	vector<QOpenGLTexture*> m_skinnedMeshTextures;
 	void drawSkinnedMesh();
 	bool m_defaultPose = false;
@@ -158,19 +163,30 @@ private:
 	void loadCube(float r);
 	void drawCube();
 
-	// shaders for floor drawing
+	// shaders for plane drawing
 	QOpenGLShaderProgram* m_shaderProgram;
+	int m_mvpLocation;
+	int m_specificLocation;
 
 	// plane
 #define PLANE_VERTICES 4
 	QOpenGLTexture* m_planeTexture;
 	GLuint m_planeVAO;
-	int m_positionLocation;
-	int m_colorLocation;
-	int m_mvpLocation;
-	int m_specificLocation;
 	void loadPlane();
 	void drawPlane();
+
+	// barbell
+	QVector<QOpenGLTexture*> m_barbellTextures;
+	QVector<MeshEntry> m_barbellMeshEntries;
+	GLuint m_barbellNumIndices;
+	GLuint m_barbellVAO;
+	void loadBarbell();
+	void drawBarbell();
+
+	// shaders for material lighting
+	QOpenGLShaderProgram* m_lighting;
+	uint m_modelViewLocation;
+	uint m_projectionLocation;
 };
 
 #endif /* MAIN_WIDGET_H */
