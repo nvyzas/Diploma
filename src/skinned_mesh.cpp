@@ -174,7 +174,7 @@ void SkinnedMesh::initMesh(uint meshIndex, const aiMesh* paiMesh)
 		m_indices.push_back(Face.mIndices[2]);
 	}
 }
-void SkinnedMesh::loadBones(uint meshIndex, const aiMesh* pMesh, vector<VertexBoneData>& vertexBoneData)
+void SkinnedMesh::loadBones(uint meshIndex, const aiMesh* pMesh, QVector<VertexBoneData>& vertexBoneData)
 {
 	for (uint i = 0; i < pMesh->mNumBones; i++) {
 		uint BoneIndex = 0;
@@ -677,11 +677,11 @@ QString SkinnedMesh::boneTransformInfo(const QString& boneName) const
 {
 	return m_boneTransformInfo[findBoneId(boneName)];
 }
-vector<QVector3D>& SkinnedMesh::positions()
+QVector<QVector3D>& SkinnedMesh::positions()
 {
 	return m_positions;
 }
-vector<QVector3D>& SkinnedMesh::normals()
+QVector<QVector3D>& SkinnedMesh::normals()
 {
 	return m_normals;
 }
@@ -689,19 +689,19 @@ QVector<QVector2D>& SkinnedMesh::texCoords()
 {
 	return m_texCoords;
 }
-vector<VertexBoneData>& SkinnedMesh::vertexBoneData()
+QVector<VertexBoneData>& SkinnedMesh::vertexBoneData()
 {
 	return m_vertexBoneData;
 }
-vector<uint>& SkinnedMesh::indices()
+QVector<uint>& SkinnedMesh::indices()
 {
 	return m_indices;
 }
-vector<QImage>& SkinnedMesh::images()
+QVector<QImage>& SkinnedMesh::images()
 {
 	return m_images;
 }
-vector<MeshEntry>& SkinnedMesh::meshEntries()
+QVector<MeshEntry>& SkinnedMesh::meshEntries()
 {
 	return m_meshEntries;
 }

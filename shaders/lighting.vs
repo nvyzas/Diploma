@@ -11,7 +11,7 @@ uniform mat4 projection;
 
 
 // Light and material properties
-uniform vec3 lightPosition = vec3(100.0, 100.0, 100.0);
+uniform vec3 lightPosition = vec3(5.0, 5.0, 5.0);
 uniform vec3 diffuseAlbedo = vec3(0.5, 0.2, 0.7); 		// Whiteness: How much diffuse light a surface reflects back
 uniform vec3 specularAlbedo = vec3(0.7);				// Whiteness: How much specular light a surface reflects back
 uniform float specularPower = 128.0;

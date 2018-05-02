@@ -120,13 +120,13 @@ public:
 	void flipParameter(uint i);
 
 	// Get vertex attribute functions
-	vector<MeshEntry>& meshEntries();
-	vector<QVector3D>& positions();
-	vector<QVector3D>& normals();
+	QVector<MeshEntry>& meshEntries();
+	QVector<QVector3D>& positions();
+	QVector<QVector3D>& normals();
 	QVector<QVector2D>& texCoords();
-	vector<VertexBoneData>& vertexBoneData();
-	vector<uint>& indices();	
-	vector<QImage>& images();
+	QVector<VertexBoneData>& vertexBoneData();
+	QVector<uint>& indices();
+	QVector<QImage>& images();
 
 	QQuaternion pelvisRotation();
 	QVector3D pelvisPosition();
@@ -139,23 +139,23 @@ public:
 private:
 	void clear();
 	void initMesh(uint meshIndex, const aiMesh* paiMesh);
-	void loadBones(uint meshIndex, const aiMesh* paiMesh, vector<VertexBoneData>& bones);
+	void loadBones(uint meshIndex, const aiMesh* paiMesh, QVector<VertexBoneData>& bones);
 	void checkWeights(uint meshIndex, const aiMesh* pMesh);
 	bool initImages(const aiScene* pScene, const string& filename);
 	bool initFromScene(const aiScene* pScene, const string& filename);
 
 	// Data loaded in CPU by loadFromFile		
-	vector<MeshEntry> m_meshEntries;
+	QVector<MeshEntry> m_meshEntries;
 	// Vertex attributes
-	vector<QVector3D> m_positions;
-	vector<QVector3D> m_normals;
+	QVector<QVector3D> m_positions;
+	QVector<QVector3D> m_normals;
 	QVector<QVector2D> m_texCoords;
-	vector<VertexBoneData> m_vertexBoneData;
-	vector<uint> m_indices;
+	QVector<VertexBoneData> m_vertexBoneData;
+	QVector<uint> m_indices;
 	// Bones
-	vector<BoneInfo> m_boneInfo;
+	QVector<BoneInfo> m_boneInfo;
 	// Textures
-	vector<QImage> m_images;
+	QVector<QImage> m_images;
 
 	map<string, uint> m_boneMap; // maps a mesh's bone name to its index (key = bone name, value = index)
 	map<string, uint> m_kboneMap; // maps a mesh's bone name to its kinect JointType index

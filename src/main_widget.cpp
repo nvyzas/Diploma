@@ -197,7 +197,6 @@ void MainWidget::initializeGL()
 	lightingVS.compileSourceFile("shaders/lighting.vs");
 	lightingFS.compileSourceFile("shaders/lighting.fs");
 
-	
 	cout << "Initializing lighting shaders" << endl;
 	m_lighting = new QOpenGLShaderProgram(context());
 	if (!m_lighting->addShader(&lightingVS)) cout << "Could not add lighting vertex shader." << endl;
@@ -221,6 +220,8 @@ void MainWidget::initializeGL()
 	loadCube(0.02);
 	loadPlane();
 	loadBarbell();
+
+	
 
 	cout << "MainWidget initializeGL end." << endl;
 }
@@ -873,10 +874,10 @@ void MainWidget::loadKinectSkeletonJoints()
 	glBindVertexArray(m_kinectSkeletonJointsVAO);
 	cout << "kinectSkeletonJointsVAO=" << m_kinectSkeletonJointsVAO << endl;
 
-	GLuint skeletonIBO;
-	glGenBuffers(1, &skeletonIBO);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skeletonIBO);
-	cout << "kinectSkeletonJointsIBO=" << skeletonIBO << endl;
+	GLuint kinectSkeletonJointsIBO;
+	glGenBuffers(1, &kinectSkeletonJointsIBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, kinectSkeletonJointsIBO);
+	cout << "kinectSkeletonJointsIBO=" << kinectSkeletonJointsIBO << endl;
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
 
 	glGenBuffers(1, &m_kinectSkeletonJointsVBO);
@@ -1083,7 +1084,7 @@ void MainWidget::loadBarbell()
 // aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices  | aiProcess_LimitBoneWeights 
 	Assimp::Importer importer;
 	const aiScene* scene = importer.ReadFile(
-		"models/barbell blendered.dae",
+		"models/barbell.obj",
 		aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices
 	);
 
@@ -1091,7 +1092,6 @@ void MainWidget::loadBarbell()
 		cout << "Could not import the barbell model." << endl;
 		return;
 	}
-	cout << "Num meshes:" << scene->mNumMeshes << endl;
 
 	// Count vertices and indices and update mesh entries
 	uint numVertices = 0;
@@ -1188,7 +1188,7 @@ void MainWidget::loadBarbell()
 		cout << "Material name: " << string(name.data) << endl;
 		int shadingModel;
 		material->Get(AI_MATKEY_SHADING_MODEL, shadingModel);
-		cout << "Shading method: " << hex << shadingModel << endl;
+		cout << "Shading method: " << hex << shadingModel << dec << endl;
 		aiColor3D col;
 		material->Get(AI_MATKEY_COLOR_DIFFUSE, col);
 		cout << "Color diffuse: " << col.r << " " << col.g << " " << col.b << endl;

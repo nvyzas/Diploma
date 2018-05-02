@@ -178,7 +178,6 @@ private:
 	// barbell
 	QVector<QOpenGLTexture*> m_barbellTextures;
 	QVector<MeshEntry> m_barbellMeshEntries;
-	GLuint m_barbellNumIndices;
 	GLuint m_barbellVAO;
 	void loadBarbell();
 	void drawBarbell();
