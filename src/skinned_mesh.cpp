@@ -386,6 +386,8 @@ void SkinnedMesh::initCorrectionQuats() // OpenSim crash if calling fromEulerAng
 	m_correctionQuats[findBoneId("RightArm")]		= QQuaternion::fromEulerAngles(0, 0, 40); // #? z=35
 	m_correctionQuats[findBoneId("RightForeArm")]	= QQuaternion::fromEulerAngles(0, 90, -50);
 	m_correctionQuats[findBoneId("RightUpLeg")]		= QQuaternion::fromEulerAngles(0, 0, -5);
+
+	// constants
 }
 QQuaternion SkinnedMesh::pelvisRotation()
 {

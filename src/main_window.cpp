@@ -78,6 +78,7 @@ void MainWindow::setActiveBoneRotationX(int value)
 	ui->openGLWidget->transformSkinnedMesh(false);
 	ui->openGLWidget->update();
 	loadActiveBoneRotationX();
+	ui->openGLWidget->update();
 }
 void MainWindow::setActiveBoneRotationY(int value)
 {
@@ -87,6 +88,7 @@ void MainWindow::setActiveBoneRotationY(int value)
 	ui->openGLWidget->transformSkinnedMesh(false);
 	ui->openGLWidget->update();
 	loadActiveBoneRotationY();
+	ui->openGLWidget->update();
 }
 void MainWindow::setActiveBoneRotationZ(int value)
 {
@@ -96,6 +98,7 @@ void MainWindow::setActiveBoneRotationZ(int value)
 	ui->openGLWidget->transformSkinnedMesh(false);
 	ui->openGLWidget->update();
 	loadActiveBoneRotationZ();
+	ui->openGLWidget->update();
 }
 void MainWindow::printActiveBoneTransforms() const
 {

@@ -28,6 +28,24 @@ QT_FORWARD_DECLARE_CLASS(QOpenGLTexture);
 // Standard C/C++
 //#include <vector>
 
+struct Material
+{
+	QVector3D diffuseColor;
+	QVector3D specularColor;
+	QVector3D ambientColor;
+
+	Material()
+	{
+	}
+
+	Material(QVector3D& difColor, QVector3D& specColor, QVector3D& ambColor)
+	{
+		diffuseColor = difColor;
+		specularColor = specColor;
+		ambientColor = ambColor;
+	}
+};
+
 class MainWidget : public QOpenGLWidget, protected QOpenGLFunctions_3_3_Core
 {
 	Q_OBJECT
@@ -35,8 +53,7 @@ public:
 	MainWidget(QWidget *parent = Q_NULLPTR);
 	~MainWidget();
 	
-
-	// #todo #? make private and create get/set functions
+	// #todo make get/set functions
 	const uint m_captureInterval = 10; // in milliseconds
 	uint m_playbackInterval; // in milliseconds
 	uint m_fpsCount = 0; // for counting fps
@@ -179,6 +196,7 @@ private:
 	QVector<QOpenGLTexture*> m_barbellTextures;
 	QVector<MeshEntry> m_barbellMeshEntries;
 	GLuint m_barbellVAO;
+	QVector<Material> m_barbellMaterials;
 	void loadBarbell();
 	void drawBarbell();
 	const aiScene* m_barbellScene;
@@ -189,6 +207,9 @@ private:
 	QOpenGLShaderProgram* m_lighting;
 	uint m_modelViewLocation;
 	uint m_projectionLocation;
+	uint m_diffuseLocation;
+	uint m_specularLocation;
+	uint m_ambientLocation;
 };
 
 #endif /* MAIN_WIDGET_H */

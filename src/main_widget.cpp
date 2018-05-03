@@ -209,6 +209,9 @@ void MainWidget::initializeGL()
 	cout << "Is supported by system? " << m_lighting->hasOpenGLShaderPrograms() << endl;
 	m_modelViewLocation = m_lighting->uniformLocation("modelView");
 	m_projectionLocation = m_lighting->uniformLocation("projection");
+	m_diffuseLocation = m_lighting->uniformLocation("diffuseAlbedo");
+	m_specularLocation = m_lighting->uniformLocation("specularAlbedo");
+	m_ambientLocation = m_lighting->uniformLocation("ambient");
 
 	cout << "Locations: ";
 	cout << m_modelViewLocation << " ";
@@ -657,6 +660,7 @@ void MainWidget::setBoneAxes(const QString &boneName)
 	assert(boneId < m_boneInfo.size());
 	m_technique->enable();
 	m_technique->setSpecific(m_skinnedMesh->boneGlobal(boneId));
+	update();
 }
 void MainWidget::setActiveBone(const QString& boneName)
 {
@@ -1118,6 +1122,7 @@ void MainWidget::loadBarbell()
 	uint numVertices = 0;
 	uint numIndices = 0;
 	m_barbellMeshEntries.resize(scene->mNumMeshes);
+	m_barbellMaterials.resize(scene->mNumMaterials);
 	for (uint i = 0; i < scene->mNumMeshes; i++) {
 		m_barbellMeshEntries[i].materialIndex = scene->mMeshes[i]->mMaterialIndex;
 		m_barbellMeshEntries[i].numIndices = scene->mMeshes[i]->mNumFaces * 3;
@@ -1186,54 +1191,95 @@ void MainWidget::loadBarbell()
 	cout << normals.length() << " ";
 	cout << indices.length() << endl;
 
-	cout << "Scene info: ";
+	// Print scene info
+	cout << "Scene: ";
 	cout << " Meshes:" << setw(3) << scene->mNumMeshes;
 	cout << " Materials:" << setw(3) << scene->mNumMaterials;
 	cout << " Textures:" << setw(3) << scene->mNumTextures;
 	cout << " Lights:" << setw(3) << scene->mNumLights;
 	cout << " Animations:" << setw(3) << scene->mNumAnimations;
 	cout << endl;
+
+	// Print mesh info
 	for (uint i = 0; i < scene->mNumMeshes; i++) {
 		cout << "Mesh:" << i;
 		cout << " Name:" << setw(15) << scene->mMeshes[i]->mName.C_Str();
 		cout << " Vertices:" << setw(6) << scene->mMeshes[i]->mNumVertices;
 		cout << " Faces:" << setw(6) << scene->mMeshes[i]->mNumFaces;
 		cout << " Bones:" << setw(6) << scene->mMeshes[i]->mNumBones;
+		cout << " MaterialId:" << setw(6) << scene->mMeshes[i]->mMaterialIndex;
 		cout << endl;
 	}
 	cout << endl;
 
+	// Print material info
 	for (uint i = 0; i < scene->mNumMeshes; i++) {
-		cout << "Mesh: " << i << endl;
-		uint materialId = scene->mMeshes[i]->mMaterialIndex;
-		cout << "Material id: " << materialId << endl;
-		const aiMaterial* material = scene->mMaterials[i];
+		// General properties
+		const uint materialIndex = scene->mMeshes[i]->mMaterialIndex;
+		const aiMaterial* material = scene->mMaterials[materialIndex];
 		aiString name;
-		material->Get(AI_MATKEY_SHADING_MODEL, name);
-		cout << "Material name: " << string(name.data) << endl;
-		int shadingModel;
-		material->Get(AI_MATKEY_SHADING_MODEL, shadingModel);
-		cout << "Shading method: " << hex << shadingModel << dec << endl;
-		aiColor3D col;
+		int shadingMethod;
+		int blendFunction;
+		int twoSided;
+		float opacity;
+		float shininess;
+		float shininessStrength;
+		material->Get(AI_MATKEY_NAME, name);
+		material->Get(AI_MATKEY_SHADING_MODEL, shadingMethod);
+		material->Get(AI_MATKEY_BLEND_FUNC, blendFunction);
+		material->Get(AI_MATKEY_TWOSIDED, twoSided);
+		material->Get(AI_MATKEY_OPACITY, opacity);
+		material->Get(AI_MATKEY_SHININESS, shininess);
+		material->Get(AI_MATKEY_SHININESS_STRENGTH, shininessStrength);
+		cout << "Material:" << i;
+		cout << " Name:" << string(name.data);
+		cout << " ShadingMethod:" << hex << shadingMethod << dec;
+		cout << " BlendFunction:" << hex << blendFunction << dec;
+		cout << " TwoSided:" << twoSided;
+		cout << " Opacity:" << opacity;
+		cout << " Shininess:" << shininess;
+		cout << " ShininessStrength:" << shininessStrength;
+		cout << endl;
+
+		// Colors
+		aiColor3D diffuseColor;
+		aiColor3D specularColor;
+		aiColor3D ambientColor;
+		aiColor3D reflectiveColor;
+		aiColor3D emissiveColor;
+		aiColor3D transparentColor;
+		material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor);
+		material->Get(AI_MATKEY_COLOR_SPECULAR, specularColor);
+		material->Get(AI_MATKEY_COLOR_AMBIENT, ambientColor);
+		material->Get(AI_MATKEY_COLOR_REFLECTIVE, reflectiveColor);
+		material->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor);
+		material->Get(AI_MATKEY_COLOR_TRANSPARENT, transparentColor);
 		cout << "Colors:";
-		material->Get(AI_MATKEY_COLOR_DIFFUSE, col);
-		cout << " Diffuse:" << col.r << " " << col.g << " " << col.b;
-		material->Get(AI_MATKEY_COLOR_SPECULAR, col);
-		cout << " Specular:" << col.r << " " << col.g << " " << col.b;
-		material->Get(AI_MATKEY_COLOR_AMBIENT, col);
-		cout << " Ambient:" << col.r << " " << col.g << " " << col.b;
-		material->Get(AI_MATKEY_COLOR_EMISSIVE, col);
-		cout << " Emissive:" << col.r << " " << col.g << " " << col.b;
-		material->Get(AI_MATKEY_COLOR_TRANSPARENT, col);
-		cout << " Transparent:" << col.r << " " << col.g << " " << col.b << endl;
-		if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
-			cout << "Diffuse type textures: " << material->GetTextureCount(aiTextureType_DIFFUSE) << endl;
-			aiString path;
-			if (material->GetTexture(aiTextureType_DIFFUSE, 0, &path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS) {
-				string p(path.data);
-				cout << "Path: " << p << endl;
-			}
-		}
+		cout << " Diffuse:" << diffuseColor.r << " " << diffuseColor.g << " " << diffuseColor.b;
+		cout << " Specular:" << specularColor.r << " " << specularColor.g << " " << specularColor.b;
+		cout << " Ambient:" << ambientColor.r << " " << ambientColor.g << " " << ambientColor.b;
+		cout << " Reflective:" << reflectiveColor.r << " " << reflectiveColor.g << " " << reflectiveColor.b;
+		cout << " Emissive:" << emissiveColor.r << " " << emissiveColor.g << " " << emissiveColor.b;
+		cout << " Transparent:" << transparentColor.r << " " << transparentColor.g << " " << transparentColor.b;
+		cout << endl;
+		// Texture types
+		cout << "Texture type-count:";
+		cout << " Diffuse" << "-" << material->GetTextureCount(aiTextureType_DIFFUSE);
+		cout << " Specular" << "-" << material->GetTextureCount(aiTextureType_SPECULAR);
+		cout << " Ambient" << "-" << material->GetTextureCount(aiTextureType_AMBIENT);
+		cout << " Reflective" << "-" << material->GetTextureCount(aiTextureType_REFLECTION);
+		cout << " Emissive" << "-" << material->GetTextureCount(aiTextureType_EMISSIVE);
+		cout << " Opacity" << "-" << material->GetTextureCount(aiTextureType_OPACITY);
+		cout << " Shininess" << "-" << material->GetTextureCount(aiTextureType_SHININESS);
+		cout << " Normals" << "-" << material->GetTextureCount(aiTextureType_NORMALS);
+		cout << " Reflective" << "-" << material->GetTextureCount(aiTextureType_REFLECTION);
+		cout << endl;
+
+		m_barbellMaterials[materialIndex] = Material(
+			QVector3D(diffuseColor.r, diffuseColor.g, diffuseColor.b),
+			QVector3D(specularColor.r, specularColor.g, specularColor.b),
+			QVector3D(ambientColor.r, ambientColor.g, ambientColor.b)
+		);
 	}
 
 	glGenVertexArrays(1, &m_barbellVAO);
@@ -1287,9 +1333,10 @@ void MainWidget::drawBarbell()
 	glBindVertexArray(m_barbellVAO);
 
 	for (uint i = 0; i < m_barbellMeshEntries.size(); i++) {
-		//const uint materialIndex = m_barbellMeshEntries[i].materialIndex;
-		//assert(materialIndex < m_skinnedMeshTextures.size());
-		//m_skinnedMeshTextures[materialIndex]->bind();
+		const uint materialIndex = m_barbellMeshEntries[i].materialIndex;
+		m_lighting->setUniformValue(m_diffuseLocation, 4*m_barbellMaterials[materialIndex].diffuseColor);
+		m_lighting->setUniformValue(m_specularLocation, 1*m_barbellMaterials[materialIndex].specularColor);
+		//m_lighting->setUniformValue(m_ambientLocation,  m_barbellMaterials[materialIndex].ambientColor);
 		glDrawElementsBaseVertex(
 			GL_TRIANGLES,
 			m_barbellMeshEntries[i].numIndices,
