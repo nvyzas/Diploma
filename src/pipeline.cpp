@@ -73,10 +73,8 @@ QMatrix4x4 Pipeline::cameraRotation()
 // #todo optimize
 const QMatrix4x4& Pipeline::GetViewTrans()
 {
-	QMatrix4x4 translation, rotation;
-
-	translation = fromTranslation(-m_camera.Pos);
-	rotation = cameraRotation();
+	QMatrix4x4 translation = fromTranslation(-m_camera.Pos);
+	QMatrix4x4 rotation = cameraRotation();
     m_Vtransformation = rotation * translation;
 
     return m_Vtransformation;

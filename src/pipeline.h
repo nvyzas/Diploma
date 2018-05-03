@@ -58,17 +58,17 @@ public:
         m_worldPosition = Pos;
     }
 
-    void setWorldRotation(float RotateX, float RotateY, float RotateZ)
+    void setWorldOrientation(float RotateX, float RotateY, float RotateZ)
     {
         m_worldOrientation.setX(RotateX);
         m_worldOrientation.setY(RotateY);
         m_worldOrientation.setZ(RotateZ);
     }
-    void setWorldRotation(const QVector3D& r)
+    void setWorldOrientation(const QVector3D& v)
     {
-        setWorldRotation(r.x(), r.y(), r.z());
+        setWorldOrientation(v.x(), v.y(), v.z());
     }
-	void setWorldRotation(const QQuaternion& q)
+	void setWorldOrientation(const QQuaternion& q)
 	{
 		m_worldOrientation = q;
 	}

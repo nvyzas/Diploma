@@ -137,6 +137,8 @@ void MainWidget::initializeGL()
 	glCullFace(GL_BACK);
 	glEnable(GL_CULL_FACE);
 
+	glPointSize(3.f);
+
 	// Init technique
 	m_technique = new Technique();
 	m_technique->initDefault();
@@ -247,11 +249,11 @@ void MainWidget::paintGL()
 
 	// prepare pipeline for drawing skinned mesh related stuff
 	transformSkinnedMesh(false);
-	if (m_defaultPose) m_pipeline->setWorldRotation(QQuaternion());
-	else m_pipeline->setWorldRotation(m_skinnedMesh->pelvisRotation());
+	m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
+	if (m_defaultPose) m_pipeline->setWorldOrientation(QQuaternion());
+	else m_pipeline->setWorldOrientation(m_skinnedMesh->pelvisRotation());
 	if (m_defaultPose) m_pipeline->setWorldPosition(QVector3D());
 	else m_pipeline->setWorldPosition(m_skinnedMesh->pelvisPosition() + m_skinnedMeshOffset);
-	m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
 	m_skinningTechnique->setWVP(m_pipeline->getWVPtrans());
 
 	// draw skinned mesh
@@ -259,16 +261,48 @@ void MainWidget::paintGL()
 		drawSkinnedMesh();
 	}
 
+	// bind lighting shaders
+	m_lighting->bind();
+
+	// draw barbell
+	QMatrix4x4 barbellScaling(fromScaling(QVector3D(1.f, 0.75f, 0.75f)));
+	//R = fromRotation(QQuaternion::rotationTo(QVector3D(0, 1, 0), barDirection));
+	//m_pipeline->setWorldOrientation(QQuaternion::fromDirection(barbellDirection, QVector3D(0.f, 1.f, 0.f)));
+	QMatrix4x4 barbellRotation(fromRotation(QQuaternion()));
+	QVector3D skinnedMeshLeftHand  = m_skinnedMesh->boneEndPosition(m_skinnedMesh->findBoneId("LThumb"));
+	QVector3D skinnedMeshRightHand = m_skinnedMesh->boneEndPosition(m_skinnedMesh->findBoneId("RThumb"));
+	QVector3D barbellDirection = skinnedMeshRightHand - skinnedMeshLeftHand;
+	QVector3D skinnedMeshHandsMid = (skinnedMeshLeftHand + skinnedMeshRightHand) / 2.f;
+	QMatrix4x4 barbellTranslation = fromTranslation(skinnedMeshHandsMid);
+	QMatrix4x4 barbellTransform = barbellTranslation * barbellRotation * barbellScaling;
+	m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
+	m_pipeline->setWorldOrientation(m_skinnedMesh->pelvisRotation());
+	m_pipeline->setWorldPosition(m_skinnedMesh->pelvisPosition() + m_skinnedMeshOffset);
+	m_lighting->setUniformValue(m_modelViewLocation, m_pipeline->GetWVTrans() * barbellTransform);
+	m_lighting->setUniformValue(m_projectionLocation, m_pipeline->GetProjTrans());
+	drawBarbell();
+
 	// enable simple technique
 	m_technique->enable();
-	m_technique->setMVP(m_pipeline->getWVPtrans());
 
 	// draw skinned mesh bone axes
+	m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
+	if (m_defaultPose) m_pipeline->setWorldOrientation(QQuaternion());
+	else m_pipeline->setWorldOrientation(m_skinnedMesh->pelvisRotation());
+	if (m_defaultPose) m_pipeline->setWorldPosition(QVector3D());
+	else m_pipeline->setWorldPosition(m_skinnedMesh->pelvisPosition() + m_skinnedMeshOffset);
 	m_technique->setSpecific(m_skinnedMesh->boneGlobal(m_activeBone));
+	m_technique->setMVP(m_pipeline->getWVPtrans());
 	if (m_renderAxes) drawAxes();
 	
 	// draw skinned mesh joints
+	m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
+	if (m_defaultPose) m_pipeline->setWorldOrientation(QQuaternion());
+	else m_pipeline->setWorldOrientation(m_skinnedMesh->pelvisRotation());
+	if (m_defaultPose) m_pipeline->setWorldPosition(QVector3D());
+	else m_pipeline->setWorldPosition(m_skinnedMesh->pelvisPosition() + m_skinnedMeshOffset);
 	m_technique->setSpecific(QMatrix4x4());
+	m_technique->setMVP(m_pipeline->getWVPtrans());
 	if (m_renderSkinnedMeshJoints) drawSkinnedMeshJoints();
 
 	// draw basic axes
@@ -277,7 +311,7 @@ void MainWidget::paintGL()
 	if (m_renderAxes) drawAxes();
 
 	// prepare pipeline to draw kinect skeleton related stuff
-	m_pipeline->setWorldRotation(QQuaternion());
+	m_pipeline->setWorldOrientation(QQuaternion());
 	if (m_defaultPose) m_pipeline->setWorldPosition(QVector3D());
 	else m_pipeline->setWorldPosition(m_kinectSkeletonOffset);
 	m_technique->setMVP(m_pipeline->getWVPtrans());
@@ -309,7 +343,7 @@ void MainWidget::paintGL()
 	
 	// draw planes
 	m_pipeline->setWorldPosition(QVector3D());
-	m_pipeline->setWorldRotation(QQuaternion());
+	m_pipeline->setWorldOrientation(QQuaternion());
 	m_shaderProgram->setUniformValue(m_mvpLocation, m_pipeline->getWVPtrans());
 	drawPlane();
 
@@ -330,16 +364,6 @@ void MainWidget::paintGL()
 	QVector3D kneeToAnkle = (ankleRight - kneeRight).normalized();
 	m_kneeAngle = 180.f-ToDegrees(acos(QVector3D::dotProduct(kneeToHip, kneeToAnkle)));
 	
-	// bind lighting shaders
-	m_lighting->bind();
-
-	// draw barbell
-	m_pipeline->setWorldPosition(QVector3D());
-	m_pipeline->setWorldRotation(QQuaternion());
-	m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
-	m_lighting->setUniformValue(m_modelViewLocation, m_pipeline->GetWVTrans());
-	m_lighting->setUniformValue(m_projectionLocation, m_pipeline->GetProjTrans());
-	drawBarbell();
 
 	if (m_play && m_shouldUpdate) {
 		if (++m_activeFrame > m_ksensor->skeleton()->m_activeSequence->size())  m_activeFrame = 0;
