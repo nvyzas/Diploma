@@ -265,14 +265,12 @@ void MainWidget::paintGL()
 	m_lighting->bind();
 
 	// draw barbell
-	QMatrix4x4 barbellScaling(fromScaling(QVector3D(1.f, 0.75f, 0.75f)));
-	//R = fromRotation(QQuaternion::rotationTo(QVector3D(0, 1, 0), barDirection));
-	//m_pipeline->setWorldOrientation(QQuaternion::fromDirection(barbellDirection, QVector3D(0.f, 1.f, 0.f)));
-	QMatrix4x4 barbellRotation(fromRotation(QQuaternion()));
-	QVector3D skinnedMeshLeftHand  = m_skinnedMesh->boneEndPosition(m_skinnedMesh->findBoneId("LThumb"));
+	QVector3D skinnedMeshLeftHand = m_skinnedMesh->boneEndPosition(m_skinnedMesh->findBoneId("LThumb"));
 	QVector3D skinnedMeshRightHand = m_skinnedMesh->boneEndPosition(m_skinnedMesh->findBoneId("RThumb"));
 	QVector3D barbellDirection = skinnedMeshRightHand - skinnedMeshLeftHand;
 	QVector3D skinnedMeshHandsMid = (skinnedMeshLeftHand + skinnedMeshRightHand) / 2.f;
+	QMatrix4x4 barbellScaling(fromScaling(QVector3D(1.f, 0.75f, 0.75f)));
+	QMatrix4x4 barbellRotation(fromRotation(QQuaternion::rotationTo(QVector3D(1.f, 0.f, 0.f), barbellDirection)));
 	QMatrix4x4 barbellTranslation = fromTranslation(skinnedMeshHandsMid);
 	QMatrix4x4 barbellTransform = barbellTranslation * barbellRotation * barbellScaling;
 	m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
@@ -1217,16 +1215,17 @@ void MainWidget::loadBarbell()
 		material->Get(AI_MATKEY_SHADING_MODEL, shadingModel);
 		cout << "Shading method: " << hex << shadingModel << dec << endl;
 		aiColor3D col;
+		cout << "Colors:";
 		material->Get(AI_MATKEY_COLOR_DIFFUSE, col);
-		cout << "Color diffuse: " << col.r << " " << col.g << " " << col.b << endl;
+		cout << " Diffuse:" << col.r << " " << col.g << " " << col.b;
 		material->Get(AI_MATKEY_COLOR_SPECULAR, col);
-		cout << "Color specular: " << col.r << " " << col.g << " " << col.b << endl;
+		cout << " Specular:" << col.r << " " << col.g << " " << col.b;
 		material->Get(AI_MATKEY_COLOR_AMBIENT, col);
-		cout << "Color ambient: " << col.r << " " << col.g << " " << col.b << endl;
+		cout << " Ambient:" << col.r << " " << col.g << " " << col.b;
 		material->Get(AI_MATKEY_COLOR_EMISSIVE, col);
-		cout << "Color emissive: " << col.r << " " << col.g << " " << col.b << endl;
+		cout << " Emissive:" << col.r << " " << col.g << " " << col.b;
 		material->Get(AI_MATKEY_COLOR_TRANSPARENT, col);
-		cout << "Color transparent: " << col.r << " " << col.g << " " << col.b << endl;
+		cout << " Transparent:" << col.r << " " << col.g << " " << col.b << endl;
 		if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
 			cout << "Diffuse type textures: " << material->GetTextureCount(aiTextureType_DIFFUSE) << endl;
 			aiString path;
