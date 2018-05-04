@@ -26,19 +26,20 @@ struct KNode
 	vector<uint> childrenId;
 
 	KNode()
-		:name("aJoint"),
+		:
+		name("aJoint"),
 		parentId(INVALID_JOINT_ID),
 		marked(true)
 	{
 	}
 
 	KNode(QString _name, uint  _parentId, bool _marked = true)
-		:name(_name),
+		:
+		name(_name),
 		parentId(_parentId),
 		marked(_marked)
 	{
 	}
-
 };
 
 // Represents the segment between 2 joints.
@@ -53,7 +54,7 @@ struct KLimb
 	int serialMin = -1, serialMax = -1;
 	static float gapAverage;
 	float siblingsLengthAverage = 0;
-	bool needsAdjustment = false;
+	float desiredLength = 0;
 
 	KLimb()
 		:
@@ -64,9 +65,8 @@ struct KLimb
 	{
 	}
 
-	KLimb(QString _name, uint _start, uint _end, uint _sibling = INVALID_JOINT_ID)
+	KLimb(uint _start, uint _end, uint _sibling = INVALID_JOINT_ID)
 		:
-		name(_name),
 		start(_start),
 		end(_end),
 		sibling(_sibling)
@@ -182,7 +182,7 @@ public:
 	double m_recordingDuration;
 	void calculateLimbLengths(const QVector<KFrame>& sequence);
 	void printLimbLengths() const;
-	const array<KLimb, NUM_LIMBS>& limbs() const;
+	const QVector<KLimb>& limbs() const;
 
 private:
 	array<KNode, JointType_Count> m_nodes; // these define the kinect skeleton hierarchy
@@ -210,15 +210,12 @@ private:
 	array<KFrame, m_framesDelayed> m_lastRawFrames;
 	uint m_firstFrameIndex = 0;
 
-	array<KLimb, NUM_LIMBS> m_limbs;
+	QVector<KLimb> m_limbs;
 	void initLimbs();
 	void interpolateFrames();
 	void filterFrames();
 	void adjustFrames();
 	void adjustLimbLength(uint frameLocation, uint jointId, const QVector3D& direction, float factor); // recursively adjust joints
-
-
-
 };
 
 #endif
