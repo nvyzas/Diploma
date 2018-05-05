@@ -187,8 +187,6 @@ void KSkeleton::initLimbs()
 	}
 	m_adjustmentOrder.push_back(JointType_ShoulderRight);
 	m_adjustmentOrder.push_back(JointType_ShoulderLeft);
-	//m_adjustmentOrder.push_back(JointType_Count);
-	//m_adjustmentOrder.push_back(JointType_Count+1);
 
 	calculateLimbLengths(m_filteredSequence);
 
@@ -201,16 +199,6 @@ void KSkeleton::initLimbs()
 			(m_limbs[l].averageLength + m_limbs[m_limbs[l].sibling].averageLength) / 2.f
 			);
 	}
-
-	//m_limbs[JointType_Count    ].desiredLength = sqrt(
-	//	pow(m_limbs[JointType_SpineShoulder].desiredLength, 2.)+
-	//	pow(m_limbs[JointType_ShoulderLeft].desiredLength, 2.)
-	//);
-	//m_limbs[JointType_Count + 1].desiredLength = sqrt(
-	//	pow(m_limbs[JointType_SpineShoulder].desiredLength, 2.) +
-	//	pow(m_limbs[JointType_ShoulderRight].desiredLength, 2.)
-	//);
-
 
 }
 void KSkeleton::interpolateFrames()
@@ -299,12 +287,10 @@ void KSkeleton::adjustFrames()
 
 	cout << "Adjusting frames" << endl;
 	m_adjustedSequence = m_filteredSequence;
-	for (uint l = 0; l < m_adjustmentOrder.size(); l++) {
-		calculateLimbLengths(m_adjustedSequence);
-		printLimbLengths();
-		for (uint i = 0; i < m_adjustedSequence.size(); i++) {
-			m_leftFootOffset = QVector3D();
-			m_rightFootOffset = QVector3D();
+	for (uint i = 0; i < m_adjustedSequence.size(); i++) {
+		m_leftFootOffset = QVector3D();
+		m_rightFootOffset = QVector3D();
+		for (uint l = 0; l < m_adjustmentOrder.size(); l++) {
 			KLimb& limb = m_limbs[m_adjustmentOrder[l]];
 			const QVector3D& startPosition = m_adjustedSequence[i].joints[limb.start].position;
 			const QVector3D& endPosition = m_adjustedSequence[i].joints[limb.end].position;
@@ -340,18 +326,20 @@ void KSkeleton::adjustFrames()
 				cout << " CurrentFactor=" << adjustmentFactor << endl;
 			}
 			adjustLimbLength(i, limb.end, direction, adjustmentFactor);
-			// Move all joints towards the ground
-			for (uint j = 0; j < JointType_Count; j++) {
-				m_adjustedSequence[i].joints[j].position.setY(
-					m_adjustedSequence[i].joints[j].position.y() -
-					(m_leftFootOffset.y() + m_rightFootOffset.y()) / 2.f
-				);
-			}
-			if (i == 0) {
-				cout << " LeftFootOffset=" << toStringCartesian(m_leftFootOffset).toStdString();
-				cout << " RightFootOffset=" << toStringCartesian(m_rightFootOffset).toStdString();
-				cout << "\n" << endl;
-			}
+		}
+
+		if (i == 0) {
+			cout << " LeftFootOffset=" << toStringCartesian(m_leftFootOffset).toStdString();
+			cout << " RightFootOffset=" << toStringCartesian(m_rightFootOffset).toStdString();
+			cout << "\n" << endl;
+		}
+
+		// Move all joints towards the ground
+		for (uint j = 0; j < JointType_Count; j++) {
+			m_adjustedSequence[i].joints[j].position.setY(
+				m_adjustedSequence[i].joints[j].position.y() -
+				(m_leftFootOffset.y() + m_rightFootOffset.y()) / 2.f
+			);
 		}
 	}
 
