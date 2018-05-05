@@ -363,7 +363,7 @@ void MainWidget::paintGL()
 	QVector3D ankleRight = (m_ksensor->skeleton()->activeJoints())[JointType_AnkleRight].position;
 	QVector3D kneeToHip = (hipRight - kneeRight).normalized();
 	QVector3D kneeToAnkle = (ankleRight - kneeRight).normalized();
-	m_kneeAngle = 180.f-ToDegrees(acos(QVector3D::dotProduct(kneeToHip, kneeToAnkle)));
+	m_kneeAngle = ToDegrees(acos(QVector3D::dotProduct(kneeToHip, kneeToAnkle)));
 	
 
 	if (m_play && m_shouldUpdate) {

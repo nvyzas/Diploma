@@ -168,8 +168,8 @@ void KSkeleton::initLimbs()
 	m_limbs[JointType_FootLeft     ] = KLimb(JointType_AnkleLeft    , JointType_FootLeft     , JointType_FootRight    );
 	m_limbs[JointType_FootRight    ] = KLimb(JointType_AnkleRight   , JointType_FootRight    , JointType_FootLeft     );
 	// Arms							 		
-	m_limbs[JointType_ShoulderRight] = KLimb(JointType_SpineShoulder, JointType_ShoulderRight, JointType_ShoulderLeft );
 	m_limbs[JointType_ShoulderLeft ] = KLimb(JointType_SpineShoulder, JointType_ShoulderLeft , JointType_ShoulderRight);
+	m_limbs[JointType_ShoulderRight] = KLimb(JointType_SpineShoulder, JointType_ShoulderRight, JointType_ShoulderLeft );
 	m_limbs[JointType_ElbowLeft    ] = KLimb(JointType_ShoulderLeft , JointType_ElbowLeft    , JointType_ElbowRight   );
 	m_limbs[JointType_ElbowRight   ] = KLimb(JointType_ShoulderRight, JointType_ElbowRight   , JointType_ElbowLeft    );
 	m_limbs[JointType_WristLeft    ] = KLimb(JointType_ElbowLeft    , JointType_WristLeft    , JointType_WristRight   );
@@ -178,9 +178,17 @@ void KSkeleton::initLimbs()
 	m_limbs[JointType_HandRight    ] = KLimb(JointType_WristRight   , JointType_HandRight    , JointType_HandLeft     );
 	m_limbs[JointType_HandTipLeft  ] = KLimb(JointType_WristLeft    , JointType_HandTipLeft  , JointType_HandTipRight );
 	m_limbs[JointType_HandTipRight ] = KLimb(JointType_WristRight   , JointType_HandTipRight , JointType_HandTipLeft  );
-	
 	m_limbs.push_back(KLimb(JointType_SpineBase, JointType_ShoulderLeft, JointType_Count + 1));
 	m_limbs.push_back(KLimb(JointType_SpineBase, JointType_ShoulderRight, JointType_Count));
+
+	for (uint i = 0; i < m_limbs.size(); i++) {
+		if (m_limbs[i].end == INVALID_JOINT_ID) continue;
+		m_adjustmentOrder.push_back(i);
+	}
+	m_adjustmentOrder.push_back(JointType_ShoulderRight);
+	m_adjustmentOrder.push_back(JointType_ShoulderLeft);
+	//m_adjustmentOrder.push_back(JointType_Count);
+	//m_adjustmentOrder.push_back(JointType_Count+1);
 
 	calculateLimbLengths(m_filteredSequence);
 
@@ -194,25 +202,16 @@ void KSkeleton::initLimbs()
 			);
 	}
 
-	//float angle1 = QVector3D::dotProduct(m_adjustedSequence[0].joints[JointType_])
+	//m_limbs[JointType_Count    ].desiredLength = sqrt(
+	//	pow(m_limbs[JointType_SpineShoulder].desiredLength, 2.)+
+	//	pow(m_limbs[JointType_ShoulderLeft].desiredLength, 2.)
+	//);
+	//m_limbs[JointType_Count + 1].desiredLength = sqrt(
+	//	pow(m_limbs[JointType_SpineShoulder].desiredLength, 2.) +
+	//	pow(m_limbs[JointType_ShoulderRight].desiredLength, 2.)
+	//);
 
 
-
-	m_limbs[JointType_Count    ].desiredLength = sqrt(
-		pow(m_limbs[JointType_SpineShoulder].desiredLength, 2.)+
-		pow(m_limbs[JointType_ShoulderLeft].desiredLength, 2.)
-	);
-	m_limbs[JointType_Count + 1].desiredLength = sqrt(
-		pow(m_limbs[JointType_SpineShoulder].desiredLength, 2.) +
-		pow(m_limbs[JointType_ShoulderRight].desiredLength, 2.)
-	);
-	m_limbs[JointType_Count    ].needsAdjustments = false;
-	m_limbs[JointType_Count + 1].needsAdjustments = false;
-
-	for (uint i = 0; i < m_limbs.size(); i++) {
-		if (m_limbs[i].end == INVALID_JOINT_ID) continue;
-		m_adjustmentOrder.push_back(i);
-	}
 }
 void KSkeleton::interpolateFrames()
 {
@@ -255,7 +254,7 @@ void KSkeleton::filterFrames()
 		return;
 	}
 	if (!m_filteredSequence.empty()) {
-		cout << "Filtered frames vector not empty!" << endl;
+		cout << "Filtered frames vector is not empty!" << endl;
 		return;
 	}
 
@@ -294,7 +293,7 @@ void KSkeleton::adjustFrames()
 		return;
 	}
 	if (!m_adjustedSequence.empty()) {
-		cout << "Frame sequence already adjusted!" << endl;
+		cout << "Adjusted frames vector is not empty!" << endl;
 		//return;
 	}
 
@@ -311,7 +310,29 @@ void KSkeleton::adjustFrames()
 			const QVector3D& endPosition = m_adjustedSequence[i].joints[limb.end].position;
 			QVector3D direction = endPosition - startPosition;
 			float currentLength = startPosition.distanceToPoint(endPosition);
-			float adjustmentFactor = limb.desiredLength / currentLength;
+			float desiredLength = limb.desiredLength;
+			if (m_adjustmentOrder[l] == JointType_Count || m_adjustmentOrder[l] == JointType_Count + 1) {
+				QVector3D spine =
+					m_adjustedSequence[i].joints[JointType_SpineShoulder].position -
+					m_adjustedSequence[i].joints[JointType_SpineBase].position;
+				QVector3D shoulder = m_adjustmentOrder[l] == JointType_Count ?
+					m_adjustedSequence[i].joints[JointType_ShoulderLeft].position -
+					m_adjustedSequence[i].joints[JointType_SpineShoulder].position :
+					m_adjustedSequence[i].joints[JointType_ShoulderRight].position -
+					m_adjustedSequence[i].joints[JointType_SpineShoulder].position;
+				float angle = acos(QVector3D::dotProduct(spine.normalized(), direction.normalized()));
+				float angleB = PI - (PI / 2.f - angle);
+				float angleA = acos(QVector3D::dotProduct(-shoulder.normalized(), -direction.normalized()));
+				float a = shoulder.length() * sin(angleA) / sin(angleB);
+				desiredLength = sqrt(spine.lengthSquared() + pow(a, 2.f));
+				if (i == 0) {
+					cout << "Angle=" << ToDegrees(angle);
+					cout << " AngleB=" << ToDegrees(angleB);
+					cout << " AngleA=" << ToDegrees(angleA);
+					cout << " CustomDesiredLength: " << desiredLength << endl;
+				}
+			}
+			float adjustmentFactor = desiredLength / currentLength;
 			if (i == 0) {
 				cout << "Limb=" << limb.name.toStdString();
 				cout << " DesiredLength=" << limb.desiredLength;
@@ -323,18 +344,20 @@ void KSkeleton::adjustFrames()
 			for (uint j = 0; j < JointType_Count; j++) {
 				m_adjustedSequence[i].joints[j].position.setY(
 					m_adjustedSequence[i].joints[j].position.y() -
-					(m_leftFootOffset.y() + m_rightFootOffset.y())
+					(m_leftFootOffset.y() + m_rightFootOffset.y()) / 2.f
 				);
 			}
-			if (i == 0) cout << "\n" << endl;
+			if (i == 0) {
+				cout << " LeftFootOffset=" << toStringCartesian(m_leftFootOffset).toStdString();
+				cout << " RightFootOffset=" << toStringCartesian(m_rightFootOffset).toStdString();
+				cout << "\n" << endl;
+			}
 		}
 	}
 
 	calculateLimbLengths(m_adjustedSequence);
 	cout << "After adjustments: " << endl;
 	printLimbLengths();
-	cout << "Left foot offset: " << toStringCartesian(m_leftFootOffset).toStdString() << endl;
-	cout << "Right foot offset: " << toStringCartesian(m_rightFootOffset).toStdString() << endl;
 }
 void KSkeleton::adjustLimbLength(uint frameIndex, uint jointId, const QVector3D& direction, float factor)
 {
@@ -357,7 +380,7 @@ void KSkeleton::calculateLimbLengths(const QVector<KFrame>& sequence)
 		return;
 	}
 	if (sequence.empty()) {
-		cout << "Frames sequence is empty!" << endl;
+		cout << "Frame sequence is empty!" << endl;
 		return;
 	}
 

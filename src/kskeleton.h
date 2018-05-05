@@ -54,7 +54,6 @@ struct KLimb
 	int serialMin = -1, serialMax = -1;
 	static float gapAverage;
 	float siblingsLengthAverage = 0;
-	bool needsAdjustments = true;
 
 	KLimb()
 		:
@@ -72,7 +71,6 @@ struct KLimb
 		sibling(_sibling)
 	{
 	}
-
 };
 
 struct KJoint
