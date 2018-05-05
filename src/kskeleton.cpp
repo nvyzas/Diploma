@@ -47,7 +47,7 @@ KSkeleton::KSkeleton()
 	m_forSequencesLog.setRealNumberPrecision(6);
 	m_forSequencesLog.setDevice(&m_sequencesLog);
 
-	initJointHierarchy();
+	initJoints();
 	loadFrameSequences();
 	initLimbs();
 	calculateLimbLengths(m_adjustedSequence);
@@ -113,140 +113,7 @@ void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientatio
 		}
 	}
 }
-void KSkeleton::interpolateFrames()
-{
-	if (m_rawSequence.empty()) {
-		cout << "No recorded frames!" << endl;
-		return;
-	}
-	if (!m_interpolatedSequence.empty()) {
-		cout << "Interpolated frames vector is not empty!" << endl;
-		return;
-	}
-
-	cout << "Interpolating recorded frames." << endl;
-	m_recordingDuration = (m_rawSequence.end() - m_framesDelayed - 1)->timestamp - (m_rawSequence.begin()+m_framesDelayed)->timestamp;
-	m_interpolationInterval = m_recordingDuration / (m_rawSequence.size() - 2 * m_framesDelayed - 1);
-	cout << "Recording duration: " << m_recordingDuration << endl;
-	cout << "Interpolation interval: " << m_interpolationInterval << endl;
-	cout << "First frame index: " << m_firstFrameIndex << endl;
-	static uint index = 1;
-	for (uint i = 0; i < m_rawSequence.size(); i++) {
-		KFrame interpolatedFrame;
-		int interpolatedSerial = i - m_framesDelayed;
-		double interpolatedTime = m_interpolationInterval * interpolatedSerial;
-		double interpolationTime = m_rawSequence[m_framesDelayed].timestamp + interpolatedTime;
-		interpolatedFrame.serial = interpolatedSerial;
-		interpolatedFrame.timestamp = interpolatedTime;
-		while (index < m_rawSequence.size() && m_rawSequence[index].timestamp <= interpolationTime) {
-			index++;
-		}
-		if (index > m_rawSequence.size() - 2) index = m_rawSequence.size() - 2;
-		interpolatedFrame.interpolateJoints(m_rawSequence[--index], m_rawSequence[index+1], interpolationTime);
-		m_interpolatedSequence.push_back(interpolatedFrame);
-	}
-	index = 0;
-}
-void KSkeleton::filterFrames()
-{
-	if (m_interpolatedSequence.empty()) {
-		cout << "No interpolated frames!" << endl;
-		return;
-	}
-	if (!m_filteredSequence.empty()) {
-		cout << "Filtered frames vector not empty!" << endl;
-		return;
-	}
-	
-	cout << "Filtering recorded frames." << endl;
-	uint np = m_sgCoefficients25.size() - 1; // number of points used
-	for (uint i = m_framesDelayed; i < m_interpolatedSequence.size()- m_framesDelayed; i++) {
-		KFrame filteredFrame;
-		for (uint j = 0; j < JointType_Count; j++) {
-			filteredFrame.joints[j].position = QVector3D(0.f, 0.f, 0.f);
-			for (uint k = 0; k < 2 * m_framesDelayed + 1; k++) {
-				filteredFrame.joints[j].position += m_interpolatedSequence[i + k - np / 2].joints[j].position *	m_sgCoefficients25[k] / m_sgCoefficients25.back();
-				//if (j == 0) cout << (i + k - np / 2 == i ? "F:" : "") << i + k - np / 2 << ",";
-			}
-		}
-		//cout << endl;
-		filteredFrame.serial = m_interpolatedSequence[i].serial;
-		filteredFrame.timestamp = m_interpolatedSequence[i].timestamp;
-		m_filteredSequence.push_back(filteredFrame);
-	}
-
-	// Remove first and last m_framesDelayed elements from raw and interpolated sequences
-	cout << "Raw sequence size before crop:" << m_rawSequence.size() << endl;
-	for (uint i = 0; i < m_framesDelayed; i++) {
-		m_rawSequence.removeFirst();
-		m_rawSequence.removeLast();
-		m_interpolatedSequence.removeFirst();
-		m_interpolatedSequence.removeLast();
-	}
-	cout << "Raw sequence size after crop:" << m_rawSequence.size() << endl;
-	cout << "Filtered sequence size:" << m_filteredSequence.size() << endl;
-}
-void KSkeleton::adjustFrames()
-{
-	if (m_filteredSequence.empty()) {
-		cout << "No filtered frames!" << endl;
-		return;
-	}
-	if (!m_adjustedSequence.empty()) {
-		cout << "Frame already adjusted!" << endl;
-		//return;
-	}
-
-	cout << "Adjusting frames" << endl;
-	m_adjustedSequence = m_filteredSequence;
-	for (uint l = 0; l < m_limbs.size(); l++) {
-		if (m_limbs[l].end == INVALID_JOINT_ID) continue;
-		calculateLimbLengths(m_adjustedSequence);
-		printLimbLengths();
-		for (uint i = 0; i < m_adjustedSequence.size(); i++) {
-			KLimb& limb = m_limbs[l];
-			QVector3D& start = m_adjustedSequence[i].joints[limb.start].position;
-			QVector3D& end = m_adjustedSequence[i].joints[limb.end].position;
-			QVector3D startToEnd = end - start;
-			float currentLength = start.distanceToPoint(end);
-			/*if (limb.sibling != INVALID_JOINT_ID) {
-				if (limb.siblingsLengthAverage != 0) {
-					average = limb.siblingsLengthAverage;
-				}
-				else {
-					average = (limb.lengthAverage + m_limbs[limb.sibling].lengthAverage) / 2.f;
-					m_limbs[limb.sibling].siblingsLengthAverage = average;
-				}
-			}*/
-			float adjustmentFactor = limb.desiredLength / currentLength;
-			if (i == 0) {
-				cout << "Limb=" << limb.name.toStdString();
-				cout << " DesiredLength=" << limb.desiredLength;
-				cout << " CurrentLength=" << currentLength;
-				cout << " CurrentFactor=" << adjustmentFactor << endl;
-			}
-			adjustLimbLength(i, limb.end, startToEnd, adjustmentFactor);
-			if (i == 0) cout << "\n" << endl;
-		}
-	}
-
-	calculateLimbLengths(m_adjustedSequence);
-	cout << "After adjustments: " << endl;
-	printLimbLengths();
-}
-void KSkeleton::adjustLimbLength(uint frameIndex, uint jointId, const QVector3D& direction, float factor)
-{
-	QVector3D& end = m_adjustedSequence[frameIndex].joints[jointId].position;
-	m_adjustedSequence[frameIndex].joints[jointId].position = end - (1 - factor) * direction;
-	if (frameIndex == 0) {
-		cout << m_nodes[jointId].name.toStdString() << " ";
-	}
-	for (uint i = 0; i < m_nodes[jointId].childrenId.size(); i++) {
-		uint childId = m_nodes[jointId].childrenId[i];
-		adjustLimbLength(frameIndex, childId, direction, factor);
-	}
-}
-void KSkeleton::initJointHierarchy()
+void KSkeleton::initJoints()
 {
 	// Set parents
 	// core
@@ -285,6 +152,245 @@ void KSkeleton::initJointHierarchy()
 			(m_nodes[p].childrenId).push_back(i);
 		}
 	}
+}// Frame sequence must be initialized before calling this
+void KSkeleton::initLimbs()
+{
+	m_limbs.resize(JointType_Count);
+	// Core
+	m_limbs[JointType_SpineShoulder] = KLimb(JointType_SpineBase, JointType_SpineShoulder);
+	// Legs
+	m_limbs[JointType_HipLeft      ] = KLimb(JointType_SpineBase    , JointType_HipLeft      , JointType_HipRight     );
+	m_limbs[JointType_HipRight     ] = KLimb(JointType_SpineBase    , JointType_HipRight     , JointType_HipLeft      );
+	m_limbs[JointType_KneeLeft     ] = KLimb(JointType_HipLeft      , JointType_KneeLeft     , JointType_KneeRight    );
+	m_limbs[JointType_KneeRight    ] = KLimb(JointType_HipRight     , JointType_KneeRight    , JointType_KneeLeft     );
+	m_limbs[JointType_AnkleLeft    ] = KLimb(JointType_KneeLeft     , JointType_AnkleLeft    , JointType_AnkleRight   );
+	m_limbs[JointType_AnkleRight   ] = KLimb(JointType_KneeRight    , JointType_AnkleRight   , JointType_AnkleLeft    );
+	m_limbs[JointType_FootLeft     ] = KLimb(JointType_AnkleLeft    , JointType_FootLeft     , JointType_FootRight    );
+	m_limbs[JointType_FootRight    ] = KLimb(JointType_AnkleRight   , JointType_FootRight    , JointType_FootLeft     );
+	// Arms							 		
+	m_limbs[JointType_ShoulderRight] = KLimb(JointType_SpineShoulder, JointType_ShoulderRight, JointType_ShoulderLeft );
+	m_limbs[JointType_ShoulderLeft ] = KLimb(JointType_SpineShoulder, JointType_ShoulderLeft , JointType_ShoulderRight);
+	m_limbs[JointType_ElbowLeft    ] = KLimb(JointType_ShoulderLeft , JointType_ElbowLeft    , JointType_ElbowRight   );
+	m_limbs[JointType_ElbowRight   ] = KLimb(JointType_ShoulderRight, JointType_ElbowRight   , JointType_ElbowLeft    );
+	m_limbs[JointType_WristLeft    ] = KLimb(JointType_ElbowLeft    , JointType_WristLeft    , JointType_WristRight   );
+	m_limbs[JointType_WristRight   ] = KLimb(JointType_ElbowRight   , JointType_WristRight   , JointType_WristLeft    );
+	m_limbs[JointType_HandLeft     ] = KLimb(JointType_WristLeft    , JointType_HandLeft     , JointType_HandRight    );
+	m_limbs[JointType_HandRight    ] = KLimb(JointType_WristRight   , JointType_HandRight    , JointType_HandLeft     );
+	m_limbs[JointType_HandTipLeft  ] = KLimb(JointType_WristLeft    , JointType_HandTipLeft  , JointType_HandTipRight );
+	m_limbs[JointType_HandTipRight ] = KLimb(JointType_WristRight   , JointType_HandTipRight , JointType_HandTipLeft  );
+	
+	m_limbs.push_back(KLimb(JointType_SpineBase, JointType_ShoulderLeft, JointType_Count + 1));
+	m_limbs.push_back(KLimb(JointType_SpineBase, JointType_ShoulderRight, JointType_Count));
+
+	calculateLimbLengths(m_filteredSequence);
+
+	for (uint l = 0; l < m_limbs.size(); l++) {
+		if (m_limbs[l].end == INVALID_JOINT_ID) continue;
+		m_limbs[l].name = m_nodes[m_limbs[l].start].name + "->" + m_nodes[m_limbs[l].end].name;
+		m_limbs[l].desiredLength = (
+			m_limbs[l].sibling == INVALID_JOINT_ID ?
+			m_limbs[l].averageLength :
+			(m_limbs[l].averageLength + m_limbs[m_limbs[l].sibling].averageLength) / 2.f
+			);
+	}
+
+	m_limbs[JointType_Count    ].desiredLength = sqrt(
+		pow(m_limbs[JointType_SpineShoulder].desiredLength, 2.)+
+		pow(m_limbs[JointType_ShoulderLeft].desiredLength, 2.)
+	);
+	m_limbs[JointType_Count + 1].desiredLength = sqrt(
+		pow(m_limbs[JointType_SpineShoulder].desiredLength, 2.) +
+		pow(m_limbs[JointType_ShoulderRight].desiredLength, 2.)
+	);
+	m_limbs[JointType_Count    ].needsAdjustments = false;
+	m_limbs[JointType_Count + 1].needsAdjustments = false;
+}
+void KSkeleton::interpolateFrames()
+{
+	if (m_rawSequence.empty()) {
+		cout << "No recorded frames!" << endl;
+		return;
+	}
+	if (!m_interpolatedSequence.empty()) {
+		cout << "Interpolated frames vector is not empty!" << endl;
+		return;
+	}
+
+	cout << "Interpolating recorded frames." << endl;
+	m_recordingDuration = (m_rawSequence.end() - m_framesDelayed - 1)->timestamp - (m_rawSequence.begin() + m_framesDelayed)->timestamp;
+	m_interpolationInterval = m_recordingDuration / (m_rawSequence.size() - 2 * m_framesDelayed - 1);
+	cout << "Recording duration: " << m_recordingDuration << endl;
+	cout << "Interpolation interval: " << m_interpolationInterval << endl;
+	cout << "First frame index: " << m_firstFrameIndex << endl;
+	static uint index = 1;
+	for (uint i = 0; i < m_rawSequence.size(); i++) {
+		KFrame interpolatedFrame;
+		int interpolatedSerial = i - m_framesDelayed;
+		double interpolatedTime = m_interpolationInterval * interpolatedSerial;
+		double interpolationTime = m_rawSequence[m_framesDelayed].timestamp + interpolatedTime;
+		interpolatedFrame.serial = interpolatedSerial;
+		interpolatedFrame.timestamp = interpolatedTime;
+		while (index < m_rawSequence.size() && m_rawSequence[index].timestamp <= interpolationTime) {
+			index++;
+		}
+		if (index > m_rawSequence.size() - 2) index = m_rawSequence.size() - 2;
+		interpolatedFrame.interpolateJoints(m_rawSequence[--index], m_rawSequence[index + 1], interpolationTime);
+		m_interpolatedSequence.push_back(interpolatedFrame);
+	}
+	index = 0;
+}
+void KSkeleton::filterFrames()
+{
+	if (m_interpolatedSequence.empty()) {
+		cout << "No interpolated frames!" << endl;
+		return;
+	}
+	if (!m_filteredSequence.empty()) {
+		cout << "Filtered frames vector not empty!" << endl;
+		return;
+	}
+
+	cout << "Filtering recorded frames." << endl;
+	uint np = m_sgCoefficients25.size() - 1; // number of points used
+	for (uint i = m_framesDelayed; i < m_interpolatedSequence.size() - m_framesDelayed; i++) {
+		KFrame filteredFrame;
+		for (uint j = 0; j < JointType_Count; j++) {
+			filteredFrame.joints[j].position = QVector3D(0.f, 0.f, 0.f);
+			for (uint k = 0; k < 2 * m_framesDelayed + 1; k++) {
+				filteredFrame.joints[j].position += m_interpolatedSequence[i + k - np / 2].joints[j].position *	m_sgCoefficients25[k] / m_sgCoefficients25.back();
+				//if (j == 0) cout << (i + k - np / 2 == i ? "F:" : "") << i + k - np / 2 << ",";
+			}
+		}
+		//cout << endl;
+		filteredFrame.serial = m_interpolatedSequence[i].serial;
+		filteredFrame.timestamp = m_interpolatedSequence[i].timestamp;
+		m_filteredSequence.push_back(filteredFrame);
+	}
+
+	// Remove first and last m_framesDelayed elements from raw and interpolated sequences
+	cout << "Raw sequence size before crop:" << m_rawSequence.size() << endl;
+	for (uint i = 0; i < m_framesDelayed; i++) {
+		m_rawSequence.removeFirst();
+		m_rawSequence.removeLast();
+		m_interpolatedSequence.removeFirst();
+		m_interpolatedSequence.removeLast();
+	}
+	cout << "Raw sequence size after crop:" << m_rawSequence.size() << endl;
+	cout << "Filtered sequence size:" << m_filteredSequence.size() << endl;
+}
+void KSkeleton::adjustFrames()
+{
+	if (m_filteredSequence.empty()) {
+		cout << "No filtered frames!" << endl;
+		return;
+	}
+	if (!m_adjustedSequence.empty()) {
+		cout << "Frame sequence already adjusted!" << endl;
+		//return;
+	}
+
+	cout << "Adjusting frames" << endl;
+	m_adjustedSequence = m_filteredSequence;
+	for (uint l = 0; l < m_limbs.size(); l++) {
+		if (m_limbs[l].end == INVALID_JOINT_ID || !m_limbs[l].needsAdjustments) continue;
+		calculateLimbLengths(m_adjustedSequence);
+		printLimbLengths();
+		for (uint i = 0; i < m_adjustedSequence.size(); i++) {
+			m_leftFootOffset = QVector3D();
+			m_rightFootOffset = QVector3D();
+			KLimb& limb = m_limbs[l];
+			const QVector3D& startPosition = m_adjustedSequence[i].joints[limb.start].position;
+			const QVector3D& endPosition = m_adjustedSequence[i].joints[limb.end].position;
+			QVector3D direction = endPosition - startPosition;
+			float currentLength = startPosition.distanceToPoint(endPosition);
+			float adjustmentFactor = limb.desiredLength / currentLength;
+			if (i == 0) {
+				cout << "Limb=" << limb.name.toStdString();
+				cout << " DesiredLength=" << limb.desiredLength;
+				cout << " CurrentLength=" << currentLength;
+				cout << " CurrentFactor=" << adjustmentFactor << endl;
+			}
+			adjustLimbLength(i, limb.end, direction, adjustmentFactor);
+			// Move all joints towards the ground
+			for (uint j = 0; j < JointType_Count; j++) {
+				m_adjustedSequence[i].joints[j].position.setY(
+					m_adjustedSequence[i].joints[j].position.y() -
+					(m_leftFootOffset.y() + m_rightFootOffset.y())
+				);
+			}
+			if (i == 0) cout << "\n" << endl;
+		}
+	}
+
+	calculateLimbLengths(m_adjustedSequence);
+	cout << "After adjustments: " << endl;
+	printLimbLengths();
+	cout << "Left foot offset: " << toStringCartesian(m_leftFootOffset).toStdString() << endl;
+	cout << "Right foot offset: " << toStringCartesian(m_rightFootOffset).toStdString() << endl;
+}
+void KSkeleton::adjustLimbLength(uint frameIndex, uint jointId, const QVector3D& direction, float factor)
+{
+	QVector3D& end = m_adjustedSequence[frameIndex].joints[jointId].position;
+	QVector3D deltaEnd = -(1 - factor) * direction;
+	end = end + deltaEnd;
+	if (jointId == JointType_FootLeft) m_leftFootOffset += deltaEnd;
+	if (jointId == JointType_FootRight) m_rightFootOffset += deltaEnd;
+	if (frameIndex == 0) cout << m_nodes[jointId].name.toStdString() << " ";
+	for (uint i = 0; i < m_nodes[jointId].childrenId.size(); i++) {
+		uint childId = m_nodes[jointId].childrenId[i];
+		adjustLimbLength(frameIndex, childId, direction, factor);
+	}
+}
+float KLimb::gapAverage = 0.f;
+void KSkeleton::calculateLimbLengths(const QVector<KFrame>& sequence)
+{
+	if (m_limbs.empty()) {
+		cout << "Limbs array is empty!" << endl;
+		return;
+	}
+	if (sequence.empty()) {
+		cout << "Frames sequence is empty!" << endl;
+		return;
+	}
+
+	KLimb::gapAverage = 0.f;
+	for (uint l = 0; l < m_limbs.size(); l++) {
+		if (m_limbs[l].end == INVALID_JOINT_ID) continue;
+		m_limbs[l].maxLength = FLT_MIN;
+		m_limbs[l].minLength = FLT_MAX;
+		m_limbs[l].averageLength = 0;
+		for (uint i = 0; i < sequence.size(); i++) {
+			const QVector3D& startPosition = sequence[i].joints[m_limbs[l].start].position;
+			const QVector3D& endPosition = sequence[i].joints[m_limbs[l].end].position;
+			float length = startPosition.distanceToPoint(endPosition);
+			if (length > m_limbs[l].maxLength) {
+				m_limbs[l].maxLength = length;
+				m_limbs[l].serialMax = sequence[i].serial;
+			}
+			if (length < m_limbs[l].minLength) {
+				m_limbs[l].minLength = length;
+				m_limbs[l].serialMin = sequence[i].serial;
+			}
+			m_limbs[l].averageLength += length;
+		}
+		m_limbs[l].averageLength /= sequence.size();
+		KLimb::gapAverage += m_limbs[l].maxLength - m_limbs[l].minLength;
+	}
+	KLimb::gapAverage /= (m_limbs.size() - 1);
+}
+void KSkeleton::printLimbLengths() const
+{
+	cout << "Limb lengths: " << endl;
+	for (uint l = 0; l < m_limbs.size(); l++) {
+		if (m_limbs[l].end == INVALID_JOINT_ID) continue;
+		cout << setw(40) << left << m_limbs[l].name.toStdString() << " ";
+		cout << "Min=" << setw(10) << m_limbs[l].minLength << " (" << setw(5) << m_limbs[l].serialMin;
+		cout << ") Max=" << setw(10) << m_limbs[l].maxLength << " (" << setw(5) << m_limbs[l].serialMax;
+		cout << ") Avg=" << setw(10) << m_limbs[l].averageLength << " ";
+		cout << " Des=" << setw(10) << m_limbs[l].desiredLength << " ";
+		cout << "Gap=" << setw(10) << m_limbs[l].maxLength - m_limbs[l].minLength << endl;
+	}
+	cout << "GapAverage=" << KLimb::gapAverage << endl;
 }
 void KSkeleton::printInfo() const
 {
@@ -496,108 +602,6 @@ void KSkeleton::clearSequences()
 	m_filteredSequence.clear();
 	m_adjustedSequence.clear();
 	m_activeFrame = 0;
-}
-// Frame sequence must be initialized before calling this
-void KSkeleton::initLimbs()
-{
-	m_limbs.resize(JointType_Count);
-
-	// Legs
-	m_limbs[JointType_HipLeft      ] = KLimb(JointType_SpineBase    , JointType_HipLeft      , JointType_HipRight     );
-	m_limbs[JointType_HipRight     ] = KLimb(JointType_SpineBase    , JointType_HipRight     , JointType_HipLeft      );
-	m_limbs[JointType_KneeLeft     ] = KLimb(JointType_HipLeft      , JointType_KneeLeft     , JointType_KneeRight    );
-	m_limbs[JointType_KneeRight    ] = KLimb(JointType_HipRight     , JointType_KneeRight    , JointType_KneeLeft     );
-	m_limbs[JointType_AnkleLeft    ] = KLimb(JointType_KneeLeft     , JointType_AnkleLeft    , JointType_AnkleRight   );
-	m_limbs[JointType_AnkleRight   ] = KLimb(JointType_KneeRight    , JointType_AnkleRight   , JointType_AnkleLeft    );
-	m_limbs[JointType_FootLeft     ] = KLimb(JointType_AnkleLeft    , JointType_FootLeft     , JointType_FootRight    );
-	m_limbs[JointType_FootRight    ] = KLimb(JointType_AnkleRight   , JointType_FootRight    , JointType_FootLeft     );
-	// Arms							 		
-	m_limbs[JointType_ShoulderRight] = KLimb(JointType_SpineShoulder, JointType_ShoulderRight, JointType_ShoulderLeft );
-	m_limbs[JointType_ShoulderLeft ] = KLimb(JointType_SpineShoulder, JointType_ShoulderLeft , JointType_ShoulderRight);
-	m_limbs[JointType_ElbowLeft    ] = KLimb(JointType_ShoulderLeft , JointType_ElbowLeft    , JointType_ElbowRight   );
-	m_limbs[JointType_ElbowRight   ] = KLimb(JointType_ShoulderRight, JointType_ElbowRight   , JointType_ElbowLeft    );
-	m_limbs[JointType_WristLeft    ] = KLimb(JointType_ElbowLeft    , JointType_WristLeft    , JointType_WristRight   );
-	m_limbs[JointType_WristRight   ] = KLimb(JointType_ElbowRight   , JointType_WristRight   , JointType_WristLeft    );
-	m_limbs[JointType_HandLeft     ] = KLimb(JointType_WristLeft    , JointType_HandLeft     , JointType_HandRight    );
-	m_limbs[JointType_HandRight    ] = KLimb(JointType_WristRight   , JointType_HandRight    , JointType_HandLeft     );
-	m_limbs[JointType_HandTipLeft  ] = KLimb(JointType_WristLeft    , JointType_HandTipLeft  , JointType_HandTipRight );
-	m_limbs[JointType_HandTipRight ] = KLimb(JointType_WristRight   , JointType_HandTipRight , JointType_HandTipLeft  );
-	// Core
-	m_limbs[JointType_SpineShoulder] = KLimb(JointType_SpineBase    , JointType_SpineShoulder);
-	m_limbs.push_back(KLimb(JointType_SpineBase    , JointType_ShoulderLeft     , JointType_Count + 1));
-	m_limbs.push_back(KLimb(JointType_SpineBase    , JointType_ShoulderRight    , JointType_Count));
-
-	calculateLimbLengths(m_filteredSequence);
-
-	for (uint l = 0; l < m_limbs.size(); l++) {
-		if (m_limbs[l].end == INVALID_JOINT_ID) continue;
-		m_limbs[l].name = m_nodes[m_limbs[l].start].name + "->" + m_nodes[m_limbs[l].end].name;
-		m_limbs[l].desiredLength = (
-			m_limbs[l].sibling == INVALID_JOINT_ID ?
-			m_limbs[l].lengthAverage :
-			(m_limbs[l].lengthAverage + m_limbs[m_limbs[l].sibling].lengthAverage) / 2.f
-		);
-	}
-	m_limbs[JointType_SpineShoulder].desiredLength = 
-	m_limbs[JointType_Count + 1].desiredLength = sqrt(
-		pow(m_limbs[JointType_SpineShoulder].desiredLength, 2.) +
-		pow(m_limbs[JointType_ShoulderLeft].desiredLength, 2.)
-	);
-	m_limbs[JointType_Count + 2].desiredLength = sqrt(
-		pow(m_limbs[JointType_SpineShoulder].desiredLength, 2.) +
-		pow(m_limbs[JointType_ShoulderRight].desiredLength, 2.)
-	);
-}
-float KLimb::gapAverage = 0.f;
-void KSkeleton::calculateLimbLengths(const QVector<KFrame>& sequence)
-{
-	if (m_limbs.empty()) {
-		cout << "Limbs array is empty!" << endl;
-		return;
-	}
-	if (sequence.empty()) {
-		cout << "Frames sequence is empty!" << endl;
-		return;
-	}
-
-	KLimb::gapAverage = 0.f;
-	for (uint l = 0; l < m_limbs.size(); l++) {
-		if (m_limbs[l].end == INVALID_JOINT_ID) continue;
-		m_limbs[l].lengthMax = FLT_MIN;
-		m_limbs[l].lengthMin = FLT_MAX;
-		m_limbs[l].lengthAverage = 0;
-		for (uint i = 0; i < sequence.size(); i++) {
-			const QVector3D& start = sequence[i].joints[m_limbs[l].start].position;
-			const QVector3D& end = sequence[i].joints[m_limbs[l].end].position;
-			float length = start.distanceToPoint(end);
-			if (length > m_limbs[l].lengthMax) {
-				m_limbs[l].lengthMax = length;
-				m_limbs[l].serialMax = sequence[i].serial;
-			}
-			if (length < m_limbs[l].lengthMin) {
-				m_limbs[l].lengthMin = length;
-				m_limbs[l].serialMin = sequence[i].serial;
-			}
-			m_limbs[l].lengthAverage += length;
-		}
-		m_limbs[l].lengthAverage /= sequence.size();
-		KLimb::gapAverage += m_limbs[l].lengthMax - m_limbs[l].lengthMin;
-	}
-	KLimb::gapAverage /= (m_limbs.size()-1);
-}
-void KSkeleton::printLimbLengths() const
-{
-	cout << "Limb lengths: " << endl;
-	for (uint l = 0; l < m_limbs.size(); l++) {
-		if (m_limbs[l].end == INVALID_JOINT_ID) continue;
-		cout << setw(40) << left << m_limbs[l].name.toStdString() << " ";
-		cout << "Min=" << setw(10) << m_limbs[l].lengthMin << " (" << setw(5) << m_limbs[l].serialMin;
-		cout << ") Max=" << setw(10) << m_limbs[l].lengthMax << " (" << setw(5) << m_limbs[l].serialMax;
-		cout << ") Avg=" << setw(10) << m_limbs[l].lengthAverage << " ";
-		cout << " Des=" << setw(10) << m_limbs[l].desiredLength << " ";
-		cout << "Gap=" << setw(10) << m_limbs[l].lengthMax - m_limbs[l].lengthMin << endl;
-	}
-	cout << "GapAverage=" << KLimb::gapAverage << endl;
 }
 const QVector<KLimb>& KSkeleton::limbs() const
 {

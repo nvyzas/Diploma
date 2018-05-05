@@ -353,7 +353,7 @@ void SkinnedMesh::initCorrectionVecs(const QVector<KLimb>& limbs)
 	i = m_boneMap.find("Hips")->second;
 	j = m_boneMap.find("LowerBack")->second;
 	meshLength = m_boneInfo[i].endPosition.distanceToPoint(m_boneInfo[j].endPosition);
-	kinectLength = limbs[JointType_SpineBase].lengthAverage;
+	kinectLength = limbs[JointType_SpineBase].averageLength;
 
 	factor =  kinectLength / meshLength;
 	cout << "MeshLength=" << meshLength << " KinectLength=" << kinectLength << " Factor=" << factor << endl;

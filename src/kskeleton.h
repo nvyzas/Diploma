@@ -50,11 +50,11 @@ struct KLimb
 	uint end;		// ending joint id 
 	uint sibling;	// sibling's ending joint id
 
-	float lengthMin = FLT_MAX, lengthMax = FLT_MIN, lengthAverage = 0;
+	float minLength = FLT_MAX, maxLength = FLT_MIN, averageLength = 0, desiredLength = 0;
 	int serialMin = -1, serialMax = -1;
 	static float gapAverage;
 	float siblingsLengthAverage = 0;
-	float desiredLength = 0;
+	bool needsAdjustments = true;
 
 	KLimb()
 		:
@@ -83,7 +83,8 @@ struct KJoint
 	QQuaternion orientation;
 
 	KJoint()
-		:id(INVALID_JOINT_ID),
+		:
+		id(INVALID_JOINT_ID),
 		position(0.f, 0.f, 0.f),
 		orientation(1.f, 0.f, 0.f, 0.f),
 		trackingState(0) // #? initial value = 0
@@ -152,7 +153,7 @@ public:
 	~KSkeleton();
 	void addFrame(const Joint* joints, const JointOrientation* orientations, const double& time);
 	void processFrames();
-	void initJointHierarchy();
+	void initJoints();
 	void printInfo() const;
 	void printJointHierarchy() const;
 	void printActiveJoints() const;
@@ -216,6 +217,8 @@ private:
 	void filterFrames();
 	void adjustFrames();
 	void adjustLimbLength(uint frameLocation, uint jointId, const QVector3D& direction, float factor); // recursively adjust joints
+	QVector3D m_leftFootOffset;
+	QVector3D m_rightFootOffset;
 };
 
 #endif
