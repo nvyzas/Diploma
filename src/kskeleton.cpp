@@ -194,6 +194,10 @@ void KSkeleton::initLimbs()
 			);
 	}
 
+	//float angle1 = QVector3D::dotProduct(m_adjustedSequence[0].joints[JointType_])
+
+
+
 	m_limbs[JointType_Count    ].desiredLength = sqrt(
 		pow(m_limbs[JointType_SpineShoulder].desiredLength, 2.)+
 		pow(m_limbs[JointType_ShoulderLeft].desiredLength, 2.)
@@ -204,6 +208,11 @@ void KSkeleton::initLimbs()
 	);
 	m_limbs[JointType_Count    ].needsAdjustments = false;
 	m_limbs[JointType_Count + 1].needsAdjustments = false;
+
+	for (uint i = 0; i < m_limbs.size(); i++) {
+		if (m_limbs[i].end == INVALID_JOINT_ID) continue;
+		m_adjustmentOrder.push_back(i);
+	}
 }
 void KSkeleton::interpolateFrames()
 {
@@ -291,14 +300,13 @@ void KSkeleton::adjustFrames()
 
 	cout << "Adjusting frames" << endl;
 	m_adjustedSequence = m_filteredSequence;
-	for (uint l = 0; l < m_limbs.size(); l++) {
-		if (m_limbs[l].end == INVALID_JOINT_ID || !m_limbs[l].needsAdjustments) continue;
+	for (uint l = 0; l < m_adjustmentOrder.size(); l++) {
 		calculateLimbLengths(m_adjustedSequence);
 		printLimbLengths();
 		for (uint i = 0; i < m_adjustedSequence.size(); i++) {
 			m_leftFootOffset = QVector3D();
 			m_rightFootOffset = QVector3D();
-			KLimb& limb = m_limbs[l];
+			KLimb& limb = m_limbs[m_adjustmentOrder[l]];
 			const QVector3D& startPosition = m_adjustedSequence[i].joints[limb.start].position;
 			const QVector3D& endPosition = m_adjustedSequence[i].joints[limb.end].position;
 			QVector3D direction = endPosition - startPosition;

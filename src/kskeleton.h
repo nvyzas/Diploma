@@ -219,6 +219,7 @@ private:
 	void adjustLimbLength(uint frameLocation, uint jointId, const QVector3D& direction, float factor); // recursively adjust joints
 	QVector3D m_leftFootOffset;
 	QVector3D m_rightFootOffset;
+	QVector<uint> m_adjustmentOrder;
 };
 
 #endif
