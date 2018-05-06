@@ -142,24 +142,24 @@ private:
 	GLuint m_skinnedMeshVAO;
 	vector<QOpenGLTexture*> m_skinnedMeshTextures;
 	void drawSkinnedMesh();
-	bool m_defaultPose = false;
+	bool m_defaultPose = true;
 
 	// Skinned mesh joint dots
 #define NUM_BONES 31
-	bool m_renderSkinnedMeshJoints = true;
+	bool m_drawSkinnedMeshJoints = true;
 	GLuint m_skinnedMeshJointsVAO;
 	GLuint m_skinnedMeshJointsVBO;
-	void loadSkinnedMeshJoints();
 	float m_skinnedMeshJoints[2 * 3 * NUM_BONES];
+	void loadSkinnedMeshJoints();
 	void drawSkinnedMeshJoints();
 
 	// kinect skeleton
-	bool m_renderKinectSkeleton = true;
+	bool m_drawKinectSkeleton = true;
 	QVector3D m_kinectSkeletonOffset;
 	GLuint m_kinectSkeletonJointsVAO;
 	GLuint m_kinectSkeletonJointsVBO;
-	void loadKinectSkeletonJoints();
 	float m_kinectSkeletonJoints[2 * 3 * JointType_Count]; // 2 attributes x 3 components x JointType_Count joints
+	void loadKinectSkeletonJoints();
 	void drawKinectSkeletonJoints();
 
 	// arrow
@@ -168,7 +168,7 @@ private:
 	void drawArrow();
 
 	// axes
-	bool m_renderAxes = true;
+	bool m_drawAxes = true;
 	GLuint m_axesVAO;
 	void loadAxes();
 	void drawAxes();
@@ -187,12 +187,14 @@ private:
 
 	// plane
 #define PLANE_VERTICES 4
+	bool m_drawPlane = false;
 	QOpenGLTexture* m_planeTexture;
 	GLuint m_planeVAO;
 	void loadPlane();
 	void drawPlane();
 
 	// barbell
+	bool m_drawBarbell = false;
 	QVector<QOpenGLTexture*> m_barbellTextures;
 	QVector<MeshEntry> m_barbellMeshEntries;
 	GLuint m_barbellVAO;

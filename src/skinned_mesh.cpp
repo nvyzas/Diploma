@@ -62,7 +62,7 @@ SkinnedMesh::SkinnedMesh()
 	m_pScene(NULL)
 {
 	cout << "SkinnedMesh constructor start." << endl;
-	loadFromFile("cmu.dae");
+	loadFromFile("Ross.dae");
 	initMotionFromFile("motion.mot");
 	printInfo();
 	cout << "SkinnedMesh constructor end.\n" << endl;
@@ -263,19 +263,22 @@ void SkinnedMesh::printInfo() const
 }
 void SkinnedMesh::printSceneInfo() const
 {
-	cout << "Scene info: ";
+	cout << "Scene info:";
 	cout << " MeshEntries:"	 << setw( 3) << m_pScene->mNumMeshes;
 	cout << " Materials:"	 << setw( 3) << m_pScene->mNumMaterials;
 	cout << " Textures:"	 << setw( 3) << m_pScene->mNumTextures;
 	cout << " Lights:"		 << setw( 3) << m_pScene->mNumLights;
 	cout << " Animations:"   << setw( 3) << m_pScene->mNumAnimations;
 	cout << endl;
+
+	cout << "Meshes:" << endl;
 	for (uint i = 0; i < m_pScene->mNumMeshes; i++) {
-		cout << "MeshId:"	 << i;
-		cout << " Name:"	 << setw(15) << m_pScene->mMeshes[i]->mName.C_Str();
-		cout << " Vertices:" << setw( 6) << m_pScene->mMeshes[i]->mNumVertices;
-		cout << " Faces:"	 << setw( 6) << m_pScene->mMeshes[i]->mNumFaces;
-		cout << " Bones:"	 << setw( 6) << m_pScene->mMeshes[i]->mNumBones;
+		cout << "Id:"	       << i;
+		cout << " Name:"	   << setw(20) << m_pScene->mMeshes[i]->mName.C_Str();
+		cout << " Vertices:"   << setw( 6) << m_pScene->mMeshes[i]->mNumVertices;
+		cout << " Faces:"	   << setw( 6) << m_pScene->mMeshes[i]->mNumFaces;
+		cout << " Bones:"	   << setw( 6) << m_pScene->mMeshes[i]->mNumBones;
+		cout << " MaterialId:" << setw( 6) << m_pScene->mMeshes[i]->mMaterialIndex;
 		cout << endl;
 	}
 	cout << "Total: Vertices:" << m_numVertices << " Bones:" << m_numBones;
@@ -371,6 +374,10 @@ QVector3D SkinnedMesh::getOffset()
 	float z = m_coordinateSequence[0][pelvis_tz];
 	return QVector3D(x, y, z);
 }
+void SkinnedMesh::initKBoneMap()
+{
+	m_kboneMap[""] == INVALID_JOINT_ID;
+}
 void SkinnedMesh::initCorrectionQuats() // OpenSim crash if calling fromEulerAngles from instance
 {
 	// init all as identity quaternions
@@ -386,8 +393,6 @@ void SkinnedMesh::initCorrectionQuats() // OpenSim crash if calling fromEulerAng
 	m_correctionQuats[findBoneId("RightArm")]		= QQuaternion::fromEulerAngles(0, 0, 40); // #? z=35
 	m_correctionQuats[findBoneId("RightForeArm")]	= QQuaternion::fromEulerAngles(0, 90, -50);
 	m_correctionQuats[findBoneId("RightUpLeg")]		= QQuaternion::fromEulerAngles(0, 0, -5);
-
-	// constants
 }
 QQuaternion SkinnedMesh::pelvisRotation()
 {

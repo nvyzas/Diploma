@@ -52,26 +52,24 @@ public:
         m_worldPosition.setY(y);
         m_worldPosition.setZ(z);
     }
-    
-    void setWorldPosition(const QVector3D& Pos)
+    void setWorldPosition(const QVector3D& v)
     {
-        m_worldPosition = Pos;
+        m_worldPosition = v;
     }
 
-    void setWorldOrientation(float RotateX, float RotateY, float RotateZ)
-    {
-        m_worldOrientation.setX(RotateX);
-        m_worldOrientation.setY(RotateY);
-        m_worldOrientation.setZ(RotateZ);
-    }
-    void setWorldOrientation(const QVector3D& v)
-    {
-        setWorldOrientation(v.x(), v.y(), v.z());
-    }
 	void setWorldOrientation(const QQuaternion& q)
 	{
 		m_worldOrientation = q;
 	}
+    void setWorldOrientation(float xAngle, float yAngle, float zAngle)
+    {
+		QQuaternion q(QQuaternion::fromEulerAngles(xAngle, yAngle, zAngle));
+		m_worldOrientation = q;
+    }
+    void setWorldOrientation(const QVector3D& eulerAngles)
+    {
+        setWorldOrientation(eulerAngles.x(), eulerAngles.y(), eulerAngles.z());
+    }
     void setPersProjInfo(const PerspectiveProjectionInfo& p)
     {
         m_persProjInfo = p;
