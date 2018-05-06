@@ -341,7 +341,7 @@ void SkinnedMesh::calculateBoneLength(const aiNode* pNode)
 		calculateBoneLength(pNode->mChildren[i]);
 	}
 }
-void SkinnedMesh::initCorrectionVecs(const QVector<KLimb>& limbs)
+void SkinnedMesh::initCorrectionVecs(const array<KLimb, NUM_LIMBS>& limbs)
 {
 	// init all as unit vectors
 	for (auto& p : m_boneMap) {

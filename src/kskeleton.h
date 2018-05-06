@@ -16,7 +16,7 @@
 #include <iostream>
 
 #define INVALID_JOINT_ID -1
-#define NUM_LIMBS JointType_Count+10
+#define NUM_LIMBS 21
 
 struct KNode
 {
@@ -181,7 +181,7 @@ public:
 	double m_recordingDuration;
 	void calculateLimbLengths(const QVector<KFrame>& sequence);
 	void printLimbLengths() const;
-	const QVector<KLimb>& limbs() const;
+	const array<KLimb, NUM_LIMBS>& limbs() const;
 
 private:
 	array<KNode, JointType_Count> m_nodes; // these define the kinect skeleton hierarchy
@@ -209,7 +209,7 @@ private:
 	array<KFrame, m_framesDelayed> m_lastRawFrames;
 	uint m_firstFrameIndex = 0;
 
-	QVector<KLimb> m_limbs;
+	array<KLimb, NUM_LIMBS> m_limbs;
 	void initLimbs();
 	void interpolateFrames();
 	void filterFrames();
@@ -217,7 +217,6 @@ private:
 	void adjustLimbLength(uint frameLocation, uint jointId, const QVector3D& direction, float factor); // recursively adjust joints
 	QVector3D m_leftFootOffset;
 	QVector3D m_rightFootOffset;
-	QVector<uint> m_adjustmentOrder;
 };
 
 #endif

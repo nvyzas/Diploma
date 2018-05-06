@@ -155,43 +155,35 @@ void KSkeleton::initJoints()
 }// Frame sequence must be initialized before calling this
 void KSkeleton::initLimbs()
 {
-	m_limbs.resize(JointType_Count);
 	// Core
-	m_limbs[JointType_SpineShoulder] = KLimb(JointType_SpineBase, JointType_SpineShoulder);
-	// Legs
-	m_limbs[JointType_HipLeft      ] = KLimb(JointType_SpineBase    , JointType_HipLeft      , JointType_HipRight     );
-	m_limbs[JointType_HipRight     ] = KLimb(JointType_SpineBase    , JointType_HipRight     , JointType_HipLeft      );
-	m_limbs[JointType_KneeLeft     ] = KLimb(JointType_HipLeft      , JointType_KneeLeft     , JointType_KneeRight    );
-	m_limbs[JointType_KneeRight    ] = KLimb(JointType_HipRight     , JointType_KneeRight    , JointType_KneeLeft     );
-	m_limbs[JointType_AnkleLeft    ] = KLimb(JointType_KneeLeft     , JointType_AnkleLeft    , JointType_AnkleRight   );
-	m_limbs[JointType_AnkleRight   ] = KLimb(JointType_KneeRight    , JointType_AnkleRight   , JointType_AnkleLeft    );
-	m_limbs[JointType_FootLeft     ] = KLimb(JointType_AnkleLeft    , JointType_FootLeft     , JointType_FootRight    );
-	m_limbs[JointType_FootRight    ] = KLimb(JointType_AnkleRight   , JointType_FootRight    , JointType_FootLeft     );
-	// Arms							 		
-	m_limbs[JointType_ShoulderLeft ] = KLimb(JointType_SpineShoulder, JointType_ShoulderLeft , JointType_ShoulderRight);
-	m_limbs[JointType_ShoulderRight] = KLimb(JointType_SpineShoulder, JointType_ShoulderRight, JointType_ShoulderLeft );
-	m_limbs[JointType_ElbowLeft    ] = KLimb(JointType_ShoulderLeft , JointType_ElbowLeft    , JointType_ElbowRight   );
-	m_limbs[JointType_ElbowRight   ] = KLimb(JointType_ShoulderRight, JointType_ElbowRight   , JointType_ElbowLeft    );
-	m_limbs[JointType_WristLeft    ] = KLimb(JointType_ElbowLeft    , JointType_WristLeft    , JointType_WristRight   );
-	m_limbs[JointType_WristRight   ] = KLimb(JointType_ElbowRight   , JointType_WristRight   , JointType_WristLeft    );
-	m_limbs[JointType_HandLeft     ] = KLimb(JointType_WristLeft    , JointType_HandLeft     , JointType_HandRight    );
-	m_limbs[JointType_HandRight    ] = KLimb(JointType_WristRight   , JointType_HandRight    , JointType_HandLeft     );
-	m_limbs[JointType_HandTipLeft  ] = KLimb(JointType_WristLeft    , JointType_HandTipLeft  , JointType_HandTipRight );
-	m_limbs[JointType_HandTipRight ] = KLimb(JointType_WristRight   , JointType_HandTipRight , JointType_HandTipLeft  );
-	m_limbs.push_back(KLimb(JointType_SpineBase, JointType_ShoulderLeft, JointType_Count + 1));
-	m_limbs.push_back(KLimb(JointType_SpineBase, JointType_ShoulderRight, JointType_Count));
+	m_limbs[0 ] = KLimb(JointType_SpineBase    , JointType_SpineShoulder    );
+	// Legs 
+	m_limbs[1 ] = KLimb(JointType_SpineBase    , JointType_HipLeft      ,  2);
+	m_limbs[2 ] = KLimb(JointType_SpineBase    , JointType_HipRight     ,  1);
+	m_limbs[3 ] = KLimb(JointType_HipLeft      , JointType_KneeLeft     ,  4);
+	m_limbs[4 ] = KLimb(JointType_HipRight     , JointType_KneeRight    ,  3);
+	m_limbs[5 ] = KLimb(JointType_KneeLeft     , JointType_AnkleLeft    ,  6);
+	m_limbs[6 ] = KLimb(JointType_KneeRight    , JointType_AnkleRight   ,  5);
+	m_limbs[7 ] = KLimb(JointType_AnkleLeft    , JointType_FootLeft     ,  8);
+	m_limbs[8 ] = KLimb(JointType_AnkleRight   , JointType_FootRight    ,  7);
+	// Arms																 			  
+	m_limbs[9 ] = KLimb(JointType_SpineBase    , JointType_ShoulderLeft	    ); // helper limb, must be before limb 11
+	m_limbs[10] = KLimb(JointType_SpineBase    , JointType_ShoulderRight    ); // helper limb, must be before limb 12
+	m_limbs[11] = KLimb(JointType_SpineShoulder, JointType_ShoulderLeft , 12);
+	m_limbs[12] = KLimb(JointType_SpineShoulder, JointType_ShoulderRight, 11);
+	m_limbs[13] = KLimb(JointType_ShoulderLeft , JointType_ElbowLeft    , 14);
+	m_limbs[14] = KLimb(JointType_ShoulderRight, JointType_ElbowRight   , 13);
+	m_limbs[15] = KLimb(JointType_ElbowLeft    , JointType_WristLeft    , 16);
+	m_limbs[16] = KLimb(JointType_ElbowRight   , JointType_WristRight   , 15);
+	m_limbs[17] = KLimb(JointType_WristLeft    , JointType_HandLeft     , 18);
+	m_limbs[18] = KLimb(JointType_WristRight   , JointType_HandRight    , 17);
+	m_limbs[19] = KLimb(JointType_WristLeft    , JointType_HandTipLeft  , 20);
+	m_limbs[20] = KLimb(JointType_WristRight   , JointType_HandTipRight , 19);
 
-	for (uint i = 0; i < m_limbs.size(); i++) {
-		if (m_limbs[i].end == INVALID_JOINT_ID) continue;
-		m_adjustmentOrder.push_back(i);
-	}
-	m_adjustmentOrder.push_back(JointType_ShoulderRight);
-	m_adjustmentOrder.push_back(JointType_ShoulderLeft);
 
 	calculateLimbLengths(m_filteredSequence);
 
 	for (uint l = 0; l < m_limbs.size(); l++) {
-		if (m_limbs[l].end == INVALID_JOINT_ID) continue;
 		m_limbs[l].name = m_nodes[m_limbs[l].start].name + "->" + m_nodes[m_limbs[l].end].name;
 		m_limbs[l].desiredLength = (
 			m_limbs[l].sibling == INVALID_JOINT_ID ?
@@ -290,18 +282,18 @@ void KSkeleton::adjustFrames()
 	for (uint i = 0; i < m_adjustedSequence.size(); i++) {
 		m_leftFootOffset = QVector3D();
 		m_rightFootOffset = QVector3D();
-		for (uint l = 0; l < m_adjustmentOrder.size(); l++) {
-			KLimb& limb = m_limbs[m_adjustmentOrder[l]];
+		for (uint l = 0; l < m_limbs.size(); l++) {
+			KLimb& limb = m_limbs[l];
 			const QVector3D& startPosition = m_adjustedSequence[i].joints[limb.start].position;
 			const QVector3D& endPosition = m_adjustedSequence[i].joints[limb.end].position;
 			QVector3D direction = endPosition - startPosition;
 			float currentLength = startPosition.distanceToPoint(endPosition);
 			float desiredLength = limb.desiredLength;
-			if (m_adjustmentOrder[l] == JointType_Count || m_adjustmentOrder[l] == JointType_Count + 1) {
+			if (l == 9 || l == 10) {
 				QVector3D spine =
 					m_adjustedSequence[i].joints[JointType_SpineShoulder].position -
 					m_adjustedSequence[i].joints[JointType_SpineBase].position;
-				QVector3D shoulder = m_adjustmentOrder[l] == JointType_Count ?
+				QVector3D shoulder = (l == 9) ?
 					m_adjustedSequence[i].joints[JointType_ShoulderLeft].position -
 					m_adjustedSequence[i].joints[JointType_SpineShoulder].position :
 					m_adjustedSequence[i].joints[JointType_ShoulderRight].position -
@@ -622,7 +614,7 @@ void KSkeleton::clearSequences()
 	m_adjustedSequence.clear();
 	m_activeFrame = 0;
 }
-const QVector<KLimb>& KSkeleton::limbs() const
+const array<KLimb, NUM_LIMBS>& KSkeleton::limbs() const
 {
 	return m_limbs;
 }

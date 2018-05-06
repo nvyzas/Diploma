@@ -141,7 +141,7 @@ public:
 	double timestamp(uint index);
 	void setActiveCoordinates(uint frameIndex);
 	uint sequenceSize();
-	void initCorrectionVecs(const QVector<KLimb>& limbs); // correct scaling
+	void initCorrectionVecs(const array<KLimb, NUM_LIMBS>& limbs); // correct scaling
 	QVector3D getOffset();
 
 private:
