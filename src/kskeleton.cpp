@@ -437,14 +437,6 @@ void KSkeleton::printActiveJoints() const
 	}
 	cout << endl;
 }
-uint KSkeleton::activeFrame() const
-{
-	return m_activeFrame;
-}
-void KSkeleton::setActiveJoints(uint frameIndex)
-{
-	m_activeJoints = m_activeSequence->at(frameIndex).joints;
-}
 void KSkeleton::nextActiveSequence()
 {
 	if (m_activeSequence == &m_interpolatedSequence) {
@@ -462,9 +454,17 @@ void KSkeleton::nextActiveSequence()
 		cout << "Unknown active frame sequence." << endl;
 	}
 }
+void KSkeleton::setActiveJoints(uint frameIndex)
+{
+	m_activeJoints = m_activeSequence->at(frameIndex).joints;
+}
 array<KJoint, JointType_Count>& KSkeleton::activeJoints()
 {
 	return m_activeJoints;
+}
+uint KSkeleton::activeFrame() const
+{
+	return m_activeFrame;
 }
 // saves filtered frame sequence to trc
 bool KSkeleton::saveToTrc()

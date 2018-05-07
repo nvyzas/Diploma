@@ -107,7 +107,7 @@ void MainWidget::setup()
 	// Setup offsets
 	m_kinectSkeletonOffset = -m_ksensor->skeleton()->m_activeSequence->at(0).joints[JointType_SpineBase].position;
 	cout << "Kinect skeleton offset=" << toStringCartesian(m_kinectSkeletonOffset).toStdString() << endl;
-	m_skinnedMeshOffset = -m_skinnedMesh->getOffset();
+	m_skinnedMeshOffset = -m_skinnedMesh->getPelvisOffset();
 	cout << "Skinned mesh offset=" << toStringCartesian(m_skinnedMeshOffset).toStdString() << endl;
 
 	cout << "MainWidget setup end." << endl;
@@ -226,8 +226,6 @@ void MainWidget::initializeGL()
 	loadPlane();
 	loadBarbell();
 
-	
-
 	cout << "MainWidget initializeGL end." << endl;
 }
 void MainWidget::paintGL()
@@ -240,7 +238,6 @@ void MainWidget::paintGL()
 	}
 	else if (m_mode == Mode::PLAYBACK){
 		m_ksensor->skeleton()->setActiveJoints(m_activeFrame);
-		m_skinnedMesh->setActiveCoordinates(m_activeFrame);
 	}
 	else {
 		cout << "Unknown mode of operation." << endl;
@@ -252,16 +249,15 @@ void MainWidget::paintGL()
 
 	// prepare pipeline for drawing skinned mesh related stuff
 	transformSkinnedMesh(false);
-	m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
 	if (m_defaultPose) {
 		m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
 		m_pipeline->setWorldOrientation(0.f, 180.f, 0.f);
-		m_pipeline->setWorldPosition(0.f, -1, 0.f);
+		m_pipeline->setWorldPosition(-1.f, -1.f, 0.f);
 	}
 	else {
 		m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
-		m_pipeline->setWorldOrientation(m_skinnedMesh->pelvisRotation());
-		m_pipeline->setWorldPosition(m_skinnedMesh->pelvisPosition() + m_skinnedMeshOffset);
+		m_pipeline->setWorldOrientation(QQuaternion());
+		m_pipeline->setWorldPosition(QVector3D());
 	}
 	m_skinningTechnique->setWVP(m_pipeline->getWVPtrans());
 

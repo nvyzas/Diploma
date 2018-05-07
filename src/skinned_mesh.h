@@ -142,7 +142,7 @@ public:
 	double timestamp(uint index);
 	void setActiveCoordinates(uint frameIndex);
 	uint sequenceSize();
-	QVector3D getOffset();
+	QVector3D getPelvisOffset();
 	void setKSkeleton(KSkeleton* ks);
 
 private:
