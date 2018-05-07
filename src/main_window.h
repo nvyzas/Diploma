@@ -29,7 +29,6 @@ private slots:
 	void setActiveBoneRotationY(int value);
 	void setActiveBoneRotationZ(int value);
 	void printActiveBoneTransforms() const;
-	void printActiveBoneRotations() const;
 
 	// Kinect
 	void setActiveKinectSkeletonFrame(int progressPercent);

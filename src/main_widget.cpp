@@ -31,6 +31,7 @@ MainWidget::MainWidget(QWidget *parent)
 	m_pipeline(new Pipeline())
 {
 	cout << "MainWidget class constructor start." << endl;
+	m_skinnedMesh->setKSkeleton(m_ksensor->skeleton());
 	setup();
 	cout << "MainWidget class constructor end.\n" << endl;
 }
@@ -90,7 +91,6 @@ void MainWidget::setup()
 	// Setup skinned mesh
 	vector<QMatrix4x4> transforms;
 	m_skinnedMesh->getBoneTransforms(transforms);
-	m_skinnedMesh->initCorrectionVecs(m_ksensor->skeleton()->limbs());
 
 	// #todo: Setup camera
 	m_camera->printInfo();
@@ -283,9 +283,6 @@ void MainWidget::paintGL()
 		QMatrix4x4 barbellRotation(fromRotation(QQuaternion::rotationTo(QVector3D(1.f, 0.f, 0.f), barbellDirection)));
 		QMatrix4x4 barbellTranslation = fromTranslation(skinnedMeshHandsMid);
 		QMatrix4x4 barbellTransform = barbellTranslation * barbellRotation * barbellScaling;
-		m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
-		m_pipeline->setWorldOrientation(m_skinnedMesh->pelvisRotation());
-		m_pipeline->setWorldPosition(m_skinnedMesh->pelvisPosition() + m_skinnedMeshOffset);
 		m_lighting->setUniformValue(m_modelViewLocation, m_pipeline->GetWVTrans() * barbellTransform);
 		m_lighting->setUniformValue(m_projectionLocation, m_pipeline->GetProjTrans());
 		drawBarbell();
@@ -296,11 +293,6 @@ void MainWidget::paintGL()
 
 	// draw skinned mesh bone axes
 	if (m_drawAxes) {
-		m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
-		if (m_defaultPose) m_pipeline->setWorldOrientation(QQuaternion());
-		else m_pipeline->setWorldOrientation(m_skinnedMesh->pelvisRotation());
-		if (m_defaultPose) m_pipeline->setWorldPosition(QVector3D());
-		else m_pipeline->setWorldPosition(m_skinnedMesh->pelvisPosition() + m_skinnedMeshOffset);
 		m_technique->setSpecific(m_skinnedMesh->boneGlobal(m_activeBone));
 		m_technique->setMVP(m_pipeline->getWVPtrans());
 		drawAxes();
@@ -308,11 +300,6 @@ void MainWidget::paintGL()
 	
 	// draw skinned mesh joints
 	if (m_drawSkinnedMeshJoints) {
-		m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
-		if (m_defaultPose) m_pipeline->setWorldOrientation(QQuaternion());
-		else m_pipeline->setWorldOrientation(m_skinnedMesh->pelvisRotation());
-		if (m_defaultPose) m_pipeline->setWorldPosition(QVector3D());
-		else m_pipeline->setWorldPosition(m_skinnedMesh->pelvisPosition() + m_skinnedMeshOffset);
 		m_technique->setSpecific(QMatrix4x4());
 		m_technique->setMVP(m_pipeline->getWVPtrans());
 		drawSkinnedMeshJoints();
@@ -382,7 +369,7 @@ void MainWidget::paintGL()
 	m_kneeAngle = ToDegrees(acos(QVector3D::dotProduct(kneeToHip, kneeToAnkle)));
 	
 
-	if (m_play && m_shouldUpdate) {
+	if (!m_paused && m_shouldUpdate) {
 		if (++m_activeFrame > m_ksensor->skeleton()->m_activeSequence->size())  m_activeFrame = 0;
 		m_shouldUpdate = false;
 		calculateFPS();
@@ -472,15 +459,15 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		m_ksensor->skeleton()->nextActiveSequence();
 		break;
 	case Qt::Key_P:
-		if (m_play) {
-			m_play = false;
-			cout << "Play OFF" << endl;
-			m_timer.stop();
+		if (m_paused) {
+			m_paused = false;
+			cout << "Playback Resumed" << endl;
+			m_timer.start();
 		}
 		else {
-			m_play = true;
-			cout << "Play ON" << endl;
-			m_timer.start();
+			m_paused = true;
+			cout << "Playback paused" << endl;
+			m_timer.stop();
 		}
 		break;
 	case Qt::Key_R:

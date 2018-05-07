@@ -202,13 +202,13 @@ enum aiPostProcessSteps
 
     // -------------------------------------------------------------------------
     /** <hr>Removes the node graph and pre-transforms all vertices with
-    * the local transformation matrices of their nodes.
+    * the defaultLocal transformation matrices of their nodes.
     *
     * The output scene still contains nodes, however there is only a
     * root node with children, each one referencing only one mesh,
     * and each mesh referencing one material. For rendering, you can
     * simply render all meshes in order - you don't need to pay
-    * attention to local transformations and the node hierarchy.
+    * attention to defaultLocal transformations and the node hierarchy.
     * Animations are removed during this step.
     * This step is intended for applications without a scenegraph.
     * The step CAN cause some problems: if e.g. a mesh of the asset

@@ -69,8 +69,9 @@ struct MeshEntry {
 };
 struct BoneInfo
 {
-	QMatrix4x4 local;
-	QMatrix4x4 corrected;
+	QMatrix4x4 defaultLocal;
+	QMatrix4x4 localCorrection;
+	QMatrix4x4 correctedLocal;
 	QMatrix4x4 offset;
 	QMatrix4x4 global;
 	QMatrix4x4 combined;
@@ -141,8 +142,8 @@ public:
 	double timestamp(uint index);
 	void setActiveCoordinates(uint frameIndex);
 	uint sequenceSize();
-	void initCorrectionVecs(const array<KLimb, NUM_LIMBS>& limbs); // correct scaling
 	QVector3D getOffset();
+	void setKSkeleton(KSkeleton* ks);
 
 private:
 	void clear();
@@ -169,17 +170,12 @@ private:
 	map<string, uint> m_kboneMap; // maps a mesh's bone name to its kinect JointType index
 	void initKBoneMap();
 	const KJoint *m_pKBones = NULL;
+	KSkeleton* m_kskelie;
 
 	// Control pose
 	vector<QQuaternion> m_controlQuats; 
 	vector<QMatrix4x4> m_controlMats;
 
-	// Correct pose
-	QVector<QVector3D> m_correctionVecs; // correct scaling
-	QVector<QQuaternion> m_correctionQuats; // correct rotations
-	vector<QMatrix4x4> m_correctionMats;
-
-	void initCorrectionQuats();
 	void initLocalMatrices(const aiNode* node);
 
 	vector<QString> m_boneTransformInfo;
@@ -236,7 +232,6 @@ private:
 	QVector<double> m_timestamps;
 
 	void initCoordinates();
-	QQuaternion boneOrientation(uint boneIndex);
 
 	uint m_numBones = 0; // crash if not 0
 	uint m_numVertices; // total number of vertices
@@ -245,7 +240,7 @@ private:
 	Assimp::Importer m_Importer;
 
 	bitset<NUM_PARAMETERS> m_parameters = bitset<NUM_PARAMETERS>().set();
-	const string m_parameterInfo[NUM_PARAMETERS] = { "",  "Corrected Pose", "OpenSim Pose", "Controlled Pose" };	
+	const string m_parameterInfo[NUM_PARAMETERS] = { "",  "Kinect Pose", "Corrected Pose", "Controlled Pose" };	
 
 	void calculateBoneLength(const aiNode* pNode);
 	uint m_activeFrame = 0;

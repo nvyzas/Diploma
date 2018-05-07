@@ -75,7 +75,7 @@ extern "C"{
 
 
 /* interface __MIDL_itf_Kinect2EINPC_0000_0000 */
-/* [local] */ 
+/* [defaultLocal] */ 
 
 
 typedef INT_PTR WAITABLE_HANDLE;
@@ -93,7 +93,7 @@ extern RPC_IF_HANDLE __MIDL_itf_Kinect2EINPC_0000_0000_v0_0_s_ifspec;
 #define __INotifyPropertyChanged_INTERFACE_DEFINED__
 
 /* interface INotifyPropertyChanged */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_INotifyPropertyChanged;
@@ -205,7 +205,7 @@ EXTERN_C const IID IID_INotifyPropertyChanged;
 #define __IPropertyChangedEventArgs_INTERFACE_DEFINED__
 
 /* interface IPropertyChangedEventArgs */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IPropertyChangedEventArgs;

@@ -552,7 +552,7 @@ extern "C"{
 
 
 /* interface __MIDL_itf_Kinect2ECOM_0000_0000 */
-/* [local] */ 
+/* [defaultLocal] */ 
 
 
 typedef INT_PTR WAITABLE_HANDLE;
@@ -931,7 +931,7 @@ extern RPC_IF_HANDLE __MIDL_itf_Kinect2ECOM_0000_0000_v0_0_s_ifspec;
 #define __IKinectSensor_INTERFACE_DEFINED__
 
 /* interface IKinectSensor */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IKinectSensor;
@@ -1217,7 +1217,7 @@ EXTERN_C const IID IID_IKinectSensor;
 #define __IIsAvailableChangedEventArgs_INTERFACE_DEFINED__
 
 /* interface IIsAvailableChangedEventArgs */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IIsAvailableChangedEventArgs;
@@ -1299,7 +1299,7 @@ EXTERN_C const IID IID_IIsAvailableChangedEventArgs;
 #define __IFrameDescription_INTERFACE_DEFINED__
 
 /* interface IFrameDescription */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IFrameDescription;
@@ -1453,7 +1453,7 @@ EXTERN_C const IID IID_IFrameDescription;
 #define __IFrameCapturedEventArgs_INTERFACE_DEFINED__
 
 /* interface IFrameCapturedEventArgs */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IFrameCapturedEventArgs;
@@ -1559,7 +1559,7 @@ EXTERN_C const IID IID_IFrameCapturedEventArgs;
 #define __IMultiSourceFrameReader_INTERFACE_DEFINED__
 
 /* interface IMultiSourceFrameReader */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IMultiSourceFrameReader;
@@ -1727,7 +1727,7 @@ EXTERN_C const IID IID_IMultiSourceFrameReader;
 #define __IMultiSourceFrameArrivedEventArgs_INTERFACE_DEFINED__
 
 /* interface IMultiSourceFrameArrivedEventArgs */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IMultiSourceFrameArrivedEventArgs;
@@ -1809,7 +1809,7 @@ EXTERN_C const IID IID_IMultiSourceFrameArrivedEventArgs;
 #define __IMultiSourceFrameReference_INTERFACE_DEFINED__
 
 /* interface IMultiSourceFrameReference */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IMultiSourceFrameReference;
@@ -1891,7 +1891,7 @@ EXTERN_C const IID IID_IMultiSourceFrameReference;
 #define __IMultiSourceFrame_INTERFACE_DEFINED__
 
 /* interface IMultiSourceFrame */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IMultiSourceFrame;
@@ -2033,7 +2033,7 @@ EXTERN_C const IID IID_IMultiSourceFrame;
 #define __IColorFrameReference_INTERFACE_DEFINED__
 
 /* interface IColorFrameReference */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IColorFrameReference;
@@ -2127,7 +2127,7 @@ EXTERN_C const IID IID_IColorFrameReference;
 #define __IColorFrameArrivedEventArgs_INTERFACE_DEFINED__
 
 /* interface IColorFrameArrivedEventArgs */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IColorFrameArrivedEventArgs;
@@ -2209,7 +2209,7 @@ EXTERN_C const IID IID_IColorFrameArrivedEventArgs;
 #define __IColorFrameSource_INTERFACE_DEFINED__
 
 /* interface IColorFrameSource */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IColorFrameSource;
@@ -2381,7 +2381,7 @@ EXTERN_C const IID IID_IColorFrameSource;
 #define __IColorFrameReader_INTERFACE_DEFINED__
 
 /* interface IColorFrameReader */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IColorFrameReader;
@@ -2537,7 +2537,7 @@ EXTERN_C const IID IID_IColorFrameReader;
 #define __IColorFrame_INTERFACE_DEFINED__
 
 /* interface IColorFrame */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IColorFrame;
@@ -2727,7 +2727,7 @@ EXTERN_C const IID IID_IColorFrame;
 #define __IDepthFrameReference_INTERFACE_DEFINED__
 
 /* interface IDepthFrameReference */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IDepthFrameReference;
@@ -2821,7 +2821,7 @@ EXTERN_C const IID IID_IDepthFrameReference;
 #define __IDepthFrameArrivedEventArgs_INTERFACE_DEFINED__
 
 /* interface IDepthFrameArrivedEventArgs */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IDepthFrameArrivedEventArgs;
@@ -2903,7 +2903,7 @@ EXTERN_C const IID IID_IDepthFrameArrivedEventArgs;
 #define __IDepthFrameSource_INTERFACE_DEFINED__
 
 /* interface IDepthFrameSource */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IDepthFrameSource;
@@ -3085,7 +3085,7 @@ EXTERN_C const IID IID_IDepthFrameSource;
 #define __IDepthFrameReader_INTERFACE_DEFINED__
 
 /* interface IDepthFrameReader */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IDepthFrameReader;
@@ -3241,7 +3241,7 @@ EXTERN_C const IID IID_IDepthFrameReader;
 #define __IDepthFrame_INTERFACE_DEFINED__
 
 /* interface IDepthFrame */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IDepthFrame;
@@ -3401,7 +3401,7 @@ EXTERN_C const IID IID_IDepthFrame;
 #define __IBodyFrameReference_INTERFACE_DEFINED__
 
 /* interface IBodyFrameReference */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IBodyFrameReference;
@@ -3495,7 +3495,7 @@ EXTERN_C const IID IID_IBodyFrameReference;
 #define __IBodyFrameArrivedEventArgs_INTERFACE_DEFINED__
 
 /* interface IBodyFrameArrivedEventArgs */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IBodyFrameArrivedEventArgs;
@@ -3577,7 +3577,7 @@ EXTERN_C const IID IID_IBodyFrameArrivedEventArgs;
 #define __IBodyFrameSource_INTERFACE_DEFINED__
 
 /* interface IBodyFrameSource */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IBodyFrameSource;
@@ -3757,7 +3757,7 @@ EXTERN_C const IID IID_IBodyFrameSource;
 #define __IBodyFrameReader_INTERFACE_DEFINED__
 
 /* interface IBodyFrameReader */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IBodyFrameReader;
@@ -3913,7 +3913,7 @@ EXTERN_C const IID IID_IBodyFrameReader;
 #define __IBodyFrame_INTERFACE_DEFINED__
 
 /* interface IBodyFrame */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IBodyFrame;
@@ -4033,7 +4033,7 @@ EXTERN_C const IID IID_IBodyFrame;
 #define __IBody_INTERFACE_DEFINED__
 
 /* interface IBody */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IBody;
@@ -4315,7 +4315,7 @@ EXTERN_C const IID IID_IBody;
 #define __IBodyIndexFrameReference_INTERFACE_DEFINED__
 
 /* interface IBodyIndexFrameReference */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IBodyIndexFrameReference;
@@ -4409,7 +4409,7 @@ EXTERN_C const IID IID_IBodyIndexFrameReference;
 #define __IBodyIndexFrameArrivedEventArgs_INTERFACE_DEFINED__
 
 /* interface IBodyIndexFrameArrivedEventArgs */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IBodyIndexFrameArrivedEventArgs;
@@ -4491,7 +4491,7 @@ EXTERN_C const IID IID_IBodyIndexFrameArrivedEventArgs;
 #define __IBodyIndexFrameSource_INTERFACE_DEFINED__
 
 /* interface IBodyIndexFrameSource */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IBodyIndexFrameSource;
@@ -4649,7 +4649,7 @@ EXTERN_C const IID IID_IBodyIndexFrameSource;
 #define __IBodyIndexFrameReader_INTERFACE_DEFINED__
 
 /* interface IBodyIndexFrameReader */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IBodyIndexFrameReader;
@@ -4805,7 +4805,7 @@ EXTERN_C const IID IID_IBodyIndexFrameReader;
 #define __IBodyIndexFrame_INTERFACE_DEFINED__
 
 /* interface IBodyIndexFrame */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IBodyIndexFrame;
@@ -4941,7 +4941,7 @@ EXTERN_C const IID IID_IBodyIndexFrame;
 #define __IInfraredFrameReference_INTERFACE_DEFINED__
 
 /* interface IInfraredFrameReference */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IInfraredFrameReference;
@@ -5035,7 +5035,7 @@ EXTERN_C const IID IID_IInfraredFrameReference;
 #define __IInfraredFrameArrivedEventArgs_INTERFACE_DEFINED__
 
 /* interface IInfraredFrameArrivedEventArgs */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IInfraredFrameArrivedEventArgs;
@@ -5117,7 +5117,7 @@ EXTERN_C const IID IID_IInfraredFrameArrivedEventArgs;
 #define __IInfraredFrameSource_INTERFACE_DEFINED__
 
 /* interface IInfraredFrameSource */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IInfraredFrameSource;
@@ -5275,7 +5275,7 @@ EXTERN_C const IID IID_IInfraredFrameSource;
 #define __IInfraredFrameReader_INTERFACE_DEFINED__
 
 /* interface IInfraredFrameReader */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IInfraredFrameReader;
@@ -5431,7 +5431,7 @@ EXTERN_C const IID IID_IInfraredFrameReader;
 #define __IInfraredFrame_INTERFACE_DEFINED__
 
 /* interface IInfraredFrame */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IInfraredFrame;
@@ -5567,7 +5567,7 @@ EXTERN_C const IID IID_IInfraredFrame;
 #define __ILongExposureInfraredFrameReference_INTERFACE_DEFINED__
 
 /* interface ILongExposureInfraredFrameReference */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_ILongExposureInfraredFrameReference;
@@ -5661,7 +5661,7 @@ EXTERN_C const IID IID_ILongExposureInfraredFrameReference;
 #define __ILongExposureInfraredFrameArrivedEventArgs_INTERFACE_DEFINED__
 
 /* interface ILongExposureInfraredFrameArrivedEventArgs */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_ILongExposureInfraredFrameArrivedEventArgs;
@@ -5743,7 +5743,7 @@ EXTERN_C const IID IID_ILongExposureInfraredFrameArrivedEventArgs;
 #define __ILongExposureInfraredFrameSource_INTERFACE_DEFINED__
 
 /* interface ILongExposureInfraredFrameSource */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_ILongExposureInfraredFrameSource;
@@ -5901,7 +5901,7 @@ EXTERN_C const IID IID_ILongExposureInfraredFrameSource;
 #define __ILongExposureInfraredFrameReader_INTERFACE_DEFINED__
 
 /* interface ILongExposureInfraredFrameReader */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_ILongExposureInfraredFrameReader;
@@ -6057,7 +6057,7 @@ EXTERN_C const IID IID_ILongExposureInfraredFrameReader;
 #define __ILongExposureInfraredFrame_INTERFACE_DEFINED__
 
 /* interface ILongExposureInfraredFrame */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_ILongExposureInfraredFrame;
@@ -6193,7 +6193,7 @@ EXTERN_C const IID IID_ILongExposureInfraredFrame;
 #define __IAudioBeam_INTERFACE_DEFINED__
 
 /* interface IAudioBeam */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IAudioBeam;
@@ -6355,7 +6355,7 @@ EXTERN_C const IID IID_IAudioBeam;
 #define __IAudioBeamList_INTERFACE_DEFINED__
 
 /* interface IAudioBeamList */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IAudioBeamList;
@@ -6451,7 +6451,7 @@ EXTERN_C const IID IID_IAudioBeamList;
 #define __IAudioBeamFrameList_INTERFACE_DEFINED__
 
 /* interface IAudioBeamFrameList */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IAudioBeamFrameList;
@@ -6547,7 +6547,7 @@ EXTERN_C const IID IID_IAudioBeamFrameList;
 #define __IAudioBeamFrame_INTERFACE_DEFINED__
 
 /* interface IAudioBeamFrame */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IAudioBeamFrame;
@@ -6691,7 +6691,7 @@ EXTERN_C const IID IID_IAudioBeamFrame;
 #define __IAudioBeamSubFrame_INTERFACE_DEFINED__
 
 /* interface IAudioBeamSubFrame */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IAudioBeamSubFrame;
@@ -6893,7 +6893,7 @@ EXTERN_C const IID IID_IAudioBeamSubFrame;
 #define __IAudioBeamFrameReference_INTERFACE_DEFINED__
 
 /* interface IAudioBeamFrameReference */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IAudioBeamFrameReference;
@@ -6987,7 +6987,7 @@ EXTERN_C const IID IID_IAudioBeamFrameReference;
 #define __IAudioBodyCorrelation_INTERFACE_DEFINED__
 
 /* interface IAudioBodyCorrelation */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IAudioBodyCorrelation;
@@ -7069,7 +7069,7 @@ EXTERN_C const IID IID_IAudioBodyCorrelation;
 #define __IAudioBeamFrameArrivedEventArgs_INTERFACE_DEFINED__
 
 /* interface IAudioBeamFrameArrivedEventArgs */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IAudioBeamFrameArrivedEventArgs;
@@ -7151,7 +7151,7 @@ EXTERN_C const IID IID_IAudioBeamFrameArrivedEventArgs;
 #define __IAudioBeamFrameReader_INTERFACE_DEFINED__
 
 /* interface IAudioBeamFrameReader */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IAudioBeamFrameReader;
@@ -7307,7 +7307,7 @@ EXTERN_C const IID IID_IAudioBeamFrameReader;
 #define __IAudioSource_INTERFACE_DEFINED__
 
 /* interface IAudioSource */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IAudioSource;
@@ -7513,7 +7513,7 @@ EXTERN_C const IID IID_IAudioSource;
 #define __ICoordinateMapper_INTERFACE_DEFINED__
 
 /* interface ICoordinateMapper */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_ICoordinateMapper;
@@ -7883,7 +7883,7 @@ EXTERN_C const IID IID_ICoordinateMapper;
 #define __ICoordinateMappingChangedEventArgs_INTERFACE_DEFINED__
 
 /* interface ICoordinateMappingChangedEventArgs */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_ICoordinateMappingChangedEventArgs;
@@ -7953,7 +7953,7 @@ EXTERN_C const IID IID_ICoordinateMappingChangedEventArgs;
 #define __IColorCameraSettings_INTERFACE_DEFINED__
 
 /* interface IColorCameraSettings */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IColorCameraSettings;
@@ -8068,7 +8068,7 @@ EXTERN_C const IID IID_IColorCameraSettings;
 
 
 /* interface __MIDL_itf_Kinect2ECOM_0000_0052 */
-/* [local] */ 
+/* [defaultLocal] */ 
 
 HRESULT WINAPI GetDefaultKinectSensor(_COM_Outptr_ IKinectSensor** defaultKinectSensor);
 #define BODY_COUNT 6
@@ -8202,7 +8202,7 @@ extern RPC_IF_HANDLE __MIDL_itf_Kinect2ECOM_0000_0052_v0_0_s_ifspec;
 #define __IBodyHandPair_INTERFACE_DEFINED__
 
 /* interface IBodyHandPair */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IBodyHandPair;
@@ -8316,7 +8316,7 @@ EXTERN_C const IID IID_IBodyHandPair;
 #define __IKinectCoreWindow_INTERFACE_DEFINED__
 
 /* interface IKinectCoreWindow */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IKinectCoreWindow;
@@ -8506,7 +8506,7 @@ EXTERN_C const IID IID_IKinectCoreWindow;
 #define __IKinectGestureRecognizer_INTERFACE_DEFINED__
 
 /* interface IKinectGestureRecognizer */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IKinectGestureRecognizer;
@@ -8924,7 +8924,7 @@ EXTERN_C const IID IID_IKinectGestureRecognizer;
 #define __IKinectGestureRecognizerSelectionHandler_INTERFACE_DEFINED__
 
 /* interface IKinectGestureRecognizerSelectionHandler */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IKinectGestureRecognizerSelectionHandler;
@@ -9044,7 +9044,7 @@ EXTERN_C const IID IID_IKinectGestureRecognizerSelectionHandler;
 #define __IKinectGestureRecognizerManipulationHandler_INTERFACE_DEFINED__
 
 /* interface IKinectGestureRecognizerManipulationHandler */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IKinectGestureRecognizerManipulationHandler;
@@ -9154,7 +9154,7 @@ EXTERN_C const IID IID_IKinectGestureRecognizerManipulationHandler;
 #define __IKinectHoldingEventArgs_INTERFACE_DEFINED__
 
 /* interface IKinectHoldingEventArgs */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IKinectHoldingEventArgs;
@@ -9260,7 +9260,7 @@ EXTERN_C const IID IID_IKinectHoldingEventArgs;
 #define __IKinectManipulationCompletedEventArgs_INTERFACE_DEFINED__
 
 /* interface IKinectManipulationCompletedEventArgs */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IKinectManipulationCompletedEventArgs;
@@ -9378,7 +9378,7 @@ EXTERN_C const IID IID_IKinectManipulationCompletedEventArgs;
 #define __IKinectManipulationInertiaStartingEventArgs_INTERFACE_DEFINED__
 
 /* interface IKinectManipulationInertiaStartingEventArgs */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IKinectManipulationInertiaStartingEventArgs;
@@ -9508,7 +9508,7 @@ EXTERN_C const IID IID_IKinectManipulationInertiaStartingEventArgs;
 #define __IKinectManipulationStartedEventArgs_INTERFACE_DEFINED__
 
 /* interface IKinectManipulationStartedEventArgs */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IKinectManipulationStartedEventArgs;
@@ -9614,7 +9614,7 @@ EXTERN_C const IID IID_IKinectManipulationStartedEventArgs;
 #define __IKinectManipulationUpdatedEventArgs_INTERFACE_DEFINED__
 
 /* interface IKinectManipulationUpdatedEventArgs */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IKinectManipulationUpdatedEventArgs;
@@ -9744,7 +9744,7 @@ EXTERN_C const IID IID_IKinectManipulationUpdatedEventArgs;
 #define __IKinectPointerDevice_INTERFACE_DEFINED__
 
 /* interface IKinectPointerDevice */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IKinectPointerDevice;
@@ -9826,7 +9826,7 @@ EXTERN_C const IID IID_IKinectPointerDevice;
 #define __IKinectPointerEventArgs_INTERFACE_DEFINED__
 
 /* interface IKinectPointerEventArgs */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IKinectPointerEventArgs;
@@ -9930,7 +9930,7 @@ EXTERN_C const IID IID_IKinectPointerEventArgs;
 #define __IKinectPointerPoint_INTERFACE_DEFINED__
 
 /* interface IKinectPointerPoint */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IKinectPointerPoint;
@@ -10072,7 +10072,7 @@ EXTERN_C const IID IID_IKinectPointerPoint;
 #define __IKinectPointerPointProperties_INTERFACE_DEFINED__
 
 /* interface IKinectPointerPointProperties */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IKinectPointerPointProperties;
@@ -10262,7 +10262,7 @@ EXTERN_C const IID IID_IKinectPointerPointProperties;
 #define __IKinectPressingCompletedEventArgs_INTERFACE_DEFINED__
 
 /* interface IKinectPressingCompletedEventArgs */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IKinectPressingCompletedEventArgs;
@@ -10344,7 +10344,7 @@ EXTERN_C const IID IID_IKinectPressingCompletedEventArgs;
 #define __IKinectPressingStartedEventArgs_INTERFACE_DEFINED__
 
 /* interface IKinectPressingStartedEventArgs */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IKinectPressingStartedEventArgs;
@@ -10426,7 +10426,7 @@ EXTERN_C const IID IID_IKinectPressingStartedEventArgs;
 #define __IKinectPressingUpdatedEventArgs_INTERFACE_DEFINED__
 
 /* interface IKinectPressingUpdatedEventArgs */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IKinectPressingUpdatedEventArgs;
@@ -10532,7 +10532,7 @@ EXTERN_C const IID IID_IKinectPressingUpdatedEventArgs;
 #define __IKinectTappedEventArgs_INTERFACE_DEFINED__
 
 /* interface IKinectTappedEventArgs */
-/* [object][local][uuid] */ 
+/* [object][defaultLocal][uuid] */ 
 
 
 EXTERN_C const IID IID_IKinectTappedEventArgs;
@@ -10635,7 +10635,7 @@ EXTERN_C const IID IID_IKinectTappedEventArgs;
 
 
 /* interface __MIDL_itf_Kinect2ECOM_0000_0070 */
-/* [local] */ 
+/* [defaultLocal] */ 
 
 HRESULT WINAPI GetKinectCoreWindowForCurrentThread(_COM_Outptr_ IKinectCoreWindow** ppKinectCoreWindow);
 HRESULT WINAPI CreateKinectGestureRecognizer(_COM_Outptr_ IKinectGestureRecognizer** ppKinectGestureRecognizer);

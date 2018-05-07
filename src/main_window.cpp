@@ -26,6 +26,7 @@ MainWindow::MainWindow(QWidget *parent)
 	
 	ui = new Ui::MainWindow;
 	ui->setupUi(this);
+	m_sensor = ui->openGLWidget->ksensor();
 	setupObjects();
 	setupConnections();
 	//resize(QDesktopWidget().availableGeometry(this).size()*0.5);
@@ -106,19 +107,6 @@ void MainWindow::printActiveBoneTransforms() const
 	if (boneName.isEmpty()) return;
 	cout << ui->openGLWidget->skinnedMesh()->boneTransformInfo(boneName).toStdString() << endl;
 }
-void MainWindow::printActiveBoneRotations() const
-{
-	const QString &boneName = ui->comboBox_activeBone->currentText();
-	if (boneName.isEmpty()) return;
-	float xRot = ui->openGLWidget->skinnedMesh()->boneRotationX(boneName);
-	float yRot = ui->openGLWidget->skinnedMesh()->boneRotationY(boneName);
-	float zRot = ui->openGLWidget->skinnedMesh()->boneRotationZ(boneName);
-	cout << setw(20) << string(boneName.toUtf8());
-	cout << " " << setw(5) << xRot;
-	cout << " " << setw(5) << yRot;
-	cout << " " << setw(5) << zRot;
-	cout << endl;
-}
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
 	cout << "MainWindow saw this keyboard event" << endl;
@@ -173,26 +161,14 @@ void MainWindow::setupObjects()
 {
 	cout << "MainWindow: Setting up objects" << endl;
 
-	// Skinned Mesh
-	for (const auto& fi : QDir("models/", "*.dae").entryInfoList()) {
-		ui->comboBox_activeModel->addItem(fi.baseName());
-	}
 	ui->checkBox_modelSkinning->setChecked(ui->openGLWidget->modelSkinning());
 
 	ui->comboBox_activeBone->addItems(ui->openGLWidget->modelBoneList());
 	loadActiveBoneInfo();
 
-	ui->openGLWidget->setModelName(ui->comboBox_activeModel->currentText());
-	m_sensor = ui->openGLWidget->ksensor();
-
 	ui->checkBox_axes->setChecked(ui->openGLWidget->renderAxes());
 	ui->checkBox_model->setChecked(ui->openGLWidget->renderSkinnedMesh());
 	ui->checkBox_skeleton->setChecked(ui->openGLWidget->renderKinectSkeleton());
-
-	QMenu *menuInfo = new QMenu(ui->pushButton_info);
-	menuInfo->addAction("Bone Transforms", this, SLOT(printActiveBoneTransforms()));
-	menuInfo->addAction("Bone Rotations", this, SLOT(printActiveBoneRotations()));
-	ui->pushButton_info->setMenu(menuInfo);
 
 	m_guiTimer = new QTimer(this);
 	m_guiTimer->setTimerType(Qt::CoarseTimer);
@@ -209,35 +185,40 @@ void MainWindow::setActiveBoneAxes() {
 void MainWindow::setupConnections()
 {
 	cout << "MainWindow: Setting up connections" << endl;
-
-	// active model
-	connect(ui->comboBox_activeModel, SIGNAL(currentIndexChanged(QString)), ui->openGLWidget, SLOT(setModelName(QString)));
-	// skinning on
-	connect(ui->checkBox_modelSkinning, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setModelSkinning(bool)));
+	
+	// Skinned mesh related
+	// toggle skinning
+	connect(ui->checkBox_modelSkinning          , SIGNAL(toggled(bool))               , ui->openGLWidget, SLOT(setModelSkinning(bool)));
+	
 	// Active bone related
-	// combo box
-	connect(ui->comboBox_activeBone, SIGNAL(currentIndexChanged(QString)), SLOT(loadActiveBoneInfo()));
-	connect(ui->comboBox_activeBone, SIGNAL(currentIndexChanged(QString)), ui->openGLWidget, SLOT(setActiveBone(QString)));
-	// check box
-	connect(ui->checkBox_boneVisible, SIGNAL(clicked(bool)), SLOT(setActiveBoneVisible(bool)));
-	connect(ui->checkBox_boneFocused, SIGNAL(clicked(bool)), SLOT(setActiveBoneFocused(bool)));
-	// sliders
-	connect(ui->horizontalSlider_xRot, SIGNAL(valueChanged(int)), SLOT(setActiveBoneRotationX(int)));
-	connect(ui->horizontalSlider_yRot, SIGNAL(valueChanged(int)), SLOT(setActiveBoneRotationY(int)));
-	connect(ui->horizontalSlider_zRot, SIGNAL(valueChanged(int)), SLOT(setActiveBoneRotationZ(int)));
-	// spin boxes
-	connect(ui->spinBox_xRot, SIGNAL(valueChanged(int)), SLOT(setActiveBoneRotationX(int)));
-	connect(ui->spinBox_yRot, SIGNAL(valueChanged(int)), SLOT(setActiveBoneRotationY(int)));
-	connect(ui->spinBox_zRot, SIGNAL(valueChanged(int)), SLOT(setActiveBoneRotationZ(int)));
-	// render axes
-	connect(ui->checkBox_axes, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setRenderAxes(bool)));
-	// render model
-	connect(ui->checkBox_model, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setRenderModel(bool)));
-	// render skeleton
-	connect(ui->checkBox_skeleton, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setRenderSkeleton(bool)));
+	// bone selection
+	connect(ui->comboBox_activeBone             , SIGNAL(currentIndexChanged(QString)), SLOT(loadActiveBoneInfo()));
+	connect(ui->comboBox_activeBone             , SIGNAL(currentIndexChanged(QString)), ui->openGLWidget, SLOT(setActiveBone(QString)));
+	// toggle visible
+	connect(ui->checkBox_boneVisible            , SIGNAL(clicked(bool))               , SLOT(setActiveBoneVisible(bool)));
+	// toggle focused
+	connect(ui->checkBox_boneFocused            , SIGNAL(clicked(bool))               , SLOT(setActiveBoneFocused(bool)));
+	// print transform info
+	connect(ui->pushButton_info                 , SIGNAL(clicked())                   , SLOT(printActiveBoneTransforms()));
+	// rotation control
+	connect(ui->horizontalSlider_xRot           , SIGNAL(valueChanged(int))           , SLOT(setActiveBoneRotationX(int)));
+	connect(ui->horizontalSlider_yRot           , SIGNAL(valueChanged(int))           , SLOT(setActiveBoneRotationY(int)));
+	connect(ui->horizontalSlider_zRot           , SIGNAL(valueChanged(int))           , SLOT(setActiveBoneRotationZ(int)));
+	connect(ui->spinBox_xRot                    , SIGNAL(valueChanged(int))           , SLOT(setActiveBoneRotationX(int)));
+	connect(ui->spinBox_yRot                    , SIGNAL(valueChanged(int))           , SLOT(setActiveBoneRotationY(int)));
+	connect(ui->spinBox_zRot                    , SIGNAL(valueChanged(int))           , SLOT(setActiveBoneRotationZ(int)));
+	
+	// drawing related
+	// toggle draw axes
+	connect(ui->checkBox_axes                   , SIGNAL(toggled(bool))               , ui->openGLWidget, SLOT(setRenderAxes(bool)));
+	// toggle draw skineed mesh
+	connect(ui->checkBox_model                  , SIGNAL(toggled(bool))               , ui->openGLWidget, SLOT(setRenderModel(bool)));
+	// toggle draw kinect skeleton
+	connect(ui->checkBox_skeleton               , SIGNAL(toggled(bool))               , ui->openGLWidget, SLOT(setRenderSkeleton(bool)));
+	
 	// Kinect
-	//open(m_timer, SIGNAL(timeout()), this, SLOT(getKinectData()));
-	connect(ui->horizontalSlider_progressPercent, SIGNAL(valueChanged(int)), SLOT(setActiveKinectSkeletonFrame(int)));
+	connect(ui->horizontalSlider_progressPercent, SIGNAL(valueChanged(int))           , SLOT(setActiveKinectSkeletonFrame(int)));
+
 }
 void MainWindow::setActiveKinectSkeletonFrame(int progressPercent)
 {

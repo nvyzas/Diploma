@@ -106,6 +106,16 @@ std::ostream& operator<<(std::ostream& out, const QVector3D& v)
 	out << setw(15) << v.x() << " " << setw(15) << v.y() << " " << setw(15) << v.z() << " ";
 	return out;
 }
+QTextStream & operator<<(QTextStream & out, const QVector3D & v)
+{
+	out << qSetRealNumberPrecision(3);
+	out << "(";
+	out << v.x() << ", ";
+	out << v.y() << ", ";
+	out << v.z() << ")";
+	out << reset;
+	return out;
+}
 QMatrix4x4 toQMatrix(const aiMatrix4x4& aiMat)
 {
 	return QMatrix4x4(

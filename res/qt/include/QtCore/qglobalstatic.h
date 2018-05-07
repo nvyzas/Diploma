@@ -62,13 +62,13 @@ enum GuardValues {
 // Clang and Intel CC masquerade as GCC when compiling on Linux.
 //
 // Apple's libc++abi however uses a global lock for initializing local statics,
-// which will block other threads also trying to initialize a local static
+// which will block other threads also trying to initialize a defaultLocal static
 // until the constructor returns ...
 // We better avoid these kind of problems by using our own locked implementation.
 
 #if defined(Q_OS_UNIX) && defined(Q_CC_INTEL)
 // Work around Intel issue ID 6000058488:
-// local statics inside an inline function inside an anonymous namespace are global
+// defaultLocal statics inside an inline function inside an anonymous namespace are global
 // symbols (this affects the IA-64 C++ ABI, so OS X and Linux only)
 #  define Q_GLOBAL_STATIC_INTERNAL_DECORATION Q_DECL_HIDDEN
 #else

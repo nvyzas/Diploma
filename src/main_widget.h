@@ -115,7 +115,7 @@ private:
 	Mode m_mode;
 	
 	QPoint m_lastMousePosition;
-	bool m_play = true;	
+	bool m_paused = true;	
 	QTimer m_timer;
 	bool m_shouldUpdate = false;
 	void setup();
@@ -145,7 +145,7 @@ private:
 	bool m_defaultPose = true;
 
 	// Skinned mesh joint dots
-#define NUM_BONES 31
+#define NUM_BONES 53
 	bool m_drawSkinnedMeshJoints = true;
 	GLuint m_skinnedMeshJointsVAO;
 	GLuint m_skinnedMeshJointsVBO;

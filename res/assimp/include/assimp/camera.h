@@ -84,7 +84,7 @@ extern "C" {
  *      cmt = mult-matrices( cmt, cur )
  *    end for
  *
- *    // now multiply with the camera's own local transform
+ *    // now multiply with the camera's own defaultLocal transform
  *    cam = mult-matrices (cam, get-camera-matrix(cmt) )
  * }
  * @endcode
