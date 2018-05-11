@@ -76,8 +76,7 @@ void MainWindow::setActiveBoneRotationX(int value)
 	const QString &boneName = ui->comboBox_activeBone->currentText();
 	if (boneName.isEmpty()) return;
 	ui->openGLWidget->skinnedMesh()->setBoneRotationX(boneName, value);
-	ui->openGLWidget->transformSkinnedMesh(false);
-	ui->openGLWidget->update();
+	//ui->openGLWidget->update();
 	loadActiveBoneRotationX();
 	ui->openGLWidget->update();
 }
@@ -86,7 +85,6 @@ void MainWindow::setActiveBoneRotationY(int value)
 	const QString &boneName = ui->comboBox_activeBone->currentText();
 	if (boneName.isEmpty()) return;
 	ui->openGLWidget->skinnedMesh()->setBoneRotationY(boneName, value);
-	ui->openGLWidget->transformSkinnedMesh(false);
 	ui->openGLWidget->update();
 	loadActiveBoneRotationY();
 	ui->openGLWidget->update();
@@ -96,7 +94,6 @@ void MainWindow::setActiveBoneRotationZ(int value)
 	const QString &boneName = ui->comboBox_activeBone->currentText();
 	if (boneName.isEmpty()) return;
 	ui->openGLWidget->skinnedMesh()->setBoneRotationZ(boneName, value);
-	ui->openGLWidget->transformSkinnedMesh(false);
 	ui->openGLWidget->update();
 	loadActiveBoneRotationZ();
 	ui->openGLWidget->update();
@@ -173,7 +170,7 @@ void MainWindow::setupObjects()
 	m_guiTimer = new QTimer(this);
 	m_guiTimer->setTimerType(Qt::CoarseTimer);
 	connect(m_guiTimer, SIGNAL(timeout()), this, SLOT(updateStatusBar()));
-
+	
 	m_guiTimer->setInterval(100);
 	m_guiTimer->start();
 }
@@ -245,5 +242,5 @@ void MainWindow::updateStatusBar()
 	ui->label_barSpeed->setText(barSpeedX+" "+barSpeedY+" "+barSpeedZ);
 
 	ui->label_kneeAngle->setNum((double)ui->openGLWidget->m_kneeAngle);
-	ui->label_time->setNum(ui->openGLWidget->m_time);
+	ui->label_time->setNum(ui->openGLWidget->m_activeFrameTimestamp);
 }

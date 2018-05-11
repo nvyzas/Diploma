@@ -139,7 +139,7 @@ bool SkinnedMesh::initFromScene(const aiScene* pScene, const string& filename)
 	m_boneTransformInfo.resize(m_numBones);
 
 	initLocalMatrices(m_pScene->mRootNode);
-	initCorrectedMatrices();
+	initCorrectionMatrices();
 	initCoordinates();
 	initImages(m_pScene, filename);
 
@@ -304,48 +304,6 @@ void SkinnedMesh::printNodeHierarchy(const aiNode* pNode) const
 	}
 	
 }
-void SkinnedMesh::getBoneTransforms(vector<QMatrix4x4>& transforms)
-{
-	traverseNodeHierarchy(m_pScene->mRootNode, QMatrix4x4());
-	transforms.resize(m_numBones);
-	for (uint i = 0; i < m_numBones; i++) {
-		transforms[i] = m_boneInfo[i].combined;
-	}
-}
-void SkinnedMesh::initLocalMatrices(const aiNode* node)
-{
-	const auto& it = m_boneMap.find(node->mName.data);
-	if (it != m_boneMap.cend()) {
-		m_boneInfo[it->second].defaultLocal = toQMatrix(node->mTransformation);
-	}
-	for (uint i = 0; i < node->mNumChildren; i++) {
-		initLocalMatrices(node->mChildren[i]);
-	}
-}
-void SkinnedMesh::initCorrectedMatrices()
-{
-	QVector3D scalingCorrection(1.f, 1.f, 1.f);
-	QQuaternion rotationCorrection;
-	QVector3D translationCorrection;
-
-
-	for (int i = 0; i < m_numBones; i++) {
-		m_boneInfo[i].localCorrection = QMatrix4x4(); // init as identity matrix
-		m_boneInfo[i].correctedLocal =  m_boneInfo[i].defaultLocal * m_boneInfo[i].localCorrection;
-	}
-}
-void SkinnedMesh::calculateBoneLength(const aiNode* pNode)
-{
-	QString nodeName(pNode->mName.data);
-	const auto& it = m_boneMap.find(nodeName.toStdString());
-	if (it != m_boneMap.end()) {
-		//m_boneInfo[it->second].length = m_boneInfo[it->second].endPosition;
-	}
-
-	for (uint i = 0; i < pNode->mNumChildren; i++) {
-		calculateBoneLength(pNode->mChildren[i]);
-	}
-}
 QVector3D SkinnedMesh::getPelvisOffset()
 {
 	float x = m_boneInfo[findBoneId("pelvis")].defaultLocal(0, 3);
@@ -356,6 +314,10 @@ QVector3D SkinnedMesh::getPelvisOffset()
 void SkinnedMesh::setKSkeleton(KSkeleton* ks)
 {
 	m_kskelie = ks;
+}
+bool SkinnedMesh::parameter(uint i) const
+{
+	return m_parameters[i];
 }
 QQuaternion SkinnedMesh::pelvisRotation()
 {
@@ -426,11 +388,60 @@ uint SkinnedMesh::sequenceSize()
 {
 	return m_coordinateSequence.size();
 }
+void SkinnedMesh::initLocalMatrices(const aiNode* node)
+{
+	const auto& it = m_boneMap.find(node->mName.data);
+	if (it != m_boneMap.cend()) {
+		m_boneInfo[it->second].defaultLocal = toQMatrix(node->mTransformation);
+	}
+	else {
+		QString nodeName(node->mName.data);
+		QMatrix4x4 L = toQMatrix(node->mTransformation);
+		cout << nodeName.toStdString() << " transformation:" << endl;
+		cout << toString(L).toStdString() << endl;
+	}
+	for (uint i = 0; i < node->mNumChildren; i++) {
+		initLocalMatrices(node->mChildren[i]);
+	}
+}
+void SkinnedMesh::initCorrectionMatrices()
+{
+	// Init all as identity
+	for (int i = 0; i < m_numBones; i++) {
+		m_boneInfo[i].localCorrection = QMatrix4x4(); // init as identity matrix
+		m_boneInfo[i].correctedLocal = m_boneInfo[i].defaultLocal * m_boneInfo[i].localCorrection;
+	}
+
+	m_boneInfo[findBoneId("lowerarm_l")].localCorrection = fromRotation(QQuaternion::fromEulerAngles(0.f, -90.f, 0.f));
+	m_boneInfo[findBoneId("hand_l")].localCorrection = fromRotation(QQuaternion::fromEulerAngles(0.f, -90.f, 0.f));
+}
 void SkinnedMesh::initKBoneMap()
 {
-	m_kboneMap["pelvis"] == 0;
+	//m_kboneMap["pelvis"] = 0;
+
+	// Core
+	m_kboneMap  ["pelvis"] = JointType_SpineBase;
+	m_kboneMap  ["spine_01"] = JointType_SpineMid;
+	//m_kboneMap["spine_02"] = INVALID_JOINT_ID;
+	m_kboneMap  ["spine_03"] = JointType_SpineShoulder;
+	m_kboneMap  ["neck_01"] = JointType_Neck;
+	m_kboneMap  ["head"] = JointType_Head;
+
+	// Arms
+	m_kboneMap["clavicle_l"] = JointType_ShoulderLeft;
+	m_kboneMap["upperarm_l"] = JointType_ElbowLeft;
+	m_kboneMap["lowerarm_l"] = JointType_WristLeft;
+	m_kboneMap["hand_l"    ] = JointType_HandLeft;
+
+	m_kboneMap["clavicle_r"] = JointType_ShoulderRight;
+	m_kboneMap["upperarm_r"] = JointType_ElbowRight;
+	m_kboneMap["lowerarm_r"] = JointType_WristRight;
+	m_kboneMap["hand_r"    ] = JointType_HandRight;
+	
+
+
 }
-void SkinnedMesh::traverseNodeHierarchy(const aiNode* pNode, const QMatrix4x4& P)
+void SkinnedMesh::calculateBoneTransforms(const aiNode* pNode, const QMatrix4x4& P)
 {
 	QString nodeName(pNode->mName.data);
 	QMatrix4x4 L = toQMatrix(pNode->mTransformation);
@@ -442,40 +453,63 @@ void SkinnedMesh::traverseNodeHierarchy(const aiNode* pNode, const QMatrix4x4& P
 	}
 	else { // is a bone
 		uint i = it->second;
+		QQuaternion q;
 		QString qs;
 		QTextStream qts(&qs);
-		QQuaternion q;
 
 		qts << "\nBoneName=" << nodeName << " Index=" << i << endl;
+		
+		q = extractQuaternion(L);
+		qts << "Default local quaternion: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
+		qts << "Default local transformation:\n" << toString(L);
 
 		QMatrix4x4 localTransformation;
 		const auto& kit = m_kboneMap.find(nodeName.toStdString());
 		if (m_parameters[1] && kit != m_kboneMap.end()) {
 			uint k = kit->second;
-
 			// calculate scaling from Kinect
 			QMatrix4x4 kinectScaling = QMatrix();
 			
 			// calculate rotation form Kinect
-			const KLimb& limb = m_kskelie->limbs()[kit->second];
+			const KLimb& limb = m_kskelie->limbs()[JointType_SpineMid];
 			qts << "Limb=" << limb.name << endl;
 			QVector3D& initialPositionStart(G * QVector3D(0.f, 0.f, 0.f));
 			QVector3D& initialPositionEnd(G * QVector3D(0.f, 1.f, 0.f));
 			QVector3D initialDirection = initialPositionEnd - initialPositionStart;
-			QVector3D& finalPositionStart = m_kskelie->activeJoints()[limb.start].position;
-			QVector3D& finalPositionEnd = m_kskelie->activeJoints()[limb.end].position;
+			QVector3D& finalPositionStart = m_kskelie->activeJoints()[JointType_SpineBase].position;
+			QVector3D& finalPositionEnd = m_kskelie->activeJoints()[JointType_SpineMid].position;
 			QVector3D finalDirection = finalPositionEnd - finalPositionStart;
+			q = QQuaternion::rotationTo(initialDirection, finalDirection);
+			QQuaternion absQ = 
+				kit->second == INVALID_JOINT_ID ?
+				extractQuaternion(P) :
+				m_kskelie->activeJoints()[kit->second].orientation;
+			QQuaternion parQ = extractQuaternion(P);
+			QQuaternion relQ = parQ.inverted() * absQ;
+			QMatrix4x4 kinectRotation = fromRotation(relQ);
+			/*
+			QMatrix4x4 absM = fromRotation(m_kskelie->activeJoints()[kit->second].orientation);
+			QMatrix4x4 parM = getRotationPart(P);
+			QMatrix4x4 relM = parM.inverted() * absM;
+			absQ = extractQuaternion(absM);
+			parQ = extractQuaternion(parM);
+			relQ = extractQuaternion(relM);
+			kinectRotation = relM;
+			//*/
 			qts << "InitialVecs: " << initialPositionStart << " " << initialPositionEnd << " " << initialDirection << endl;
 			qts << "FinalVecs: " << finalPositionStart << " " << finalPositionEnd << " " << finalDirection << endl;
-			q = QQuaternion::rotationTo(initialDirection, finalDirection);
-			QMatrix4x4 kinectRotation = fromRotation(q);
-			qts << "Kinect rotation quaternion: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
+			qts << "Kinect rotation abs: " << toString(absQ) << toStringEulerAngles(absQ) << toStringAxisAngle(absQ) << endl;
+			qts << "Parent rotation abs: " << toString(parQ) << toStringEulerAngles(parQ) << toStringAxisAngle(parQ) << endl;
+			qts << "Parent rotation inv: " << toString(parQ.inverted()) << toStringEulerAngles(parQ.inverted()) << toStringAxisAngle(parQ.inverted()) << endl;
+			qts << "Kinect rotation rel: " << toString(relQ) << toStringEulerAngles(relQ) << toStringAxisAngle(relQ) << endl;
 			
 			// calculate translation from Kinect
 			QVector3D v(L(0, 3), L(1, 3), L(2, 3));
 			QMatrix4x4 kinectTranslation = fromTranslation(v);
-			qts << "Kinect translation vector: " << v << endl;
-			localTransformation = kinectTranslation * kinectRotation;
+			qts << "Local translation vector: " << v << endl;
+
+			localTransformation = kinectTranslation * kinectRotation * kinectScaling;
+			qts << "Kinect transformation:\n" << toString(localTransformation);
 		}
 		
 		if (m_parameters[2]) {
@@ -503,6 +537,7 @@ void SkinnedMesh::traverseNodeHierarchy(const aiNode* pNode, const QMatrix4x4& P
 			qts << "Control quaternion: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
 			qts << "Control transformation:\n" << toString(m_controlMats[i]);
 		}
+		if (!m_parameters[4]) localTransformation = QMatrix4x4();
 
 		// localTransformation next to P, 
 		// control next to localTransformation
@@ -510,11 +545,11 @@ void SkinnedMesh::traverseNodeHierarchy(const aiNode* pNode, const QMatrix4x4& P
 		G = P * localTransformation * controlRot;
 
 		m_boneInfo[i].global = G;
-		qts << "Global transformation:\n" << toString(G);
-
-		qts << "Offset transformation:\n" << toString(m_boneInfo[i].offset);
-
 		m_boneInfo[i].combined = G * m_boneInfo[i].offset;
+		
+		qts << "Parent's Global transformation:\n" << toString(P);
+		qts << "Global transformation:\n" << toString(G);
+		qts << "Offset transformation:\n" << toString(m_boneInfo[i].offset);
 		qts << "Combined transformation:\n" << toString(m_boneInfo[i].combined);
 
 		QVector3D positionGlobal = m_boneInfo[i].global * QVector3D(QVector4D(0.f, 0.f, 0.f, 1.f));
@@ -526,7 +561,7 @@ void SkinnedMesh::traverseNodeHierarchy(const aiNode* pNode, const QMatrix4x4& P
 	}
 
 	for (uint i = 0; i < pNode->mNumChildren; i++) {
-		traverseNodeHierarchy(pNode->mChildren[i], G);
+		calculateBoneTransforms(pNode->mChildren[i], G);
 	}
 }
 float SkinnedMesh::boneRotationX(const QString &boneName) const
@@ -676,6 +711,13 @@ const QVector3D& SkinnedMesh::boneEndPosition(uint boneIndex) const
 		return QVector3D();
 	}
 	return m_boneInfo[boneIndex].endPosition;
+}
+const BoneInfo& SkinnedMesh::boneInfo(uint boneIndex) const
+{
+	if (boneIndex > m_boneInfo.size() || boneIndex < 0) {
+		cout << "SkinnedMesh::boneInfo: bone index out of bounds! Index=" << boneIndex << endl;
+	}
+	return m_boneInfo[boneIndex];
 }
 bool SkinnedMesh::initMotionFromFile(const QString& filename)
 {

@@ -6,6 +6,7 @@ const int MAX_SPOT_LIGHTS = 2;
 in vec2 TexCoord0;
 in vec3 Normal0;                                                                   
 in vec3 WorldPos0;                                                                 
+in float ToBeDiscarded;
 
 struct VSOutput
 {
@@ -123,7 +124,8 @@ void main()
     In.TexCoord = TexCoord0;
     In.Normal   = normalize(Normal0);
     In.WorldPos = WorldPos0;
-  
+	
+	if (ToBeDiscarded!=0) discard;
     vec4 TotalLight = CalcDirectionalLight(In);                                         
                                                                                             
     for (int i = 0 ; i < gNumPointLights ; i++) {                                           

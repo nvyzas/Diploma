@@ -89,9 +89,8 @@ void MainWidget::setup()
 	m_timer.start();
 
 	// Setup skinned mesh
-	vector<QMatrix4x4> transforms;
-	m_skinnedMesh->getBoneTransforms(transforms);
-
+	m_skinnedMesh->calculateBoneTransforms(m_skinnedMesh->m_pScene->mRootNode, QMatrix4x4());
+	
 	// #todo: Setup camera
 	m_camera->printInfo();
 
@@ -237,32 +236,40 @@ void MainWidget::paintGL()
 		m_ksensor->getBodyFrame();
 	}
 	else if (m_mode == Mode::PLAYBACK){
-		m_ksensor->skeleton()->setActiveJoints(m_activeFrame);
+		m_ksensor->skeleton()->setActiveJoints(m_activeFrameIndex);
 	}
 	else {
 		cout << "Unknown mode of operation." << endl;
 	}
-	m_time = m_skinnedMesh->timestamp(m_activeFrame);
-
-	// enable skinning technique
-	m_skinningTechnique->enable();
+	m_activeFrameTimestamp = m_ksensor->skeleton()->timestamp(m_activeFrameIndex);
 
 	// prepare pipeline for drawing skinned mesh related stuff
-	transformSkinnedMesh(false);
 	if (m_defaultPose) {
 		m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
-		m_pipeline->setWorldOrientation(0.f, 180.f, 0.f);
-		m_pipeline->setWorldPosition(-1.f, -1.f, 0.f);
+		m_pipeline->setWorldOrientation(QQuaternion());
+		m_pipeline->setWorldPosition(QVector3D());
 	}
 	else {
 		m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
 		m_pipeline->setWorldOrientation(QQuaternion());
 		m_pipeline->setWorldPosition(QVector3D());
 	}
-	m_skinningTechnique->setWVP(m_pipeline->getWVPtrans());
 
-	// draw skinned mesh
-	if (m_mode == Mode::PLAYBACK && m_renderSkinnedMesh && m_skinnedMesh->m_successfullyLoaded) {
+	// enable skinning technique
+	m_skinningTechnique->enable();
+
+	// draw skinned mesh //todo to optimize invert for and if (put if outside and use two for loops)
+	m_skinnedMesh->calculateBoneTransforms(m_skinnedMesh->m_pScene->mRootNode, QMatrix4x4());
+	for (uint i = 0; i < m_skinnedMesh->numBones(); i++) {
+		if (!m_skinnedMesh->parameter(0)) {
+			m_skinningTechnique->setBoneTransform(i, m_skinnedMesh->boneInfo(i).offset);
+		}
+		else {
+			m_skinningTechnique->setBoneTransform(i, m_skinnedMesh->boneInfo(i).combined);
+		}
+	}
+	m_skinningTechnique->setWVP(m_pipeline->getWVPtrans());
+	if (m_renderSkinnedMesh && m_skinnedMesh->m_successfullyLoaded) {
 		drawSkinnedMesh();
 	}
 
@@ -311,7 +318,8 @@ void MainWidget::paintGL()
 	// prepare pipeline to draw kinect skeleton related stuff
 	m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
 	m_pipeline->setWorldOrientation(QQuaternion());
-	m_pipeline->setWorldPosition(m_kinectSkeletonOffset);
+	if (m_mode == Mode::CAPTURE) m_pipeline->setWorldPosition(QVector3D());
+	else m_pipeline->setWorldPosition(m_kinectSkeletonOffset);
 	m_technique->setMVP(m_pipeline->getWVPtrans());
 
 	// draw kinect skeleton
@@ -366,7 +374,7 @@ void MainWidget::paintGL()
 	
 
 	if (!m_paused && m_shouldUpdate) {
-		if (++m_activeFrame > m_ksensor->skeleton()->m_activeSequence->size())  m_activeFrame = 0;
+		if (++m_activeFrameIndex > m_ksensor->skeleton()->m_activeSequence->size())  m_activeFrameIndex = 0;
 		m_shouldUpdate = false;
 		calculateFPS();
 	}
@@ -416,7 +424,6 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_8:
 	case Qt::Key_9:
 		m_skinnedMesh->flipParameter(key - Qt::Key_0);
-		transformSkinnedMesh(true);
 		break;
 	case Qt::Key_Y:
 		m_playbackInterval *= 1.2f; // decrease playback speed
@@ -533,16 +540,6 @@ void MainWidget::wheelEvent(QWheelEvent *event)
 	m_technique->setMVP(m_pipeline->getVPtrans());
 	update();
 }
-void MainWidget::transformSkinnedMesh(bool print)
-{
-	if (print) cout << "Transforming bones." << endl;
-	vector<QMatrix4x4> transforms;
-	m_skinnedMesh->getBoneTransforms(transforms);
-	m_skinningTechnique->enable();
-	for (uint i = 0; i < transforms.size(); i++) {
-		m_skinningTechnique->setBoneTransform(i, transforms[i]);
-	}
-}
 void MainWidget::setRenderAxes(bool state)
 {
 	if (m_drawAxes != state) {
@@ -638,7 +635,7 @@ void MainWidget::updateIndirect()
 }
 void MainWidget::setActiveFrame(uint index)
 {
-	m_activeFrame = (uint)(index / 100.f * m_ksensor->skeleton()->m_activeSequence->size());
+	m_activeFrameIndex = (uint)(index / 100.f * m_ksensor->skeleton()->m_activeSequence->size());
 }
 void MainWidget::changeMode()
 {

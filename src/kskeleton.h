@@ -16,7 +16,7 @@
 #include <iostream>
 
 #define INVALID_JOINT_ID -1
-#define NUM_LIMBS 21
+#define NUM_LIMBS 23
 
 struct KNode
 {
@@ -156,6 +156,7 @@ public:
 	void printJointHierarchy() const;
 	void printActiveJoints() const;
 	void printSequenceToLog(const QVector<KFrame>& seq);
+	void printLimbLengths() const;
 
 	// files
 	bool saveToTrc();
@@ -168,20 +169,17 @@ public:
 	bool m_recordingOn = false;
 	bool m_finalizingOn = false;
 
-	uint activeFrame() const;
-
 	array<KJoint, JointType_Count>& activeJoints();
 	void setActiveJoints(uint frameIndex);
+	double timestamp(uint frameIndex) const;
 
-	bool m_playbackFiltered = true;
 	QVector<KFrame>* m_activeSequence;
 	void nextActiveSequence();
 
 	double m_interpolationInterval;
 	double m_recordingDuration;
-	void calculateLimbLengths(const QVector<KFrame>& sequence);
-	void printLimbLengths() const;
 	const array<KLimb, NUM_LIMBS>& limbs() const;
+	void calculateLimbLengths(const QVector<KFrame>& sequence);
 
 private:
 	array<KNode, JointType_Count> m_nodes; // these define the kinect skeleton hierarchy
@@ -193,15 +191,10 @@ private:
 	QFile m_sequencesLog;
 	QTextStream m_forSequencesLog;
 
-	uint m_activeFrame = 0;
-
 	// trc file
 	QFile *m_trcFile;
 	
-	uint m_activeJoint = JointType_SpineBase;
-
 	// Savitzky-Golay filter
-
 	// Coefficients (Symmetric), Cubic order, 1st element = 1/commonFactor #? should make them static?
 	static const uint m_framesDelayed = 12;
 	const array<float, 2*m_framesDelayed+2> m_sgCoefficients25 = { -253, -138, -33, 62, 147, 222, 287, 343, 387, 422, 447, 462, 467, 462, 447, 422, 387, 343, 278, 222, 147, 62, -33, -138, -253, 5175 };
@@ -217,6 +210,8 @@ private:
 	void adjustLimbLength(uint frameLocation, uint jointId, const QVector3D& direction, float factor); // recursively adjust joints
 	QVector3D m_leftFootOffset;
 	QVector3D m_rightFootOffset;
+	QVector3D m_leftFootPosition;
+	QVector3D m_rightFootPosition;
 };
 
 #endif

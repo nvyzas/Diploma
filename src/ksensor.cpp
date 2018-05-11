@@ -188,7 +188,7 @@ bool KSensor::getBodyFrame()
 			return false;
 		} 
 		else {
-			hr = frame->GetAndRefreshBodyData(_countof(bodies), bodies);
+			hr = frame->GetAndRefreshBodyData(ARRAY_SIZE_IN_ELEMENTS(bodies), bodies);
 		}
 
 		if (FAILED(hr)) {
@@ -199,7 +199,7 @@ bool KSensor::getBodyFrame()
 			processBodyFrameData(bodies, (double)relativeTime / 10000000.);
 		}
 
-		for (int i = 0; i < _countof(bodies); ++i) {
+		for (int i = 0; i < ARRAY_SIZE_IN_ELEMENTS(bodies); ++i) {
 			safeRelease(&bodies[i]);
 		}
 		safeRelease(&frame);
@@ -217,7 +217,6 @@ void KSensor::processBodyFrameData(IBody** bodies, double timestamp)
 	for (int i = 0; i < BODY_COUNT; i++) {
 		bodies[i]->get_IsTracked(&isTracked);
 		if (isTracked) {
-			//m_forCaptureLog << " BodyIndex=" << i;
 			bodies[i]->GetJoints(JointType_Count, joints);
 			bodies[i]->GetJointOrientations(JointType_Count, orientations);
 			discardFrame = false;

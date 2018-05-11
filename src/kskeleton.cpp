@@ -9,12 +9,12 @@
 
 QDataStream& operator<<(QDataStream& out, const KJoint& joint)
 {
-	out << joint.position << joint.trackingState;
+	out << joint.position << joint.orientation << joint.trackingState;
 	return out;
 }
 QDataStream& operator>>(QDataStream& in, KJoint& joint)
 {
-	in >> joint.position >> joint.trackingState;
+	in >> joint.position >> joint.orientation >> joint.trackingState;
 	return in;
 }
 QDataStream& operator<<(QDataStream& out, const KFrame& frame)
@@ -52,7 +52,7 @@ KSkeleton::KSkeleton()
 	initLimbs();
 	calculateLimbLengths(m_adjustedSequence);
 	printLimbLengths();
-	m_activeSequence = &m_adjustedSequence;
+	m_activeSequence = &m_rawSequence;
 	m_interpolationInterval = m_activeSequence->at(1).timestamp - m_activeSequence->at(0).timestamp;
 	cout << "Frame interval in active sequence: " << m_interpolationInterval << endl;
 
@@ -71,8 +71,8 @@ void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientatio
 		const Joint& jt = joints[i];
 		const JointOrientation& or = orientations[i];
 		m_activeJoints[i].position = QVector3D(jt.Position.X, jt.Position.Y, jt.Position.Z);
-		m_activeJoints[i].trackingState = jt.TrackingState;
 		m_activeJoints[i].orientation = QQuaternion(or.Orientation.w, or.Orientation.x, or.Orientation.y, or.Orientation.z);
+		m_activeJoints[i].trackingState = jt.TrackingState;
 	}
 
 	KFrame kframe;
@@ -152,7 +152,8 @@ void KSkeleton::initJoints()
 			(m_nodes[p].childrenId).push_back(i);
 		}
 	}
-}// Frame sequence must be initialized before calling this
+}
+// Frame sequence must be initialized before calling this
 void KSkeleton::initLimbs()
 {
 	// Core
@@ -179,8 +180,9 @@ void KSkeleton::initLimbs()
 	m_limbs[18] = KLimb(JointType_WristRight   , JointType_HandRight    , 17);
 	m_limbs[19] = KLimb(JointType_WristLeft    , JointType_HandTipLeft  , 20);
 	m_limbs[20] = KLimb(JointType_WristRight   , JointType_HandTipRight , 19);
-
-
+	m_limbs[21] = KLimb(JointType_HandLeft     , JointType_ThumbLeft    , 22);
+	m_limbs[22] = KLimb(JointType_HandRight    , JointType_ThumbRight   , 21);
+	
 	calculateLimbLengths(m_filteredSequence);
 
 	for (uint l = 0; l < m_limbs.size(); l++) {
@@ -191,7 +193,6 @@ void KSkeleton::initLimbs()
 			(m_limbs[l].averageLength + m_limbs[m_limbs[l].sibling].averageLength) / 2.f
 			);
 	}
-
 }
 void KSkeleton::interpolateFrames()
 {
@@ -269,7 +270,7 @@ void KSkeleton::filterFrames()
 void KSkeleton::adjustFrames()
 {
 	if (m_filteredSequence.empty()) {
-		cout << "No filtered frames!" << endl;
+		cout << "No filtered frames! Returning." << endl;
 		return;
 	}
 	if (!m_adjustedSequence.empty()) {
@@ -277,9 +278,17 @@ void KSkeleton::adjustFrames()
 		//return;
 	}
 
-	cout << "Adjusting frames" << endl;
+	cout << "Adjusting filtered frames" << endl;
+	cout << "Before adjustments:" << endl;
+	calculateLimbLengths(m_filteredSequence);
+	printLimbLengths();
+
 	m_adjustedSequence = m_filteredSequence;
 	for (uint i = 0; i < m_adjustedSequence.size(); i++) {
+		m_adjustedSequence[i].joints[JointType_AnkleLeft].position =
+			m_adjustedSequence[0].joints[JointType_AnkleLeft].position;
+		m_adjustedSequence[i].joints[JointType_AnkleRight].position =
+			m_adjustedSequence[0].joints[JointType_AnkleRight].position;
 		m_leftFootOffset = QVector3D();
 		m_rightFootOffset = QVector3D();
 		for (uint l = 0; l < m_limbs.size(); l++) {
@@ -320,19 +329,61 @@ void KSkeleton::adjustFrames()
 			adjustLimbLength(i, limb.end, direction, adjustmentFactor);
 		}
 
+		// Point thumbs towards opposite hand
+		QVector3D handRightToLeft =
+			m_adjustedSequence[i].joints[JointType_HandLeft].position -
+			m_adjustedSequence[i].joints[JointType_HandRight].position;
+
+		m_adjustedSequence[i].joints[JointType_ThumbLeft].position =
+			m_adjustedSequence[i].joints[JointType_HandLeft].position -
+			handRightToLeft.normalized()*m_limbs[21].desiredLength;
+		m_adjustedSequence[i].joints[JointType_ThumbRight].position =
+			m_adjustedSequence[i].joints[JointType_HandRight].position +
+			handRightToLeft.normalized()*m_limbs[22].desiredLength;
+
+		// Move all joints towards the ground
 		if (i == 0) {
 			cout << " LeftFootOffset=" << toStringCartesian(m_leftFootOffset).toStdString();
 			cout << " RightFootOffset=" << toStringCartesian(m_rightFootOffset).toStdString();
 			cout << "\n" << endl;
 		}
-
-		// Move all joints towards the ground
 		for (uint j = 0; j < JointType_Count; j++) {
 			m_adjustedSequence[i].joints[j].position.setY(
 				m_adjustedSequence[i].joints[j].position.y() -
 				(m_leftFootOffset.y() + m_rightFootOffset.y()) / 2.f
 			);
 		}
+
+		// immobilize feet
+		m_leftFootPosition = m_adjustedSequence[0].joints[JointType_AnkleLeft].position;
+		m_rightFootPosition = m_adjustedSequence[0].joints[JointType_AnkleRight].position;
+
+		m_adjustedSequence[i].joints[JointType_AnkleLeft].position = m_leftFootPosition;
+		m_adjustedSequence[i].joints[JointType_AnkleRight].position = m_rightFootPosition;
+
+		//*
+		m_adjustedSequence[i].joints[JointType_FootLeft].position.setX(m_leftFootPosition.x());
+		m_adjustedSequence[i].joints[JointType_FootRight].position.setX(m_rightFootPosition.x());
+		
+		m_adjustedSequence[i].joints[JointType_FootLeft].position.setY(
+			m_adjustedSequence[0].joints[JointType_AnkleLeft].position.y()
+		);
+		m_adjustedSequence[i].joints[JointType_FootRight].position.setY(
+			m_adjustedSequence[0].joints[JointType_AnkleRight].position.y()
+		);
+		QVector3D leftFootDirection =
+			m_adjustedSequence[0].joints[JointType_FootLeft].position -
+			m_adjustedSequence[0].joints[JointType_AnkleLeft].position;
+		QVector3D rightFootDirection =
+			m_adjustedSequence[0].joints[JointType_FootRight].position -
+			m_adjustedSequence[0].joints[JointType_AnkleRight].position;
+		m_adjustedSequence[i].joints[JointType_FootLeft].position =
+			m_adjustedSequence[i].joints[JointType_AnkleLeft].position +
+			leftFootDirection.normalized() * m_limbs[7].desiredLength;
+		m_adjustedSequence[i].joints[JointType_FootRight].position =
+			m_adjustedSequence[i].joints[JointType_AnkleRight].position +
+			rightFootDirection.normalized() * m_limbs[8].desiredLength;
+		//*/
 	}
 
 	calculateLimbLengths(m_adjustedSequence);
@@ -356,11 +407,11 @@ float KLimb::gapAverage = 0.f;
 void KSkeleton::calculateLimbLengths(const QVector<KFrame>& sequence)
 {
 	if (m_limbs.empty()) {
-		cout << "Limbs array is empty!" << endl;
+		cout << "Limbs array is empty! Returning." << endl;
 		return;
 	}
 	if (sequence.empty()) {
-		cout << "Frame sequence is empty!" << endl;
+		cout << "Frame sequence is empty! Returning." << endl;
 		return;
 	}
 
@@ -388,6 +439,14 @@ void KSkeleton::calculateLimbLengths(const QVector<KFrame>& sequence)
 		KLimb::gapAverage += m_limbs[l].maxLength - m_limbs[l].minLength;
 	}
 	KLimb::gapAverage /= (m_limbs.size() - 1);
+
+	for (uint l = 0; l < m_limbs.size(); l++) {
+		m_limbs[l].desiredLength = (
+			m_limbs[l].sibling == INVALID_JOINT_ID ?
+			m_limbs[l].averageLength :
+			(m_limbs[l].averageLength + m_limbs[m_limbs[l].sibling].averageLength) / 2.f
+			);
+	}
 }
 void KSkeleton::printLimbLengths() const
 {
@@ -430,8 +489,11 @@ void KSkeleton::printActiveJoints() const
 {
 	for (uint i = 0; i < JointType_Count; i++) {
 		const KJoint &jt = m_activeJoints[i];
-		cout << setw(15) << m_nodes[i].name.toStdString() << ": ";
-		cout << setw(15) << m_activeJoints[i].position << " ";
+		cout << setw(15) << m_nodes[i].name.toStdString() << ": v:";
+		cout << setw(15) << toStringCartesian(m_activeJoints[i].position).toStdString() << " q:";
+		cout << setw(15) << toString(m_activeJoints[i].orientation).toStdString() << " ";
+		cout << setw(15) << toStringEulerAngles(m_activeJoints[i].orientation).toStdString() << " ";
+		cout << setw(15) << toStringAxisAngle(m_activeJoints[i].orientation).toStdString() << " ";
 		cout << m_activeJoints[i].getTrackingState().toStdString();
 		cout << endl;
 	}
@@ -439,16 +501,21 @@ void KSkeleton::printActiveJoints() const
 }
 void KSkeleton::nextActiveSequence()
 {
-	if (m_activeSequence == &m_interpolatedSequence) {
+	if (m_activeSequence == &m_rawSequence) {
+		m_activeSequence = &m_interpolatedSequence;
+		cout << "Active frame sequence: Interpolated" << endl;
+	}
+	else if (m_activeSequence == &m_interpolatedSequence) {
 		m_activeSequence = &m_filteredSequence;
 		cout << "Active frame sequence: Filtered" << endl;
-	} else if (m_activeSequence == &m_filteredSequence) {
+	} 
+	else if (m_activeSequence == &m_filteredSequence) {
 		m_activeSequence = &m_adjustedSequence;
 		cout << "Active frame sequence: Adjusted" << endl;
 	}
 	else if (m_activeSequence == &m_adjustedSequence) {
-		m_activeSequence = &m_interpolatedSequence;
-		cout << "Active frame sequence: Interpolated" << endl;
+		m_activeSequence = &m_rawSequence;
+		cout << "Active frame sequence: Raw" << endl;
 	}
 	else {
 		cout << "Unknown active frame sequence." << endl;
@@ -458,13 +525,13 @@ void KSkeleton::setActiveJoints(uint frameIndex)
 {
 	m_activeJoints = m_activeSequence->at(frameIndex).joints;
 }
+double KSkeleton::timestamp(uint frameIndex) const
+{
+	return m_activeSequence->at(frameIndex).timestamp;
+}
 array<KJoint, JointType_Count>& KSkeleton::activeJoints()
 {
 	return m_activeJoints;
-}
-uint KSkeleton::activeFrame() const
-{
-	return m_activeFrame;
 }
 // saves filtered frame sequence to trc
 bool KSkeleton::saveToTrc()
@@ -612,7 +679,6 @@ void KSkeleton::clearSequences()
 	m_interpolatedSequence.clear();
 	m_filteredSequence.clear();
 	m_adjustedSequence.clear();
-	m_activeFrame = 0;
 }
 const array<KLimb, NUM_LIMBS>& KSkeleton::limbs() const
 {

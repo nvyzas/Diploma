@@ -67,9 +67,12 @@ QString toStringSpherical(const QVector3D& v);
 double ticksToMilliseconds(clock_t ticks);
 std::ostream& operator<<(std::ostream& out, const QVector3D& v);
 QTextStream& operator<<(QTextStream& out, const QVector3D& v);
-QQuaternion extractQuaternion(QMatrix4x4& m);
+QQuaternion extractQuaternion(const QMatrix4x4& m);
 QMatrix4x4 toQMatrix(const aiMatrix4x4& aiMat);
 QMatrix4x4 fromScaling(const QVector3D& v);
 QMatrix4x4 fromRotation(const QQuaternion& q);
 QMatrix4x4 fromTranslation(const QVector3D& v);
+QMatrix4x4 getScalingPart(const QMatrix4x4& m);
+QMatrix4x4 getRotationPart(const QMatrix4x4& m);
+QMatrix4x4 getTranslationPart(const QMatrix4x4& m);
 #endif	/* UTIL_H */

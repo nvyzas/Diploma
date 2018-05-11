@@ -61,9 +61,10 @@ public:
 	float m_kneeAngle;
 	float m_barAngle;
 	QVector3D m_barSpeed;
-	double m_time;
 
-	void transformSkinnedMesh(bool print);
+	uint m_activeFrameIndex = 0;
+	double m_activeFrameTimestamp;
+	uint m_activeBone = 0;
 
 	// get functions
 	SkinnedMesh* skinnedMesh();
@@ -120,8 +121,6 @@ private:
 	bool m_shouldUpdate = false;
 	void setup();
 
-	uint m_activeBone = 0;
-	uint m_activeFrame = 0;
 
 	// Skinned mesh
 	QString m_skinnedMeshModelName;

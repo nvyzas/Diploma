@@ -98,9 +98,8 @@ public:
 	bool loadFromFile(const string& basename);
 	bool initMotionFromFile(const QString& filename);
 
-	void getBoneTransforms(vector<QMatrix4x4>& transforms);
-	void traverseNodeHierarchy(const aiNode* pNode, const QMatrix4x4& P);
-	void initCorrectedMatrices();
+	void calculateBoneTransforms(const aiNode* pNode, const QMatrix4x4& P);
+	void initCorrectionMatrices();
 	void printInfo() const;
 	void printNodeHierarchy(const aiNode* pNode) const;
 	void printParameters() const;
@@ -119,6 +118,7 @@ public:
 	const map<string, uint>& boneMap() const;
 	const QMatrix4x4& boneGlobal(uint boneIndex) const;
 	const QVector3D& boneEndPosition(uint boneIndex) const;
+	const BoneInfo& boneInfo(uint boneIndex) const;
 
 	uint findBoneId(const QString &boneName) const;
 	bool boneVisibility(uint boneIndex) const;
@@ -128,7 +128,7 @@ public:
 	QString boneTransformInfo(const QString& boneName) const;
 	void flipParameter(uint i);
 
-	// Get vertex attribute functions
+	// Getters
 	QVector<MeshEntry>& meshEntries();
 	QVector<QVector3D>& positions();
 	QVector<QVector3D>& normals();
@@ -144,6 +144,8 @@ public:
 	uint sequenceSize();
 	QVector3D getPelvisOffset();
 	void setKSkeleton(KSkeleton* ks);
+	bool parameter(uint i) const;
+	const aiScene* m_pScene;
 
 private:
 	void clear();
@@ -152,8 +154,8 @@ private:
 	void checkWeights(uint meshIndex, const aiMesh* pMesh);
 	bool initImages(const aiScene* pScene, const string& filename);
 	bool initFromScene(const aiScene* pScene, const string& filename);
-
-	// Data loaded in CPU by loadFromFile		
+	
+	// Mesh entries
 	QVector<MeshEntry> m_meshEntries;
 	// Vertex attributes
 	QVector<QVector3D> m_positions;
@@ -236,13 +238,17 @@ private:
 	uint m_numBones = 0; // crash if not 0
 	uint m_numVertices; // total number of vertices
 
-	const aiScene* m_pScene;
 	Assimp::Importer m_Importer;
 
 	bitset<NUM_PARAMETERS> m_parameters = bitset<NUM_PARAMETERS>().set();
-	const string m_parameterInfo[NUM_PARAMETERS] = { "",  "Kinect Pose", "Corrected Pose", "Controlled Pose" };	
+	const string m_parameterInfo[NUM_PARAMETERS] = { 
+		"Offset Pose Disabled"  , // 0
+		"Kinect Pose"           , // 1
+		"Corrected Pose"        , // 2
+		"Controlled Pose"       , // 3
+		"Identity Pose Disabled"  // 4
+	};	
 
-	void calculateBoneLength(const aiNode* pNode);
 	uint m_activeFrame = 0;
 };
 

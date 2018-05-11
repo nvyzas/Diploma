@@ -143,7 +143,34 @@ QMatrix4x4 fromTranslation(const QVector3D& v)
 	m.translate(v);
 	return m;
 }
-QQuaternion extractQuaternion(QMatrix4x4& m)
+QMatrix4x4 getScalingPart(const QMatrix4x4& m)
+{
+	return QMatrix4x4(
+		m(0, 0),     0.f,    0.f, 0.f,
+		    0.f, m(1, 1),    0.f, 0.f,
+		    0.f,     0.f, m(2,2), 0.f,
+		    0.f,     0.f,    0.f, 1.f
+	);
+}
+QMatrix4x4 getRotationPart(const QMatrix4x4& m)
+{
+	return QMatrix4x4(
+		m(0, 0), m(0, 1), m(0, 2), 0.f,
+		m(1, 0), m(1, 1), m(1, 2), 0.f,
+		m(2, 0), m(2, 1), m(2, 2), 0.f,
+		    0.f,     0.f,     0.f, 1.f
+	);
+}
+QMatrix4x4 getTranslationPart(const QMatrix4x4& m)
+{
+	return QMatrix4x4(
+		1.f, 0.f, 0.f, m(0, 3),
+		0.f, 1.f, 0.f, m(1, 3),
+		0.f, 0.f, 1.f, m(2, 3),
+		0.f, 0.f, 0.f,     1.f
+	);
+}
+QQuaternion extractQuaternion(const QMatrix4x4& m)
 {
 	float data[9] = { 
 		m(0, 0), m(0, 1), m(0, 2),

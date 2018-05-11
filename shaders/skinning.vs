@@ -9,6 +9,7 @@ layout (location = 4) in vec4 Weights;
 out vec2 TexCoord0;
 out vec3 Normal0;                                                                   
 out vec3 WorldPos0;                                                                 
+out float ToBeDiscarded;
 
 const int MAX_BONES = 100;
 const mat4 ZeroMat4 = mat4(0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0);
@@ -16,17 +17,18 @@ const mat4 ZeroMat4 = mat4(0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0
 uniform mat4 gWVP;
 uniform mat4 gWorld;
 uniform mat4 gBones[MAX_BONES];
-uniform bool skinningOn;
 uniform bool visible[MAX_BONES];
+uniform bool skinningOn;
 
 void main()
 {
 	mat4 BoneTransform;
 	mat4 FinalTransforms[4];
 	// visible?
+	ToBeDiscarded = 1;
 	for (int i = 0; i < 4 ; i++){
-		if (visible[BoneIDs[i]]) FinalTransforms[i] = gBones[BoneIDs[i]];
-		else FinalTransforms[i] = ZeroMat4;
+		FinalTransforms[i] = gBones[BoneIDs[i]];
+		if (visible[BoneIDs[i]]) ToBeDiscarded = 0;
 	}
 	// skinning?
 	if (!skinningOn){
