@@ -448,6 +448,10 @@ void KSkeleton::calculateLimbLengths(const QVector<KFrame>& sequence)
 			);
 	}
 }
+const array<KNode, JointType_Count>& KSkeleton::nodes() const
+{
+	return m_nodes;
+}
 void KSkeleton::printLimbLengths() const
 {
 	cout << "Limb lengths: " << endl;

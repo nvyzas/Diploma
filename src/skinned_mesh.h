@@ -250,6 +250,7 @@ private:
 	};	
 
 	uint m_activeFrame = 0;
+	array<QVector3D, JointType_Count> m_forwardDirections;
 };
 
 #endif	/* SKINNED_MESH_H */

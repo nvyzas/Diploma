@@ -179,8 +179,8 @@ public:
 	double m_interpolationInterval;
 	double m_recordingDuration;
 	const array<KLimb, NUM_LIMBS>& limbs() const;
+	const array<KNode, JointType_Count>& nodes() const;
 	void calculateLimbLengths(const QVector<KFrame>& sequence);
-
 private:
 	array<KNode, JointType_Count> m_nodes; // these define the kinect skeleton hierarchy
 	array<KJoint, JointType_Count> m_activeJoints;

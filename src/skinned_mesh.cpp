@@ -425,7 +425,6 @@ void SkinnedMesh::initKBoneMap()
 	//m_kboneMap["spine_02"] = INVALID_JOINT_ID;
 	m_kboneMap  ["spine_03"] = JointType_SpineShoulder;
 	m_kboneMap  ["neck_01"] = JointType_Neck;
-	m_kboneMap  ["head"] = JointType_Head;
 
 	// Arms
 	m_kboneMap["clavicle_l"] = JointType_ShoulderLeft;
@@ -471,33 +470,73 @@ void SkinnedMesh::calculateBoneTransforms(const aiNode* pNode, const QMatrix4x4&
 			QMatrix4x4 kinectScaling = QMatrix();
 			
 			// calculate rotation form Kinect
-			const KLimb& limb = m_kskelie->limbs()[JointType_SpineMid];
-			qts << "Limb=" << limb.name << endl;
-			QVector3D& initialPositionStart(G * QVector3D(0.f, 0.f, 0.f));
-			QVector3D& initialPositionEnd(G * QVector3D(0.f, 1.f, 0.f));
-			QVector3D initialDirection = initialPositionEnd - initialPositionStart;
-			QVector3D& finalPositionStart = m_kskelie->activeJoints()[JointType_SpineBase].position;
-			QVector3D& finalPositionEnd = m_kskelie->activeJoints()[JointType_SpineMid].position;
-			QVector3D finalDirection = finalPositionEnd - finalPositionStart;
-			q = QQuaternion::rotationTo(initialDirection, finalDirection);
-			QQuaternion absQ = 
-				kit->second == INVALID_JOINT_ID ?
-				extractQuaternion(P) :
-				m_kskelie->activeJoints()[kit->second].orientation;
+			//*
+			if (kit->second == JointType_SpineBase) {
+				QVector3D xAxis =
+					m_kskelie->activeJoints()[JointType_HipLeft].position-
+					m_kskelie->activeJoints()[JointType_HipRight].position;
+				QVector3D yAxis =
+					QVector3D::crossProduct(
+						m_kskelie->activeJoints()[JointType_HipLeft].position-
+						m_kskelie->activeJoints()[JointType_HipRight].position,
+						m_kskelie->activeJoints()[JointType_SpineBase].position-
+						m_kskelie->activeJoints()[JointType_HipRight].position
+						);
+				QVector3D zAxis = QVector3D::crossProduct(xAxis, yAxis);
+				xAxis.normalize();
+				yAxis.normalize();
+				zAxis.normalize();
+				qts << "Frame axes:" << xAxis << yAxis << zAxis << endl;
+				qts << "AngleBetweenAxes=" << ToDegrees(acos(QVector3D::dotProduct(xAxis, yAxis))) << endl;
+				q = QQuaternion::fromAxes(xAxis, yAxis, zAxis);
+				qts << "fromAxes       quat: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
+				q = QQuaternion::fromDirection(zAxis, yAxis);
+				qts << "fromDirection  quat: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
+				m_forwardDirections[kit->second] = zAxis;
+			}
+			else {
+				uint parentId = m_kskelie->nodes()[kit->second].parentId;
+				uint childId = m_kskelie->nodes()[kit->second].childrenId[0];
+				qts << "This=" << m_kskelie->nodes()[kit->second].name;
+				qts << " Parent=" << m_kskelie->nodes()[parentId].name;
+				qts << " Child=" << m_kskelie->nodes()[childId].name << endl;
+				QVector3D upwardDirection =
+					m_kskelie->activeJoints()[kit->second].position-
+					m_kskelie->activeJoints()[parentId].position;
+				QVector3D parentToChild =
+					m_kskelie->activeJoints()[childId].position-
+					m_kskelie->activeJoints()[parentId].position;
+				upwardDirection.normalize();
+				parentToChild.normalize();
+				QVector3D forwardDirection = QVector3D::crossProduct(parentToChild, upwardDirection);
+				upwardDirection.normalize();
+				parentToChild.normalize();
+				forwardDirection.normalize();
+				if (kit->second == JointType_SpineMid) {
+					forwardDirection = -QVector3D::crossProduct(forwardDirection, upwardDirection);
+				}
+				if (kit->second == JointType_ShoulderRight) {
+					forwardDirection = -forwardDirection;
+				}
+				qts << upwardDirection << parentToChild << endl;
+				float angle = ToDegrees(acos(QVector3D::dotProduct(parentToChild, upwardDirection)));
+				qts << "AngleBetweenDirections=" << angle << endl;
+				if (0) {
+					qts << "Using parent's forward direction." << endl;
+					q = QQuaternion::fromDirection(m_forwardDirections[parentId], upwardDirection);
+				}
+				else {
+					q = QQuaternion::fromDirection(forwardDirection, upwardDirection);
+				}
+				qts << "fromDirection  quat: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
+				m_forwardDirections[kit->second] = forwardDirection;
+			}
+			
+			QQuaternion absQ = m_kskelie->activeJoints()[kit->second].orientation;
 			QQuaternion parQ = extractQuaternion(P);
 			QQuaternion relQ = parQ.inverted() * absQ;
 			QMatrix4x4 kinectRotation = fromRotation(relQ);
-			/*
-			QMatrix4x4 absM = fromRotation(m_kskelie->activeJoints()[kit->second].orientation);
-			QMatrix4x4 parM = getRotationPart(P);
-			QMatrix4x4 relM = parM.inverted() * absM;
-			absQ = extractQuaternion(absM);
-			parQ = extractQuaternion(parM);
-			relQ = extractQuaternion(relM);
-			kinectRotation = relM;
-			//*/
-			qts << "InitialVecs: " << initialPositionStart << " " << initialPositionEnd << " " << initialDirection << endl;
-			qts << "FinalVecs: " << finalPositionStart << " " << finalPositionEnd << " " << finalDirection << endl;
+			
 			qts << "Kinect rotation abs: " << toString(absQ) << toStringEulerAngles(absQ) << toStringAxisAngle(absQ) << endl;
 			qts << "Parent rotation abs: " << toString(parQ) << toStringEulerAngles(parQ) << toStringAxisAngle(parQ) << endl;
 			qts << "Parent rotation inv: " << toString(parQ.inverted()) << toStringEulerAngles(parQ.inverted()) << toStringAxisAngle(parQ.inverted()) << endl;
