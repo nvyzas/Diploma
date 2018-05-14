@@ -414,6 +414,7 @@ void SkinnedMesh::initCorrectionMatrices()
 
 	m_boneInfo[findBoneId("lowerarm_l")].localCorrection = fromRotation(QQuaternion::fromEulerAngles(0.f, -90.f, 0.f));
 	m_boneInfo[findBoneId("hand_l")].localCorrection = fromRotation(QQuaternion::fromEulerAngles(0.f, -90.f, 0.f));
+	//m_boneInfo[findBoneId("thigh_l")].localCorrection = fromRotation(QQuaternion::fromEulerAngles(0.f, -90.f, 0.f));
 }
 void SkinnedMesh::initKBoneMap()
 {
@@ -422,7 +423,7 @@ void SkinnedMesh::initKBoneMap()
 	// Core
 	m_kboneMap  ["pelvis"] = JointType_SpineBase;
 	m_kboneMap  ["spine_01"] = JointType_SpineMid;
-	//m_kboneMap["spine_02"] = INVALID_JOINT_ID;
+	m_kboneMap["spine_02"] = JointType_SpineMid;
 	m_kboneMap  ["spine_03"] = JointType_SpineShoulder;
 	m_kboneMap  ["neck_01"] = JointType_Neck;
 
@@ -437,7 +438,11 @@ void SkinnedMesh::initKBoneMap()
 	m_kboneMap["lowerarm_r"] = JointType_WristRight;
 	m_kboneMap["hand_r"    ] = JointType_HandRight;
 	
+	m_kboneMap["thigh_l"] = JointType_KneeLeft;
+	m_kboneMap["calf_l"] = JointType_AnkleLeft;
 
+	m_kboneMap["thigh_r"] = JointType_KneeRight;
+	m_kboneMap["calf_r"] = JointType_AnkleRight;
 
 }
 void SkinnedMesh::calculateBoneTransforms(const aiNode* pNode, const QMatrix4x4& P)
@@ -483,6 +488,7 @@ void SkinnedMesh::calculateBoneTransforms(const aiNode* pNode, const QMatrix4x4&
 						m_kskelie->activeJoints()[JointType_HipRight].position
 						);
 				QVector3D zAxis = QVector3D::crossProduct(xAxis, yAxis);
+
 				xAxis.normalize();
 				yAxis.normalize();
 				zAxis.normalize();
@@ -492,49 +498,62 @@ void SkinnedMesh::calculateBoneTransforms(const aiNode* pNode, const QMatrix4x4&
 				qts << "fromAxes       quat: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
 				q = QQuaternion::fromDirection(zAxis, yAxis);
 				qts << "fromDirection  quat: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
-				m_forwardDirections[kit->second] = zAxis;
+				m_absoluteOrientations[JointType_SpineBase] = q;
+			}
+			else if (kit->second == JointType_SpineMid) {
+				q = m_absoluteOrientations[JointType_SpineBase];
+				m_absoluteOrientations[JointType_SpineMid] = q;
 			}
 			else {
 				uint parentId = m_kskelie->nodes()[kit->second].parentId;
-				uint childId = m_kskelie->nodes()[kit->second].childrenId[0];
+				uint grandparentId = m_kskelie->nodes()[parentId].parentId;
 				qts << "This=" << m_kskelie->nodes()[kit->second].name;
 				qts << " Parent=" << m_kskelie->nodes()[parentId].name;
-				qts << " Child=" << m_kskelie->nodes()[childId].name << endl;
-				QVector3D upwardDirection =
+				qts << " Grandparent=" << m_kskelie->nodes()[grandparentId].name << endl;
+				QVector3D upDirection =
 					m_kskelie->activeJoints()[kit->second].position-
 					m_kskelie->activeJoints()[parentId].position;
-				QVector3D parentToChild =
-					m_kskelie->activeJoints()[childId].position-
+				QVector3D ParentToGrandparent =
+					m_kskelie->activeJoints()[grandparentId].position-
 					m_kskelie->activeJoints()[parentId].position;
-				upwardDirection.normalize();
-				parentToChild.normalize();
-				QVector3D forwardDirection = QVector3D::crossProduct(parentToChild, upwardDirection);
-				upwardDirection.normalize();
-				parentToChild.normalize();
-				forwardDirection.normalize();
-				if (kit->second == JointType_SpineMid) {
-					forwardDirection = -QVector3D::crossProduct(forwardDirection, upwardDirection);
-				}
-				if (kit->second == JointType_ShoulderRight) {
-					forwardDirection = -forwardDirection;
-				}
-				qts << upwardDirection << parentToChild << endl;
-				float angle = ToDegrees(acos(QVector3D::dotProduct(parentToChild, upwardDirection)));
+				QVector3D leftDirection = QVector3D::crossProduct(ParentToGrandparent, upDirection);
+				QVector3D frontDirection = QVector3D::crossProduct(upDirection, leftDirection);
+
+				if (kit->second == JointType_ShoulderLeft) frontDirection = leftDirection;
+				if (kit->second == JointType_ElbowLeft) frontDirection = -frontDirection;
+				if (kit->second == JointType_WristLeft) frontDirection = -leftDirection;
+				if (kit->second == JointType_HandLeft) frontDirection = frontDirection;
+
+				if (kit->second == JointType_ShoulderRight) frontDirection = -leftDirection;
+				if (kit->second == JointType_ElbowRight) frontDirection = -frontDirection;
+				if (kit->second == JointType_WristRight) frontDirection = frontDirection;
+				if (kit->second == JointType_HandRight) frontDirection = frontDirection;
+
+				if (kit->second == JointType_KneeLeft) frontDirection = -leftDirection;
+				if (kit->second == JointType_AnkleLeft) frontDirection = -frontDirection;
+
+				if (kit->second == JointType_KneeRight) frontDirection = -frontDirection;
+				if (kit->second == JointType_AnkleRight) frontDirection = leftDirection;
+
+				ParentToGrandparent.normalize();
+				upDirection.normalize();
+				float angle = ToDegrees(acos(QVector3D::dotProduct(ParentToGrandparent, upDirection)));
 				qts << "AngleBetweenDirections=" << angle << endl;
-				if (0) {
-					qts << "Using parent's forward direction." << endl;
-					q = QQuaternion::fromDirection(m_forwardDirections[parentId], upwardDirection);
+				if (angle < 0.001) {
+					qts << "Using parent's absolute quaternion." << endl;
+					cout << "Duh" << endl;
+					q = m_absoluteOrientations[parentId];
 				}
 				else {
-					q = QQuaternion::fromDirection(forwardDirection, upwardDirection);
+					q = QQuaternion::fromDirection(frontDirection, upDirection);
 				}
 				qts << "fromDirection  quat: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
-				m_forwardDirections[kit->second] = forwardDirection;
+				m_absoluteOrientations[kit->second] = q;
 			}
 			
 			QQuaternion absQ = m_kskelie->activeJoints()[kit->second].orientation;
 			QQuaternion parQ = extractQuaternion(P);
-			QQuaternion relQ = parQ.inverted() * absQ;
+			QQuaternion relQ = parQ.inverted() * (m_parameters[5] ? q : absQ);
 			QMatrix4x4 kinectRotation = fromRotation(relQ);
 			
 			qts << "Kinect rotation abs: " << toString(absQ) << toStringEulerAngles(absQ) << toStringAxisAngle(absQ) << endl;
