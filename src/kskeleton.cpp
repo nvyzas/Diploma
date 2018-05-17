@@ -49,6 +49,7 @@ KSkeleton::KSkeleton()
 
 	initJoints();
 	loadFrameSequences();
+	printJointHierarchy();
 	initLimbs();
 	calculateLimbLengths(m_adjustedSequence);
 	printLimbLengths();

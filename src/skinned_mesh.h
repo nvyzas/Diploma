@@ -69,13 +69,19 @@ struct MeshEntry {
 };
 struct BoneInfo
 {
+	// Transformations
 	QMatrix4x4 defaultLocal;
 	QMatrix4x4 localCorrection;
 	QMatrix4x4 correctedLocal;
 	QMatrix4x4 offset;
 	QMatrix4x4 global;
 	QMatrix4x4 combined;
-	QMatrix4x4 scaling;
+
+	// Kinect
+	uint originJointId;
+	uint childJointId;
+	uint helperJointId;
+	QQuaternion globalJointOrientation;
 
 	bool visible;
 	float xRot, yRot, zRot;
@@ -121,6 +127,7 @@ public:
 	const BoneInfo& boneInfo(uint boneIndex) const;
 
 	uint findBoneId(const QString &boneName) const;
+	uint findJointId(const QString &boneName) const;
 	bool boneVisibility(uint boneIndex) const;
 	bool boneVisibility(const QString &boneName) const;
 	void setBoneVisibility(uint boneIndex, bool state);
@@ -247,14 +254,12 @@ private:
 		"Corrected Pose"        , // 2
 		"Controlled Pose"       , // 3
 		"Identity Pose Disabled", // 4
-		"Handmade quaternions"	  // 5
+		"Handmade quaternions"	, // 5
+		"Front Direction"		, // 6
+		"+ Direction"    		, // 7
 	};	
 
 	uint m_activeFrame = 0;
-	array<QVector3D, JointType_Count> m_leftDirections;
-	array<QVector3D, JointType_Count> m_frontDirections;
-	array<QVector3D, JointType_Count> m_upDirections;
-	array<QQuaternion, JointType_Count> m_absoluteOrientations;
 };
 
 #endif	/* SKINNED_MESH_H */

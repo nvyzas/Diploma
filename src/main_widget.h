@@ -64,7 +64,8 @@ public:
 
 	uint m_activeFrameIndex = 0;
 	double m_activeFrameTimestamp;
-	uint m_activeBone = 0;
+	uint m_activeBoneId = 0;
+	uint m_activeJointId = 0;
 
 	// get functions
 	SkinnedMesh* skinnedMesh();
@@ -84,7 +85,6 @@ public slots:
 	void setRenderSkeleton(bool state);
 	void setModelName(const QString& modelName);
 	void setModelSkinning(bool state);
-	void setBoneAxes(const QString& boneName);
 	void changeMode();
 	void updateIndirect(); // #todo replace it with something else
 	void setActiveFrame(uint index);

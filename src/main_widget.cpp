@@ -261,15 +261,10 @@ void MainWidget::paintGL()
 	// draw skinned mesh //todo to optimize invert for and if (put if outside and use two for loops)
 	m_skinnedMesh->calculateBoneTransforms(m_skinnedMesh->m_pScene->mRootNode, QMatrix4x4());
 	for (uint i = 0; i < m_skinnedMesh->numBones(); i++) {
-		if (!m_skinnedMesh->parameter(0)) {
-			m_skinningTechnique->setBoneTransform(i, m_skinnedMesh->boneInfo(i).offset);
-		}
-		else {
-			m_skinningTechnique->setBoneTransform(i, m_skinnedMesh->boneInfo(i).combined);
-		}
+		m_skinningTechnique->setBoneTransform(i, m_skinnedMesh->boneInfo(i).combined);
 	}
-	m_skinningTechnique->setWVP(m_pipeline->getWVPtrans());
 	if (m_renderSkinnedMesh && m_skinnedMesh->m_successfullyLoaded) {
+		m_skinningTechnique->setWVP(m_pipeline->getWVPtrans());
 		drawSkinnedMesh();
 	}
 
@@ -296,11 +291,11 @@ void MainWidget::paintGL()
 
 	// draw skinned mesh bone axes
 	if (m_drawAxes) {
-		m_technique->setSpecific(m_skinnedMesh->boneGlobal(m_activeBone));
+		m_technique->setSpecific(m_skinnedMesh->boneGlobal(m_activeBoneId));
 		m_technique->setMVP(m_pipeline->getWVPtrans());
 		drawAxes();
 	}
-	
+
 	// draw skinned mesh joints
 	if (m_drawSkinnedMeshJoints) {
 		m_technique->setSpecific(QMatrix4x4());
@@ -310,8 +305,8 @@ void MainWidget::paintGL()
 
 	// draw basic axes
 	if (m_drawAxes) {
-		m_technique->setMVP(m_pipeline->getVPtrans()); // only VP transformation! 
 		m_technique->setSpecific(QMatrix4x4());
+		m_technique->setMVP(m_pipeline->getVPtrans()); // only VP transformation! 
 		drawAxes();
 	}
 
@@ -320,20 +315,34 @@ void MainWidget::paintGL()
 	m_pipeline->setWorldOrientation(QQuaternion());
 	if (m_mode == Mode::CAPTURE) m_pipeline->setWorldPosition(QVector3D());
 	else m_pipeline->setWorldPosition(m_kinectSkeletonOffset);
-	m_technique->setMVP(m_pipeline->getWVPtrans());
 
 	// draw kinect skeleton
 	if (m_drawKinectSkeleton) {
+		m_technique->setMVP(m_pipeline->getWVPtrans());
 		drawKinectSkeletonJoints();
 		for (uint i = 0; i < JointType_Count; i++) {
 			m_technique->setSpecific(fromTranslation(m_ksensor->skeleton()->activeJoints()[i].position));
 			drawCube();
 		}
-		QVector3D HipsMid = (m_ksensor->skeleton()->activeJoints()[JointType_HipLeft].position + m_ksensor->skeleton()->activeJoints()[JointType_HipRight].position) / 2;
+		QVector3D HipsMid = 
+			m_ksensor->skeleton()->activeJoints()[JointType_HipLeft].position / 2.f +
+			m_ksensor->skeleton()->activeJoints()[JointType_HipRight].position / 2.f;
 		m_technique->setSpecific(fromTranslation(HipsMid));
 		drawCube();
+
+		// draw kinect joint axes
+		if (m_drawAxes) {
+			m_technique->setMVP(m_pipeline->getWVPtrans());
+			QMatrix4x4 T(fromTranslation(m_ksensor->skeleton()->activeJoints()[m_activeJointId].position));
+			QMatrix4x4 R(fromRotation(m_skinnedMesh->boneInfo(m_activeBoneId).globalJointOrientation));
+			QMatrix4x4 S(fromScaling(0.5f, 0.5f, 0.5f));
+			m_technique->setSpecific(T * R * S);
+			drawAxes();
+		}
 	}
+	//
 	
+
 	// draw arrow
 	QVector3D leftHand = (m_ksensor->skeleton()->activeJoints())[JointType_HandLeft].position;
 	QVector3D rightHand = (m_ksensor->skeleton()->activeJoints())[JointType_HandRight].position;
@@ -650,17 +659,12 @@ void MainWidget::changeMode()
 		cout << "Mode: " << mode().toStdString() << endl;
 		m_timer.start();
 }
-void MainWidget::setBoneAxes(const QString &boneName)
-{
-	uint boneId = m_skinnedMesh->findBoneId(boneName);
-	assert(boneId < m_boneInfo.size());
-	m_technique->enable();
-	m_technique->setSpecific(m_skinnedMesh->boneGlobal(boneId));
-	update();
-}
 void MainWidget::setActiveBone(const QString& boneName)
 {
-	m_activeBone = m_skinnedMesh->findBoneId(boneName);
+	m_activeBoneId = m_skinnedMesh->findBoneId(boneName);
+	m_activeJointId = m_skinnedMesh->boneInfo(m_activeBoneId).originJointId;
+	if (m_activeJointId == INVALID_JOINT_ID) m_activeJointId = JointType_SpineBase;
+	update();
 }
 void MainWidget::loadSkinnedMesh()
 {
@@ -955,9 +959,9 @@ void MainWidget::drawSkinnedMeshJoints()
 		m_skinnedMeshJoints[6 * i    ] = m_skinnedMesh->boneEndPosition(i).x();
 		m_skinnedMeshJoints[6 * i + 1] = m_skinnedMesh->boneEndPosition(i).y();
 		m_skinnedMeshJoints[6 * i + 2] = m_skinnedMesh->boneEndPosition(i).z();
-		m_skinnedMeshJoints[6 * i + 3] = 0.f;
+		m_skinnedMeshJoints[6 * i + 3] = 255.f;
 		m_skinnedMeshJoints[6 * i + 4] = 255.f;
-		m_skinnedMeshJoints[6 * i + 5] = 0.f;	 
+		m_skinnedMeshJoints[6 * i + 5] = 255.f;	 
 	}
 
 

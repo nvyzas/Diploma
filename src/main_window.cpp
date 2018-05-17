@@ -169,15 +169,7 @@ void MainWindow::setupObjects()
 
 	m_guiTimer = new QTimer(this);
 	m_guiTimer->setTimerType(Qt::CoarseTimer);
-	connect(m_guiTimer, SIGNAL(timeout()), this, SLOT(updateStatusBar()));
-	
 	m_guiTimer->setInterval(100);
-	m_guiTimer->start();
-}
-void MainWindow::setActiveBoneAxes() {
-	const QString &boneName = ui->comboBox_activeBone->currentText();
-	if (boneName.isEmpty()) return;
-	ui->openGLWidget->setBoneAxes(boneName);
 }
 void MainWindow::setupConnections()
 {
@@ -216,6 +208,9 @@ void MainWindow::setupConnections()
 	// Kinect
 	connect(ui->horizontalSlider_progressPercent, SIGNAL(valueChanged(int))           , SLOT(setActiveKinectSkeletonFrame(int)));
 
+	// gui timer
+	connect(m_guiTimer, SIGNAL(timeout()), this, SLOT(updateStatusBar()));
+	m_guiTimer->start();
 }
 void MainWindow::setActiveKinectSkeletonFrame(int progressPercent)
 {

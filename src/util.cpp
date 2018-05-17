@@ -131,17 +131,29 @@ QMatrix4x4 fromScaling(const QVector3D& v)
 	m.scale(v);
 	return m;
 }
+QMatrix4x4 fromScaling(float xScaling, float yScaling, float zScaling)
+{
+	return fromScaling(QVector3D(xScaling, yScaling, zScaling));
+}
 QMatrix4x4 fromRotation(const QQuaternion& q)
 {
 	QMatrix4x4 m;
 	m.rotate(q);
 	return m;
 }
+QMatrix4x4 fromRotation(float xAngle, float yAngle, float zAngle)
+{
+	return fromRotation(QQuaternion::fromEulerAngles(xAngle, yAngle, zAngle));
+}
 QMatrix4x4 fromTranslation(const QVector3D& v)
 {
 	QMatrix4x4 m;
 	m.translate(v);
 	return m;
+}
+QMatrix4x4 fromTranslation(float xTranslation, float yTranslation, float zTranslation)
+{
+	return fromTranslation(QVector3D(xTranslation, yTranslation, zTranslation));
 }
 QMatrix4x4 getScalingPart(const QMatrix4x4& m)
 {
