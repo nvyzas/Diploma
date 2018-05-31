@@ -183,6 +183,7 @@ void KSkeleton::initLimbs()
 	m_limbs[20] = KLimb(JointType_WristRight   , JointType_HandTipRight , 19);
 	m_limbs[21] = KLimb(JointType_HandLeft     , JointType_ThumbLeft    , 22);
 	m_limbs[22] = KLimb(JointType_HandRight    , JointType_ThumbRight   , 21);
+	m_limbs[23] = KLimb(JointType_HandLeft, JointType_HandRight);
 	
 	calculateLimbLengths(m_filteredSequence);
 

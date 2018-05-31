@@ -131,12 +131,12 @@ bool Technique::initDefault()
 		return false;
 	}
 
-	if (!AddShader(GL_VERTEX_SHADER, "shaders/simple.vs")) {
+	if (!AddShader(GL_VERTEX_SHADER, "shaders/simple.vert")) {
 		printf("Cannot add simple vertex shader\n");
 		return false;
 	}
 
-	if (!AddShader(GL_FRAGMENT_SHADER, "shaders/simple.fs")) {
+	if (!AddShader(GL_FRAGMENT_SHADER, "shaders/simple.frag")) {
 		printf("Cannot add simple fragment shader\n");
 		return false;
 	}

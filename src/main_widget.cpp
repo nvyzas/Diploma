@@ -195,8 +195,8 @@ void MainWidget::initializeGL()
 	// Init lighting shaders
 	QOpenGLShader lightingVS(QOpenGLShader::Vertex);
 	QOpenGLShader lightingFS(QOpenGLShader::Fragment);
-	lightingVS.compileSourceFile("shaders/lighting.vs");
-	lightingFS.compileSourceFile("shaders/lighting.fs");
+	lightingVS.compileSourceFile("shaders/lighting.vert");
+	lightingFS.compileSourceFile("shaders/lighting.frag");
 
 	cout << "Initializing lighting shaders" << endl;
 	m_lighting = new QOpenGLShaderProgram(context());

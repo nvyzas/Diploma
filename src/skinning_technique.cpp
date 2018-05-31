@@ -11,12 +11,12 @@ bool SkinningTechnique::Init()
         return false;
     }
 
-    if (!AddShader(GL_VERTEX_SHADER, "shaders/skinning.vs")) {	
+    if (!AddShader(GL_VERTEX_SHADER, "shaders/skinning.vert")) {	
 		printf("Cannot add skinning vertex shader\n");
         return false;
     }
 
-    if (!AddShader(GL_FRAGMENT_SHADER, "shaders/skinning.fs")) {	
+    if (!AddShader(GL_FRAGMENT_SHADER, "shaders/skinning.frag")) {	
 		printf("Cannot add skinning fragment shader\n");
         return false;
     }

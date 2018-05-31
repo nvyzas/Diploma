@@ -414,20 +414,28 @@ void SkinnedMesh::initCorrectionMatrices()
 	}
 
 	m_boneInfo[findBoneId("pelvis")].originJointId = JointType_SpineBase;
-	m_boneInfo[findBoneId("pelvis")].childJointId = JointType_HipLeft;
+	m_boneInfo[findBoneId("pelvis")].childJointId = JointType_SpineMid;
 	m_boneInfo[findBoneId("pelvis")].helperJointId = JointType_HipRight;
 
 	m_boneInfo[findBoneId("spine_01")].originJointId = JointType_SpineBase;
-	m_boneInfo[findBoneId("spine_01")].childJointId = JointType_HipLeft;
+	m_boneInfo[findBoneId("spine_01")].childJointId = JointType_SpineMid;
 	m_boneInfo[findBoneId("spine_01")].helperJointId = JointType_HipRight;
 
 	m_boneInfo[findBoneId("spine_02")].originJointId = JointType_SpineBase;
-	m_boneInfo[findBoneId("spine_02")].childJointId = JointType_HipLeft;
+	m_boneInfo[findBoneId("spine_02")].childJointId = JointType_SpineMid;
 	m_boneInfo[findBoneId("spine_02")].helperJointId = JointType_HipRight;
 
 	m_boneInfo[findBoneId("spine_03")].originJointId = JointType_SpineMid;
 	m_boneInfo[findBoneId("spine_03")].childJointId = JointType_SpineShoulder;
 	m_boneInfo[findBoneId("spine_03")].helperJointId = JointType_Neck;
+
+	m_boneInfo[findBoneId("neck_01")].originJointId = JointType_SpineShoulder;
+	m_boneInfo[findBoneId("neck_01")].childJointId = JointType_Neck;
+	m_boneInfo[findBoneId("neck_01")].helperJointId = JointType_Head;
+
+	m_boneInfo[findBoneId("head")].originJointId = JointType_Neck;
+	m_boneInfo[findBoneId("head")].childJointId = JointType_Head;
+	m_boneInfo[findBoneId("head")].helperJointId = JointType_SpineShoulder;
 
 	m_boneInfo[findBoneId("clavicle_l")].originJointId = JointType_SpineShoulder;
 	m_boneInfo[findBoneId("clavicle_l")].childJointId = JointType_ShoulderLeft;
@@ -469,9 +477,46 @@ void SkinnedMesh::initCorrectionMatrices()
 	m_boneInfo[findBoneId("thigh_r")].childJointId = JointType_KneeRight;
 	m_boneInfo[findBoneId("thigh_r")].helperJointId = JointType_AnkleRight;
 
-	//m_boneInfo[findBoneId("lowerarm_l")].localCorrection = fromRotation(0.f, -90.f, 0.f);
-	//m_boneInfo[findBoneId("hand_l")].localCorrection = fromRotation(0.f, -90.f, 0.f);
-	//m_boneInfo[findBoneId("thigh_l")].localCorrection = fromRotation(0.f, -90.f, 0.f);
+	m_boneInfo[findBoneId("calf_l")].originJointId = JointType_KneeLeft;
+	m_boneInfo[findBoneId("calf_l")].childJointId = JointType_AnkleLeft;
+	m_boneInfo[findBoneId("calf_l")].helperJointId = JointType_FootLeft;
+						   
+	m_boneInfo[findBoneId("calf_r")].originJointId = JointType_KneeRight;
+	m_boneInfo[findBoneId("calf_r")].childJointId = JointType_AnkleRight;
+	m_boneInfo[findBoneId("calf_r")].helperJointId = JointType_FootRight;
+
+	//m_boneInfo[findBoneId("foot_l")].originJointId = JointType_AnkleLeft;
+	//m_boneInfo[findBoneId("foot_l")].childJointId = JointType_FootLeft;
+	//m_boneInfo[findBoneId("foot_l")].helperJointId = JointType_KneeLeft;
+	//					   
+	//m_boneInfo[findBoneId("foot_r")].originJointId = JointType_AnkleRight;
+	//m_boneInfo[findBoneId("foot_r")].childJointId = JointType_FootRight;
+	//m_boneInfo[findBoneId("foot_r")].helperJointId = JointType_KneeRight;
+
+	m_boneInfo[findBoneId("pelvis")].localCorrection = fromRotation(0.f, 0.f, 0.f);
+	m_boneInfo[findBoneId("spine_01")].localCorrection = fromRotation(0.f, 0.f, 0.f);
+	m_boneInfo[findBoneId("spine_02")].localCorrection = fromRotation(0.f, 0.f, 0.f);
+	m_boneInfo[findBoneId("spine_03")].localCorrection = fromRotation(0.f, 0.f, 0.f);
+	m_boneInfo[findBoneId("neck_01")].localCorrection = fromRotation(0.f, 0.f, 0.f);
+	m_boneInfo[findBoneId("head")].localCorrection = fromRotation(0.f, 0.f, 0.f);
+
+	m_boneInfo[findBoneId("clavicle_l")].localCorrection = fromRotation(0.f, 0.f, 0.f);
+	m_boneInfo[findBoneId("clavicle_r")].localCorrection = fromRotation(0.f, 0.f, 0.f);
+	m_boneInfo[findBoneId("upperarm_l")].localCorrection = fromRotation(0.f, 90.f, 0.f);
+	m_boneInfo[findBoneId("upperarm_r")].localCorrection = fromRotation(0.f, -90.f, 0.f);
+	m_boneInfo[findBoneId("lowerarm_l")].localCorrection = fromRotation(0.f, 180.f, 0.f);
+	m_boneInfo[findBoneId("lowerarm_r")].localCorrection = fromRotation(0.f, -90.f, 0.f);
+	m_boneInfo[findBoneId("hand_l")].localCorrection = fromRotation(0.f, -90.f, 0.f);
+	m_boneInfo[findBoneId("hand_r")].localCorrection = fromRotation(0.f, 0.f, 0.f);
+
+	m_boneInfo[findBoneId("thigh_l")].localCorrection = fromRotation(0.f, -90.f, 0.f);
+	m_boneInfo[findBoneId("thigh_r")].localCorrection = fromRotation(0.f, 90.f, 0.f);
+	m_boneInfo[findBoneId("calf_l")].localCorrection = fromRotation(0.f, -90.f, 0.f);
+	m_boneInfo[findBoneId("calf_r")].localCorrection = fromRotation(0.f, 90.f, 0.f);	
+	m_boneInfo[findBoneId("foot_l")].defaultLocal = fromRotation(0.f, 0.f, 0.f);
+	m_boneInfo[findBoneId("foot_r")].defaultLocal = fromRotation(0.f, 0.f, 0.f);
+	m_boneInfo[findBoneId("foot_l")].localCorrection = fromRotation(0.f, 0.f, 0.f);
+	m_boneInfo[findBoneId("foot_r")].localCorrection = fromRotation(0.f, 0.f, 0.f);
 }
 void SkinnedMesh::initKBoneMap()
 {
@@ -532,7 +577,6 @@ void SkinnedMesh::calculateBoneTransforms(const aiNode* pNode, const QMatrix4x4&
 			QMatrix4x4 kinectScaling = QMatrix();
 			
 			// calculate rotation form Kinect
-			//*
 			uint originId = m_boneInfo[it->second].originJointId;
 			uint childId = m_boneInfo[it->second].childJointId;
 			uint helperId = m_boneInfo[it->second].helperJointId;
@@ -552,10 +596,25 @@ void SkinnedMesh::calculateBoneTransforms(const aiNode* pNode, const QMatrix4x4&
 			QVector3D leftDirection = QVector3D::crossProduct(childToOrigin, childToHelper);
 			QVector3D frontDirection = QVector3D::crossProduct(childToOrigin, leftDirection);
 			if (originId == JointType_SpineBase){
-				upDirection = leftDirection;
-				frontDirection = QVector3D::crossProduct(upDirection, childToHelper);
+				QVector3D hipsDirection =
+					m_kskelie->activeJoints()[JointType_HipLeft].position -
+					m_kskelie->activeJoints()[JointType_HipRight].position;
+
+				frontDirection = QVector3D::crossProduct(hipsDirection, upDirection);
 			}
 			else if (originId == JointType_SpineMid) {
+				QVector3D shouldersDirection =
+					m_kskelie->activeJoints()[JointType_ShoulderLeft].position -
+					m_kskelie->activeJoints()[JointType_ShoulderRight].position;
+				frontDirection = QVector3D::crossProduct(shouldersDirection, upDirection);
+			}
+			else if (childId == JointType_Neck) {
+				QVector3D shouldersDirection =
+					m_kskelie->activeJoints()[JointType_ShoulderLeft].position -
+					m_kskelie->activeJoints()[JointType_ShoulderRight].position;
+				frontDirection = QVector3D::crossProduct(shouldersDirection, upDirection);
+			}
+			else if (childId == JointType_Head) {
 				QVector3D shouldersDirection =
 					m_kskelie->activeJoints()[JointType_ShoulderLeft].position -
 					m_kskelie->activeJoints()[JointType_ShoulderRight].position;
@@ -571,7 +630,11 @@ void SkinnedMesh::calculateBoneTransforms(const aiNode* pNode, const QMatrix4x4&
 			else if (childId == JointType_HandRight) frontDirection = -frontDirection;
 			else if (childId == JointType_KneeLeft) frontDirection = frontDirection;
 			else if (childId == JointType_KneeRight) frontDirection = leftDirection;
-			//else if (originId == JointType_SpineMid)
+			else if (childId == JointType_AnkleLeft) frontDirection = leftDirection;
+			else if (childId == JointType_AnkleRight) frontDirection = -leftDirection;
+			//else if (childId == JointType_FootLeft) frontDirection = leftDirection;
+			//else if (childId == JointType_FootRight) frontDirection = -leftDirection;
+
 			childToOrigin.normalize();
 			childToHelper.normalize();
 			float angle = ToDegrees(acos(QVector3D::dotProduct(childToOrigin, childToHelper)));
@@ -587,11 +650,11 @@ void SkinnedMesh::calculateBoneTransforms(const aiNode* pNode, const QMatrix4x4&
 				q = QQuaternion::fromDirection(frontDirection, upDirection);
 			}
 			qts << "fromDirection  quat: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
-			m_boneInfo[it->second].globalJointOrientation = q;
 			
 			QQuaternion absQ = m_kskelie->activeJoints()[kit->second].orientation;
+			if (m_parameters[5]) absQ = q;
 			QQuaternion parQ = extractQuaternion(P);
-			QQuaternion relQ = parQ.inverted() * (m_parameters[5] ? q : absQ);
+			QQuaternion relQ = parQ.inverted() * absQ;
 			QMatrix4x4 kinectRotation = fromRotation(relQ);
 			
 			qts << "Kinect rotation abs: " << toString(absQ) << toStringEulerAngles(absQ) << toStringAxisAngle(absQ) << endl;
@@ -599,6 +662,8 @@ void SkinnedMesh::calculateBoneTransforms(const aiNode* pNode, const QMatrix4x4&
 			qts << "Parent rotation inv: " << toString(parQ.inverted()) << toStringEulerAngles(parQ.inverted()) << toStringAxisAngle(parQ.inverted()) << endl;
 			qts << "Kinect rotation rel: " << toString(relQ) << toStringEulerAngles(relQ) << toStringAxisAngle(relQ) << endl;
 			
+			m_boneInfo[it->second].globalJointOrientation = absQ;
+
 			// calculate translation from Kinect
 			QVector3D v(L(0, 3), L(1, 3), L(2, 3));
 			QMatrix4x4 kinectTranslation = fromTranslation(v);

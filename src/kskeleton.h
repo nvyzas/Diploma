@@ -16,7 +16,7 @@
 #include <iostream>
 
 #define INVALID_JOINT_ID -1
-#define NUM_LIMBS 23
+#define NUM_LIMBS 24
 
 struct KNode
 {
