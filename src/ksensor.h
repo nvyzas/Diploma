@@ -21,8 +21,7 @@ public:
 	KSensor();
 	~KSensor();
 	bool init();
-	bool open();
-	KSkeleton *skeleton();
+	bool prepare();
 	bool getBodyFrame();
 	void processBodyFrameData(IBody** bodies, double timestamp);
 	void calculateFPS();
@@ -30,6 +29,7 @@ public:
 	// Start/Stop frame recording in KSkeleton class
 	void record();
 
+	KSkeleton *skeleton();
 private:
 	IKinectSensor *m_sensor = nullptr;
 	IBodyFrameSource *m_source = nullptr;

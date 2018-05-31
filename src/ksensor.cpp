@@ -22,7 +22,8 @@ KSensor::KSensor()
 	cout << "KSensor constructor start." << endl;
 	
 	init();
-	open();
+	prepare();
+
 	m_captureLog.setFileName("capture_log.txt");
 	if (!m_captureLog.open(QIODevice::WriteOnly | QIODevice::Text)) {
 		cout << "Could not open capture log file." << endl;
@@ -36,10 +37,10 @@ KSensor::KSensor()
 }
 KSensor::~KSensor()
 {
-	safeRelease(&m_reader);
-	safeRelease(&m_source);
 	m_sensor->Close();
 	safeRelease(&m_sensor);
+	safeRelease(&m_source);
+	safeRelease(&m_reader);
 	m_captureLog.close();
 }
 bool KSensor::init() {
@@ -49,42 +50,72 @@ bool KSensor::init() {
 		cout << "Could not get kinect sensor. hr = " <<  hr << endl;
 		return false;
 	}
+
+	return true;	
+}
+bool KSensor::prepare()
+{
+	HRESULT hr;
+
+	// Safety check
 	if (!m_sensor) {
-		cout << "m_sensor = NULL" << endl;
+		cout << "m_sensor = NULL." << endl;
 		return false;
 	}
+
+	// Open sensor
 	hr = m_sensor->Open();
 	if (FAILED(hr)) {
 		cout << hr << "Could not open sensor. hr = " << hr << endl;
 		return false;
 	}
-
-	return true;	
-}
-bool KSensor::open()
-{
-	if (m_sensor == NULL) {
-		cout << "m_sensor = NULL" << endl;
-		return false;
-	}
-	HRESULT hr;
-	BOOLEAN isOpen = false;
-	hr = m_sensor->get_IsOpen(&isOpen);
-	if (SUCCEEDED(hr)) {
-		if (!isOpen) cout << "Sensor is not open." << endl;
-	}
-	else {
-		cout << "Could not specify if sensor is open. hr = " << hr << endl;
-	}
-
+	
+	// Get source
 	hr = m_sensor->get_BodyFrameSource(&m_source);
 	if (FAILED(hr)) {
 		cout << hr << "Could not get frame source. hr = " << hr << endl;
 		return false;
 	}
+
+	// Open reader
 	hr = m_source->OpenReader(&m_reader);
 	if (FAILED(hr)) {
 		cout << hr << "Could not open reader.  hr = " << hr << endl;
+		return false;
+	}
+
+	return true;
+}
+bool KSensor::getBodyFrame()
+{
+	HRESULT hr;
+
+	// Safety checks
+
+	if (!m_sensor) {
+		cout << "m_sensor = NULL" << endl;
+		return false;
+	}
+
+	BOOLEAN isOpen = false;
+	hr = m_sensor->get_IsOpen(&isOpen);
+	if (SUCCEEDED(hr)) {
+		if (!isOpen) {
+			cout << "Sensor is not open." << endl;
+			return false;
+		}
+	}
+	else {
+		cout << "Could not specify if sensor is open. hr = " << hr << endl;
+	}
+
+	if (!m_source) {
+		cout << "m_source = NULL" << endl;
+		return false;
+	}
+
+	if (!m_reader) {
+		cout << "m_reader = NULL" << endl;
 		return false;
 	}
 
@@ -98,56 +129,6 @@ bool KSensor::open()
 		cout << "Could not specify if source is active. hr = " << hr << endl;
 	}
 
-	/*
-	safeRelease(&m_source);
-	//*/
-
-	return true;
-}
-bool KSensor::getBodyFrame()
-{
-	// Checks 1
-	if (!m_sensor) {
-		cout << "m_sensor = NULL" << endl;
-		return false;
-	}
-	//*
-	if (!m_source) {
-		cout << "m_source = NULL" << endl;
-		return false;
-	}
-	//*/
-	if (!m_reader) {
-		cout << "m_reader = NULL" << endl;
-		return false;
-	}
-
-	// Checks 2
-	HRESULT hr;
-	BOOLEAN isOpen = false;
-	hr = m_sensor->get_IsOpen(&isOpen);
-	if (SUCCEEDED(hr)) {
-		if (!isOpen) {
-			cout << "Sensor is not open." << endl;
-			return false;
-		}
-	}
-	else {
-		cout << "Could not specify if sensor is open. hr = " << hr << endl;
-	}
-	//*
-	BOOLEAN isActive = false;
-	hr = m_source->get_IsActive(&isActive);
-	if (SUCCEEDED(hr)) {
-		if (!isActive) {
-			cout << "Source is not active." << endl;
-			return false;
-		}
-	}
-	else {
-		cout << "Could not specify if source is active. hr = " << hr << endl;
-	}
-	//*/
 	BOOLEAN isPaused = false;
 	hr = m_reader->get_IsPaused(&isPaused);
 	if (SUCCEEDED(hr)) {
@@ -179,33 +160,34 @@ bool KSensor::getBodyFrame()
 			m_lastAttemptFailed = false;
 			m_consecutiveFails = 0;
 		}
+
 		m_forCaptureLog << "Acquired frame. ";
+
+		// get relative time
 		INT64 relativeTime;
 		hr = frame->get_RelativeTime(&relativeTime);
-		IBody* bodies[BODY_COUNT] = { 0 };
 		if (FAILED(hr)) {
 			m_forCaptureLog << "Could not get relative time. hr = " << hr << endl;
 			return false;
-		} 
-		else {
-			hr = frame->GetAndRefreshBodyData(ARRAY_SIZE_IN_ELEMENTS(bodies), bodies);
 		}
 
+		// get body frame
+		IBody* bodies[BODY_COUNT] = { 0 };
+		hr = frame->GetAndRefreshBodyData(ARRAY_SIZE_IN_ELEMENTS(bodies), bodies);
 		if (FAILED(hr)) {
 			m_forCaptureLog << "Could not get and refresh body data. hr = " << hr << endl;
 			return false;
 		} 
-		else {
-			processBodyFrameData(bodies, (double)relativeTime / 10000000.);
-		}
 
+		processBodyFrameData(bodies, (double)relativeTime / 10000000.);
+		
+		// release resources
 		for (int i = 0; i < ARRAY_SIZE_IN_ELEMENTS(bodies); ++i) {
 			safeRelease(&bodies[i]);
 		}
 		safeRelease(&frame);
 	}
 
-	// maybe release frame here
 	return true;
 }
 void KSensor::processBodyFrameData(IBody** bodies, double timestamp)
