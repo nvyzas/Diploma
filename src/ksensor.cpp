@@ -123,7 +123,10 @@ bool KSensor::getBodyFrame()
 	BOOLEAN isActive = false;
 	hr = m_source->get_IsActive(&isActive);
 	if (SUCCEEDED(hr)) {
-		if (!isActive) cout << "Source is not active." << endl;
+		if (!isActive) {
+			cout << "Source is not active." << endl;
+			return false;
+		}
 	}
 	else {
 		cout << "Could not specify if source is active. hr = " << hr << endl;
@@ -144,25 +147,16 @@ bool KSensor::getBodyFrame()
 	// Get frame
 	IBodyFrame* frame = NULL;
 	hr = m_reader->AcquireLatestFrame(&frame);
+	static uint consecutiveFails = 0;
 	if (FAILED(hr)) {
-		if (!m_lastAttemptFailed) m_forCaptureLog << "Failed to acquire frame. ";
-		m_consecutiveFails++;
-		if (m_consecutiveFails == 15 && m_skeleton.m_recordingOn) {
-			cout << "\nStopping recording due to many consecutive fails." << endl;
+		consecutiveFails++;
+		if (consecutiveFails == 15 && m_skeleton.m_recordingOn) {
+			cout << "Too many consecutive fails." << endl;
 			record();
 		}
-		m_lastAttemptFailed = true;
 		return false;
 	} 
 	else {
-		if (m_consecutiveFails > 0) {
-			m_forCaptureLog << " ConsecutiveFails=" << m_consecutiveFails << endl;
-			m_lastAttemptFailed = false;
-			m_consecutiveFails = 0;
-		}
-
-		m_forCaptureLog << "Acquired frame. ";
-
 		// get relative time
 		INT64 relativeTime;
 		hr = frame->get_RelativeTime(&relativeTime);
@@ -170,17 +164,64 @@ bool KSensor::getBodyFrame()
 			m_forCaptureLog << "Could not get relative time. hr = " << hr << endl;
 			return false;
 		}
+		double timestamp = (double)relativeTime / 10000000.;
 
-		// get body frame
+		// get bodies
 		IBody* bodies[BODY_COUNT] = { 0 };
-		hr = frame->GetAndRefreshBodyData(ARRAY_SIZE_IN_ELEMENTS(bodies), bodies);
+		hr = frame->GetAndRefreshBodyData(BODY_COUNT, bodies);
 		if (FAILED(hr)) {
 			m_forCaptureLog << "Could not get and refresh body data. hr = " << hr << endl;
 			return false;
 		} 
 
-		processBodyFrameData(bodies, (double)relativeTime / 10000000.);
+		bool discardFrame = false;
+		uint personsTracked = 0;
+		BOOLEAN isTracked;
+		Joint joints[JointType_Count];
+		JointOrientation orientations[JointType_Count];
+		for (int i = 0; i < BODY_COUNT; i++) {
+			bodies[i]->get_IsTracked(&isTracked);
+			if (isTracked) {
+				personsTracked++;
+				bodies[i]->GetJoints(JointType_Count, joints);
+				bodies[i]->GetJointOrientations(JointType_Count, orientations);
+			}
+		}
+
+		// discard due to
+		if (personsTracked != 1) {
+			cout << timestamp << ":Discarded -> PersonsTracked = " << personsTracked << endl;
+			discardFrame = true;
+		}
+
+		// discard due to big interval
+		static double lastTimestamp = timestamp;
+		double interval = timestamp - lastTimestamp;
+		lastTimestamp = timestamp;
+		if (interval > 0.1) {
+			cout << timestamp << ":Discarded -> Interval = " << interval << endl;
+			discardFrame = true;
+		}
 		
+		if (discardFrame) {
+			m_forCaptureLog << "Status=Discarded ";
+			if (m_skeleton.m_recordingOn) {
+				cout << "Discarded frame during recording." << endl;
+				record(); // stop recording
+			}
+		}
+		else {
+			m_forCaptureLog << (m_skeleton.m_recordingOn ? "Status=Recorded " : "Status=Captured ") << qSetFieldWidth(4);
+			m_skeleton.addFrame(joints, orientations, timestamp);
+		}
+
+		
+		m_forCaptureLog << " RelativeTime=" << qSetFieldWidth(10) << timestamp;
+		m_forCaptureLog << " Interval=" << qSetFieldWidth(10) << interval;
+		m_forCaptureLog << " FPS=" << calculateFPS();
+		m_forCaptureLog << " ConsecutiveFails=" << qSetFieldWidth(5) << consecutiveFails << endl;
+		consecutiveFails = 0;
+
 		// release resources
 		for (int i = 0; i < ARRAY_SIZE_IN_ELEMENTS(bodies); ++i) {
 			safeRelease(&bodies[i]);
@@ -190,47 +231,12 @@ bool KSensor::getBodyFrame()
 
 	return true;
 }
-void KSensor::processBodyFrameData(IBody** bodies, double timestamp)
-{
-	bool discardFrame = true;
-	BOOLEAN isTracked;
-	Joint joints[JointType_Count];
-	JointOrientation orientations[JointType_Count];
-	for (int i = 0; i < BODY_COUNT; i++) {
-		bodies[i]->get_IsTracked(&isTracked);
-		if (isTracked) {
-			bodies[i]->GetJoints(JointType_Count, joints);
-			bodies[i]->GetJointOrientations(JointType_Count, orientations);
-			discardFrame = false;
-		}
-	}
-
-	if (discardFrame) {
-		m_forCaptureLog << "Frame discarded." << endl;
-		if (m_skeleton.m_recordingOn) {
-			cout << "Discarded frame during recording." << endl;
-			record(); // stop recording
-		}
-	} 
-	else {
-		m_forCaptureLog << (m_skeleton.m_recordingOn ? "Recorded" : "Captured")  << qSetFieldWidth(4);
-		static double lastTimestamp = timestamp;
-		double interval = timestamp - lastTimestamp;
-		m_forCaptureLog << " RelativeTime=" << qSetFieldWidth(10) << timestamp;
-		m_forCaptureLog << " Interval=" << qSetFieldWidth(10) << interval;
-		lastTimestamp = timestamp;
-
-		m_skeleton.addFrame(joints, orientations, timestamp);
-		calculateFPS();
-		m_forCaptureLog << " FPS=" << m_fps << endl;
-	}
-}
-// must be called after m_acceptedFrames is incremented
-void KSensor::calculateFPS() 
+double KSensor::calculateFPS() 
 {
 	static clock_t ticksThisTime;
 	static clock_t ticksLastTime = clock();
 	static uint framesPassed = 0;
+	static double fps = 0;
 
 	ticksThisTime = clock();
 	framesPassed++;
@@ -238,20 +244,20 @@ void KSensor::calculateFPS()
 	double millisecondsPassed = ticksToMilliseconds(ticksPassed);
 
 	if (millisecondsPassed > 1000.) {
-		m_fps = framesPassed / (millisecondsPassed / 1000.);
+		fps = framesPassed / (millisecondsPassed / 1000.);
 		framesPassed = 0;
 		ticksLastTime = ticksThisTime;
 	}
+	return fps;
 }
 void KSensor::record()
 {
 	if (!m_skeleton.m_recordingOn) {
 		cout << "Recording started." << endl;
-		// Reset record related variables
-		m_fps = 0;
 		m_skeleton.clearSequences();
 		m_skeleton.m_recordingOn = true;
-	} else {
+	} 
+	else {
 		cout << "Recording stopped." << endl;
 		m_skeleton.m_recordingOn = false;
 		m_skeleton.m_finalizingOn = true;

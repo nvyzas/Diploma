@@ -23,8 +23,8 @@ public:
 	bool init();
 	bool prepare();
 	bool getBodyFrame();
-	void processBodyFrameData(IBody** bodies, double timestamp);
-	void calculateFPS();
+	void getBodyData(IBody** bodies, double timestamp);
+	double calculateFPS();
 
 	// Start/Stop frame recording in KSkeleton class
 	void record();
@@ -37,13 +37,6 @@ private:
 
 	QFile m_captureLog;
 	QTextStream m_forCaptureLog;
-
-	// Frame counter and timestamps
-	bool m_lastAttemptFailed = false;
-	uint m_consecutiveFails = 0;
-
-	// FPS counter
-	double m_fps = 0.;
 
 	KSkeleton m_skeleton;
 };
