@@ -90,8 +90,7 @@ bool KSensor::getBodyFrame()
 {
 	HRESULT hr;
 
-	// Safety checks
-
+	// Perform safety checks
 	if (!m_sensor) {
 		cout << "m_sensor = NULL" << endl;
 		return false;
@@ -119,7 +118,6 @@ bool KSensor::getBodyFrame()
 		return false;
 	}
 
-	// Must open reader first for source to be active
 	BOOLEAN isActive = false;
 	hr = m_source->get_IsActive(&isActive);
 	if (SUCCEEDED(hr)) {
@@ -145,89 +143,89 @@ bool KSensor::getBodyFrame()
 	}
 
 	// Get frame
+	static uint consecutiveFails = 0;
 	IBodyFrame* frame = NULL;
 	hr = m_reader->AcquireLatestFrame(&frame);
-	static uint consecutiveFails = 0;
 	if (FAILED(hr)) {
 		consecutiveFails++;
-		if (consecutiveFails == 15 && m_skeleton.m_recordingOn) {
+		if (consecutiveFails == 10 && m_skeleton.m_recordingOn) {
 			cout << "Too many consecutive fails." << endl;
 			record();
 		}
 		return false;
-	} 
-	else {
-		// get relative time
-		INT64 relativeTime;
-		hr = frame->get_RelativeTime(&relativeTime);
-		if (FAILED(hr)) {
-			m_forCaptureLog << "Could not get relative time. hr = " << hr << endl;
-			return false;
-		}
-		double timestamp = (double)relativeTime / 10000000.;
-
-		// get bodies
-		IBody* bodies[BODY_COUNT] = { 0 };
-		hr = frame->GetAndRefreshBodyData(BODY_COUNT, bodies);
-		if (FAILED(hr)) {
-			m_forCaptureLog << "Could not get and refresh body data. hr = " << hr << endl;
-			return false;
-		} 
-
-		bool discardFrame = false;
-		uint personsTracked = 0;
-		BOOLEAN isTracked;
-		Joint joints[JointType_Count];
-		JointOrientation orientations[JointType_Count];
-		for (int i = 0; i < BODY_COUNT; i++) {
-			bodies[i]->get_IsTracked(&isTracked);
-			if (isTracked) {
-				personsTracked++;
-				bodies[i]->GetJoints(JointType_Count, joints);
-				bodies[i]->GetJointOrientations(JointType_Count, orientations);
-			}
-		}
-
-		// discard due to
-		if (personsTracked != 1) {
-			cout << timestamp << ":Discarded -> PersonsTracked = " << personsTracked << endl;
-			discardFrame = true;
-		}
-
-		// discard due to big interval
-		static double lastTimestamp = timestamp;
-		double interval = timestamp - lastTimestamp;
-		lastTimestamp = timestamp;
-		if (interval > 0.1) {
-			cout << timestamp << ":Discarded -> Interval = " << interval << endl;
-			discardFrame = true;
-		}
-		
-		if (discardFrame) {
-			m_forCaptureLog << "Status=Discarded ";
-			if (m_skeleton.m_recordingOn) {
-				cout << "Discarded frame during recording." << endl;
-				record(); // stop recording
-			}
-		}
-		else {
-			m_forCaptureLog << (m_skeleton.m_recordingOn ? "Status=Recorded " : "Status=Captured ") << qSetFieldWidth(4);
-			m_skeleton.addFrame(joints, orientations, timestamp);
-		}
-
-		
-		m_forCaptureLog << " RelativeTime=" << qSetFieldWidth(10) << timestamp;
-		m_forCaptureLog << " Interval=" << qSetFieldWidth(10) << interval;
-		m_forCaptureLog << " FPS=" << calculateFPS();
-		m_forCaptureLog << " ConsecutiveFails=" << qSetFieldWidth(5) << consecutiveFails << endl;
-		consecutiveFails = 0;
-
-		// release resources
-		for (int i = 0; i < ARRAY_SIZE_IN_ELEMENTS(bodies); ++i) {
-			safeRelease(&bodies[i]);
-		}
-		safeRelease(&frame);
 	}
+
+	// get relative time
+	INT64 relativeTime;
+	hr = frame->get_RelativeTime(&relativeTime);
+	if (FAILED(hr)) {
+		m_forCaptureLog << "Could not get relative time. hr = " << hr << endl;
+		return false;
+	}
+	double timestamp = (double)relativeTime / 10000000.;
+
+	// get bodies
+	IBody* bodies[BODY_COUNT] = { 0 };
+	hr = frame->GetAndRefreshBodyData(BODY_COUNT, bodies);
+	if (FAILED(hr)) {
+		m_forCaptureLog << "Could not get and refresh body data. hr = " << hr << endl;
+		return false;
+	} 
+
+	// get data from bodies
+	bool discardFrame = false;
+	uint personsTracked = 0;
+	BOOLEAN isTracked;
+	Joint joints[JointType_Count];
+	JointOrientation orientations[JointType_Count];
+	for (int i = 0; i < BODY_COUNT; i++) {
+		bodies[i]->get_IsTracked(&isTracked);
+		if (isTracked) {
+			personsTracked++;
+			bodies[i]->GetJoints(JointType_Count, joints);
+			bodies[i]->GetJointOrientations(JointType_Count, orientations);
+		}
+	}
+
+	// discard if persons tracked != 1
+	if (personsTracked != 1) {
+		cout << timestamp << ":Discarded -> PersonsTracked = " << personsTracked << endl;
+		discardFrame = true;
+	}
+
+	// discard if interval > 0.1
+	static double lastTimestamp = timestamp;
+	double interval = timestamp - lastTimestamp;
+	lastTimestamp = timestamp;
+	if (interval > 0.1) {
+		cout << timestamp << ":Discarded -> Interval = " << interval << endl;
+		discardFrame = true;
+	}
+		
+	if (discardFrame) {
+		m_forCaptureLog << "Status=Discarded ";
+		if (m_skeleton.m_recordingOn) {
+			cout << "Discarded frame during recording." << endl;
+			record(); // stop recording
+		}
+	}
+	else {
+		m_forCaptureLog << (m_skeleton.m_recordingOn ? "Status=Recorded " : "Status=Captured ") << qSetFieldWidth(4);
+		m_skeleton.addFrame(joints, orientations, timestamp);
+	}
+
+		
+	m_forCaptureLog << " RelativeTime=" << qSetFieldWidth(10) << timestamp;
+	m_forCaptureLog << " Interval=" << qSetFieldWidth(10) << interval;
+	m_forCaptureLog << " FPS=" << calculateFPS();
+	m_forCaptureLog << " ConsecutiveFails=" << qSetFieldWidth(5) << consecutiveFails << endl;
+	consecutiveFails = 0;
+
+	// release resources
+	for (int i = 0; i < ARRAY_SIZE_IN_ELEMENTS(bodies); ++i) {
+		safeRelease(&bodies[i]);
+	}
+	safeRelease(&frame);
 
 	return true;
 }

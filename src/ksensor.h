@@ -23,7 +23,7 @@ public:
 	bool init();
 	bool prepare();
 	bool getBodyFrame();
-	void getBodyData(IBody** bodies, double timestamp);
+
 	double calculateFPS();
 
 	// Start/Stop frame recording in KSkeleton class
