@@ -81,7 +81,7 @@ void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientatio
 	kframe.joints = m_activeJoints;
 	kframe.serial = addedFrames; // serial = size - 1
 
-	if (m_recordingOn) {
+	if (m_isRecording) {
 		m_rawSequence.push_back(kframe);
 	} 
 	else if (m_finalizingOn) {
@@ -450,6 +450,19 @@ void KSkeleton::calculateLimbLengths(const QVector<KFrame>& sequence)
 			);
 	}
 }
+void KSkeleton::record()
+{
+	if (!m_isRecording) {
+		cout << "Recording started." << endl;
+		clearSequences();
+		m_isRecording = true;
+	}
+	else {
+		cout << "Recording stopped." << endl;
+		m_isRecording = false;
+		m_finalizingOn = true;
+	}
+}
 const array<KNode, JointType_Count>& KSkeleton::nodes() const
 {
 	return m_nodes;
@@ -500,7 +513,11 @@ void KSkeleton::printActiveJoints() const
 		cout << setw(15) << toString(m_activeJoints[i].orientation).toStdString() << " ";
 		cout << setw(15) << toStringEulerAngles(m_activeJoints[i].orientation).toStdString() << " ";
 		cout << setw(15) << toStringAxisAngle(m_activeJoints[i].orientation).toStdString() << " ";
-		cout << m_activeJoints[i].getTrackingState().toStdString();
+		string ts;
+		if (m_activeJoints[i].trackingState == TrackingState_Tracked)  ts = "Tracked";
+		else if (m_activeJoints[i].trackingState == TrackingState_Inferred) ts = "Inferred";
+		else ts = "Not tracked";
+		cout << ts;
 		cout << endl;
 	}
 	cout << endl;

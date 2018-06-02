@@ -75,25 +75,16 @@ struct KLimb
 
 struct KJoint
 {
-	uint id; // #! maybe not needed
 	QVector3D position;
 	uint trackingState;  
 	QQuaternion orientation;
 
 	KJoint()
 		:
-		id(INVALID_JOINT_ID),
 		position(0.f, 0.f, 0.f),
 		orientation(1.f, 0.f, 0.f, 0.f),
-		trackingState(0) // #? initial value = 0
+		trackingState(TrackingState_NotTracked)
 	{
-	}
-
-	QString getTrackingState() const
-	{
-		if (trackingState == TrackingState_Tracked) return "Tracked";
-		else if (trackingState == TrackingState_Inferred) return "Inferred";
-		else return "Not tracked";
 	}
 
 };
@@ -151,7 +142,7 @@ public:
 	~KSkeleton();
 	void addFrame(const Joint* joints, const JointOrientation* orientations, const double& time);
 	void processFrames();
-	void initJoints();
+
 	void printInfo() const;
 	void printJointHierarchy() const;
 	void printActiveJoints() const;
@@ -166,7 +157,7 @@ public:
 	void clearSequences();
 
 	bool m_playbackOn = false;
-	bool m_recordingOn = false;
+	bool m_isRecording = false;
 	bool m_finalizingOn = false;
 
 	array<KJoint, JointType_Count>& activeJoints();
@@ -181,6 +172,8 @@ public:
 	const array<KLimb, NUM_LIMBS>& limbs() const;
 	const array<KNode, JointType_Count>& nodes() const;
 	void calculateLimbLengths(const QVector<KFrame>& sequence);
+	void record();
+
 private:
 	array<KNode, JointType_Count> m_nodes; // these define the kinect skeleton hierarchy
 	array<KJoint, JointType_Count> m_activeJoints;
@@ -203,6 +196,7 @@ private:
 	uint m_firstFrameIndex = 0;
 
 	array<KLimb, NUM_LIMBS> m_limbs;
+	void initJoints();
 	void initLimbs();
 	void interpolateFrames();
 	void filterFrames();

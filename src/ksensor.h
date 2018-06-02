@@ -26,17 +26,14 @@ public:
 
 	double calculateFPS();
 
-	// Start/Stop frame recording in KSkeleton class
-	void record();
-
 	KSkeleton *skeleton();
 private:
 	IKinectSensor *m_sensor = nullptr;
 	IBodyFrameSource *m_source = nullptr;
 	IBodyFrameReader *m_reader = nullptr;
 
-	QFile m_captureLog;
-	QTextStream m_forCaptureLog;
+	QFile m_sensorLog;
+	QTextStream m_sensorLogData;
 
 	KSkeleton m_skeleton;
 };

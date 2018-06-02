@@ -24,14 +24,14 @@ KSensor::KSensor()
 	init();
 	prepare();
 
-	m_captureLog.setFileName("capture_log.txt");
-	if (!m_captureLog.open(QIODevice::WriteOnly | QIODevice::Text)) {
+	m_sensorLog.setFileName("sensor.log");
+	if (!m_sensorLog.open(QIODevice::WriteOnly | QIODevice::Text)) {
 		cout << "Could not open capture log file." << endl;
 		return;
 	}
-	m_forCaptureLog.setFieldAlignment(QTextStream::AlignLeft);
-	m_forCaptureLog.setRealNumberPrecision(10);
-	m_forCaptureLog.setDevice(&m_captureLog);
+	m_sensorLogData.setFieldAlignment(QTextStream::AlignLeft);
+	m_sensorLogData.setRealNumberPrecision(10);
+	m_sensorLogData.setDevice(&m_sensorLog);
 
 	cout << "KSensor constructor end.\n" << endl;
 }
@@ -41,7 +41,7 @@ KSensor::~KSensor()
 	safeRelease(&m_sensor);
 	safeRelease(&m_source);
 	safeRelease(&m_reader);
-	m_captureLog.close();
+	m_sensorLog.close();
 }
 bool KSensor::init() {
 	HRESULT hr;
@@ -148,9 +148,9 @@ bool KSensor::getBodyFrame()
 	hr = m_reader->AcquireLatestFrame(&frame);
 	if (FAILED(hr)) {
 		consecutiveFails++;
-		if (consecutiveFails == 10 && m_skeleton.m_recordingOn) {
+		if (consecutiveFails == 10 && m_skeleton.m_isRecording) {
 			cout << "Too many consecutive fails." << endl;
-			record();
+			m_skeleton.record();
 		}
 		return false;
 	}
@@ -159,7 +159,7 @@ bool KSensor::getBodyFrame()
 	INT64 relativeTime;
 	hr = frame->get_RelativeTime(&relativeTime);
 	if (FAILED(hr)) {
-		m_forCaptureLog << "Could not get relative time. hr = " << hr << endl;
+		m_sensorLogData << "Could not get relative time. hr = " << hr << endl;
 		return false;
 	}
 	double timestamp = (double)relativeTime / 10000000.;
@@ -168,7 +168,7 @@ bool KSensor::getBodyFrame()
 	IBody* bodies[BODY_COUNT] = { 0 };
 	hr = frame->GetAndRefreshBodyData(BODY_COUNT, bodies);
 	if (FAILED(hr)) {
-		m_forCaptureLog << "Could not get and refresh body data. hr = " << hr << endl;
+		m_sensorLogData << "Could not get and refresh body data. hr = " << hr << endl;
 		return false;
 	} 
 
@@ -203,22 +203,21 @@ bool KSensor::getBodyFrame()
 	}
 		
 	if (discardFrame) {
-		m_forCaptureLog << "Status=Discarded ";
-		if (m_skeleton.m_recordingOn) {
+		m_sensorLogData << "Status=Discarded ";
+		if (m_skeleton.m_isRecording) {
 			cout << "Discarded frame during recording." << endl;
-			record(); // stop recording
+			m_skeleton.record(); // stop recording
 		}
 	}
 	else {
-		m_forCaptureLog << (m_skeleton.m_recordingOn ? "Status=Recorded " : "Status=Captured ") << qSetFieldWidth(4);
+		m_sensorLogData << (m_skeleton.m_isRecording ? "Status=Recorded " : "Status=Captured ") << qSetFieldWidth(4);
 		m_skeleton.addFrame(joints, orientations, timestamp);
 	}
-
-		
-	m_forCaptureLog << " RelativeTime=" << qSetFieldWidth(10) << timestamp;
-	m_forCaptureLog << " Interval=" << qSetFieldWidth(10) << interval;
-	m_forCaptureLog << " FPS=" << calculateFPS();
-	m_forCaptureLog << " ConsecutiveFails=" << qSetFieldWidth(5) << consecutiveFails << endl;
+	
+	m_sensorLogData << " RelativeTime=" << qSetFieldWidth(10) << timestamp;
+	m_sensorLogData << " Interval=" << qSetFieldWidth(10) << interval;
+	m_sensorLogData << " FPS=" << calculateFPS();
+	m_sensorLogData << " ConsecutiveFails=" << qSetFieldWidth(5) << consecutiveFails << endl;
 	consecutiveFails = 0;
 
 	// release resources
@@ -247,19 +246,6 @@ double KSensor::calculateFPS()
 		ticksLastTime = ticksThisTime;
 	}
 	return fps;
-}
-void KSensor::record()
-{
-	if (!m_skeleton.m_recordingOn) {
-		cout << "Recording started." << endl;
-		m_skeleton.clearSequences();
-		m_skeleton.m_recordingOn = true;
-	} 
-	else {
-		cout << "Recording stopped." << endl;
-		m_skeleton.m_recordingOn = false;
-		m_skeleton.m_finalizingOn = true;
-	}
 }
 KSkeleton* KSensor::skeleton()
 {
