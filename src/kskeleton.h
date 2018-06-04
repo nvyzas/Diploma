@@ -18,26 +18,24 @@
 #define INVALID_JOINT_ID -1
 #define NUM_LIMBS 24
 
+// Represents a node of the skeletal hierarchy
 struct KNode
 {
 	QString name;
 	uint parentId;
-	bool marked;
 	vector<uint> childrenId;
 
 	KNode()
 		:
 		name("aJoint"),
-		parentId(INVALID_JOINT_ID),
-		marked(true)
+		parentId(INVALID_JOINT_ID)
 	{
 	}
 
 	KNode(QString _name, uint  _parentId, bool _marked = true)
 		:
 		name(_name),
-		parentId(_parentId),
-		marked(_marked)
+		parentId(_parentId)
 	{
 	}
 };
@@ -48,7 +46,7 @@ struct KLimb
 	QString name;
 	uint start;		// starting joint id
 	uint end;		// ending joint id 
-	uint sibling;	// sibling's ending joint id
+	uint sibling;	// sibling limb's id
 
 	float minLength = FLT_MAX, maxLength = FLT_MIN, averageLength = 0, desiredLength = 0;
 	int serialMin = -1, serialMax = -1;
@@ -73,6 +71,7 @@ struct KLimb
 	}
 };
 
+// Represents a joint's skeletal data
 struct KJoint
 {
 	QVector3D position;
@@ -94,11 +93,11 @@ QDataStream& operator>>(QDataStream& in, const KJoint& joint);
 
 struct KFrame
 {
-	int serial; // serial number #! maybe not needed
+	int serial;
 	double timestamp;
 	array<KJoint, JointType_Count> joints;
 
-	// Interpolates this frame between frames "next" and "previous" at time "interpolationTime"
+	// Interpolation between frames "previous" and "next" at time "interpolationTime"
 	void interpolateJoints(const KFrame& previous, const KFrame& next, double interpolationTime)
 	{
 		double percentDistance = (interpolationTime - previous.timestamp) / (next.timestamp - previous.timestamp);
@@ -158,7 +157,7 @@ public:
 
 	bool m_playbackOn = false;
 	bool m_isRecording = false;
-	bool m_finalizingOn = false;
+	bool m_isFinalizing = false;
 
 	array<KJoint, JointType_Count>& activeJoints();
 	void setActiveJoints(uint frameIndex);
@@ -181,27 +180,27 @@ private:
 	QVector<KFrame> m_interpolatedSequence;
 	QVector<KFrame> m_filteredSequence;
 	QVector<KFrame> m_adjustedSequence;
-	QFile m_sequencesLog;
-	QTextStream m_forSequencesLog;
+	
+	QFile m_sequenceLog;
+	QTextStream m_sequenceLogData;
 
 	// trc file
 	QFile *m_trcFile;
 	
-	// Savitzky-Golay filter
-	// Coefficients (Symmetric), Cubic order, 1st element = 1/commonFactor #? should make them static?
+	// Savitzky-Golay filter, cubic order with symmetric coefficients
 	static const uint m_framesDelayed = 12;
-	const array<float, 2*m_framesDelayed+2> m_sgCoefficients25 = { -253, -138, -33, 62, 147, 222, 287, 343, 387, 422, 447, 462, 467, 462, 447, 422, 387, 343, 278, 222, 147, 62, -33, -138, -253, 5175 };
+	const array<float, 2*m_framesDelayed+2> m_sgCoefficients = { -253, -138, -33, 62, 147, 222, 287, 343, 387, 422, 447, 462, 467, 462, 447, 422, 387, 343, 278, 222, 147, 62, -33, -138, -253, 1 / 5175.f };
 	array<KFrame, m_framesDelayed> m_firstRawFrames;
-	array<KFrame, m_framesDelayed> m_lastRawFrames;
 	uint m_firstFrameIndex = 0;
 
 	array<KLimb, NUM_LIMBS> m_limbs;
 	void initJoints();
 	void initLimbs();
-	void interpolateFrames();
-	void filterFrames();
-	void adjustFrames();
+	void interpolateSequence();
+	void filterSequence();
+	void adjustSequence();
 	void adjustLimbLength(uint frameLocation, uint jointId, const QVector3D& direction, float factor); // recursively adjust joints
+	
 	QVector3D m_leftFootOffset;
 	QVector3D m_rightFootOffset;
 	QVector3D m_leftFootPosition;

@@ -38,14 +38,14 @@ KSkeleton::KSkeleton()
 {
 	cout << "KSkeleton constructor start." << endl;
 	
-	m_sequencesLog.setFileName("sequences_log.txt");
-	if (!m_sequencesLog.open(QIODevice::WriteOnly | QIODevice::Text)) {
+	m_sequenceLog.setFileName("sequences_log.txt");
+	if (!m_sequenceLog.open(QIODevice::WriteOnly | QIODevice::Text)) {
 		cout << "Could not open sequences log file." << endl;
 		return;
 	}
-	m_forSequencesLog.setFieldAlignment(QTextStream::AlignLeft);
-	m_forSequencesLog.setRealNumberPrecision(6);
-	m_forSequencesLog.setDevice(&m_sequencesLog);
+	m_sequenceLogData.setFieldAlignment(QTextStream::AlignLeft);
+	m_sequenceLogData.setRealNumberPrecision(6);
+	m_sequenceLogData.setDevice(&m_sequenceLog);
 
 	initJoints();
 	loadFrameSequences();
@@ -61,7 +61,88 @@ KSkeleton::KSkeleton()
 }
 KSkeleton::~KSkeleton()
 {
-	m_sequencesLog.close();
+	m_sequenceLog.close();
+}
+void KSkeleton::initJoints()
+{
+	// Set parents
+	// core
+	m_nodes[JointType_SpineBase] = KNode("SpineBase", INVALID_JOINT_ID);
+	m_nodes[JointType_SpineMid] = KNode("SpineMid", JointType_SpineBase);
+	m_nodes[JointType_SpineShoulder] = KNode("SpineShoulder", JointType_SpineMid);
+	m_nodes[JointType_Neck] = KNode("Neck", JointType_SpineShoulder);
+	m_nodes[JointType_Head] = KNode("Head", JointType_Neck);
+	// left side																				
+	m_nodes[JointType_HipLeft] = KNode("HipLeft", JointType_SpineBase);
+	m_nodes[JointType_KneeLeft] = KNode("KneeLeft", JointType_HipLeft);
+	m_nodes[JointType_AnkleLeft] = KNode("AnkleLeft", JointType_KneeLeft);
+	m_nodes[JointType_FootLeft] = KNode("FootLeft", JointType_AnkleLeft);
+	m_nodes[JointType_ShoulderLeft] = KNode("ShoulderLeft", JointType_SpineShoulder);
+	m_nodes[JointType_ElbowLeft] = KNode("ElbowLeft", JointType_ShoulderLeft);
+	m_nodes[JointType_WristLeft] = KNode("WristLeft", JointType_ElbowLeft);
+	m_nodes[JointType_HandLeft] = KNode("HandLeft", JointType_WristLeft);
+	m_nodes[JointType_ThumbLeft] = KNode("ThumbLeft", JointType_HandLeft);
+	m_nodes[JointType_HandTipLeft] = KNode("HandTipLeft", JointType_HandLeft);
+	// right side																				
+	m_nodes[JointType_HipRight] = KNode("HipRight", JointType_SpineBase);
+	m_nodes[JointType_KneeRight] = KNode("KneeRight", JointType_HipRight);
+	m_nodes[JointType_AnkleRight] = KNode("AnkleRight", JointType_KneeRight);
+	m_nodes[JointType_FootRight] = KNode("FootRight", JointType_AnkleRight);
+	m_nodes[JointType_ShoulderRight] = KNode("ShoulderRight", JointType_SpineShoulder);
+	m_nodes[JointType_ElbowRight] = KNode("ElbowRight", JointType_ShoulderRight);
+	m_nodes[JointType_WristRight] = KNode("WristRight", JointType_ElbowRight);
+	m_nodes[JointType_HandRight] = KNode("HandRight", JointType_WristRight);
+	m_nodes[JointType_ThumbRight] = KNode("ThumbRight", JointType_HandRight);
+	m_nodes[JointType_HandTipRight] = KNode("HandTipRight", JointType_HandRight);
+
+	// Set children
+	for (uint i = 0; i < JointType_Count; i++) {
+		uint p = m_nodes[i].parentId;
+		if (p != INVALID_JOINT_ID) {
+			(m_nodes[p].childrenId).push_back(i);
+		}
+	}
+}
+void KSkeleton::initLimbs()
+{
+	// Core
+	m_limbs[0] = KLimb(JointType_SpineBase, JointType_SpineShoulder);
+	// Legs 
+	m_limbs[1] = KLimb(JointType_SpineBase, JointType_HipLeft, 2);
+	m_limbs[2] = KLimb(JointType_SpineBase, JointType_HipRight, 1);
+	m_limbs[3] = KLimb(JointType_HipLeft, JointType_KneeLeft, 4);
+	m_limbs[4] = KLimb(JointType_HipRight, JointType_KneeRight, 3);
+	m_limbs[5] = KLimb(JointType_KneeLeft, JointType_AnkleLeft, 6);
+	m_limbs[6] = KLimb(JointType_KneeRight, JointType_AnkleRight, 5);
+	m_limbs[7] = KLimb(JointType_AnkleLeft, JointType_FootLeft, 8);
+	m_limbs[8] = KLimb(JointType_AnkleRight, JointType_FootRight, 7);
+	// Arms																 			  
+	m_limbs[9] = KLimb(JointType_SpineBase, JointType_ShoulderLeft); // helper limb, must be before limb 11
+	m_limbs[10] = KLimb(JointType_SpineBase, JointType_ShoulderRight); // helper limb, must be before limb 12
+	m_limbs[11] = KLimb(JointType_SpineShoulder, JointType_ShoulderLeft, 12);
+	m_limbs[12] = KLimb(JointType_SpineShoulder, JointType_ShoulderRight, 11);
+	m_limbs[13] = KLimb(JointType_ShoulderLeft, JointType_ElbowLeft, 14);
+	m_limbs[14] = KLimb(JointType_ShoulderRight, JointType_ElbowRight, 13);
+	m_limbs[15] = KLimb(JointType_ElbowLeft, JointType_WristLeft, 16);
+	m_limbs[16] = KLimb(JointType_ElbowRight, JointType_WristRight, 15);
+	m_limbs[17] = KLimb(JointType_WristLeft, JointType_HandLeft, 18);
+	m_limbs[18] = KLimb(JointType_WristRight, JointType_HandRight, 17);
+	m_limbs[19] = KLimb(JointType_WristLeft, JointType_HandTipLeft, 20);
+	m_limbs[20] = KLimb(JointType_WristRight, JointType_HandTipRight, 19);
+	m_limbs[21] = KLimb(JointType_HandLeft, JointType_ThumbLeft, 22);
+	m_limbs[22] = KLimb(JointType_HandRight, JointType_ThumbRight, 21);
+	m_limbs[23] = KLimb(JointType_HandLeft, JointType_HandRight);
+
+	calculateLimbLengths(m_filteredSequence); // load data into filteredSequence first
+
+	for (uint l = 0; l < m_limbs.size(); l++) {
+		m_limbs[l].name = m_nodes[m_limbs[l].start].name + "->" + m_nodes[m_limbs[l].end].name;
+		m_limbs[l].desiredLength = (
+			m_limbs[l].sibling == INVALID_JOINT_ID ?
+			m_limbs[l].averageLength :
+			(m_limbs[l].averageLength + m_limbs[m_limbs[l].sibling].averageLength) / 2.f
+			);
+	}
 }
 void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientations, const double& time)
 {
@@ -84,24 +165,21 @@ void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientatio
 	if (m_isRecording) {
 		m_rawSequence.push_back(kframe);
 	} 
-	else if (m_finalizingOn) {
+	else if (m_isFinalizing) {
 		static uint counter = 0;
 		if (counter < m_framesDelayed) {
 			counter++;
 			uint index = (m_firstFrameIndex - counter + m_framesDelayed) % m_framesDelayed;
-
-			m_rawSequence.push_back(kframe);
-			cout << "counter=" << counter << " ";
-
 			m_rawSequence.push_front(m_firstRawFrames[index]);
-			cout << "index=" << index << " ";
+			m_rawSequence.push_back(kframe);
 		}
 		else {
 			cout << "Recording finished." << endl;
-			m_finalizingOn = false;
+			m_isFinalizing = false;
 			processFrames();
 			counter = 0;
 			addedFrames = 0;
+			m_firstFrameIndex = 0;
 		}
 	}
 	else {
@@ -114,89 +192,7 @@ void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientatio
 		}
 	}
 }
-void KSkeleton::initJoints()
-{
-	// Set parents
-	// core
-	m_nodes[JointType_SpineBase]     = KNode("SpineBase", INVALID_JOINT_ID);
-	m_nodes[JointType_SpineMid]      = KNode("SpineMid", JointType_SpineBase);
-	m_nodes[JointType_SpineShoulder] = KNode("SpineShoulder", JointType_SpineMid);
-	m_nodes[JointType_Neck]          = KNode("Neck", JointType_SpineShoulder);
-	m_nodes[JointType_Head]          = KNode("Head", JointType_Neck);
-	// left side																				
-	m_nodes[JointType_HipLeft]       = KNode("HipLeft", JointType_SpineBase);
-	m_nodes[JointType_KneeLeft]      = KNode("KneeLeft", JointType_HipLeft);
-	m_nodes[JointType_AnkleLeft]     = KNode("AnkleLeft", JointType_KneeLeft);
-	m_nodes[JointType_FootLeft]      = KNode("FootLeft", JointType_AnkleLeft);
-	m_nodes[JointType_ShoulderLeft]  = KNode("ShoulderLeft", JointType_SpineShoulder);
-	m_nodes[JointType_ElbowLeft]     = KNode("ElbowLeft", JointType_ShoulderLeft);
-	m_nodes[JointType_WristLeft]     = KNode("WristLeft", JointType_ElbowLeft);
-	m_nodes[JointType_HandLeft]      = KNode("HandLeft", JointType_WristLeft);
-	m_nodes[JointType_ThumbLeft]     = KNode("ThumbLeft", JointType_HandLeft);
-	m_nodes[JointType_HandTipLeft]   = KNode("HandTipLeft", JointType_HandLeft);
-	// right side																				
-	m_nodes[JointType_HipRight]      = KNode("HipRight", JointType_SpineBase);
-	m_nodes[JointType_KneeRight]     = KNode("KneeRight", JointType_HipRight);
-	m_nodes[JointType_AnkleRight]    = KNode("AnkleRight", JointType_KneeRight);
-	m_nodes[JointType_FootRight]     = KNode("FootRight", JointType_AnkleRight);
-	m_nodes[JointType_ShoulderRight] = KNode("ShoulderRight", JointType_SpineShoulder);
-	m_nodes[JointType_ElbowRight]    = KNode("ElbowRight", JointType_ShoulderRight);
-	m_nodes[JointType_WristRight]    = KNode("WristRight", JointType_ElbowRight);
-	m_nodes[JointType_HandRight]     = KNode("HandRight", JointType_WristRight);
-	m_nodes[JointType_ThumbRight]    = KNode("ThumbRight", JointType_HandRight);
-	m_nodes[JointType_HandTipRight]  = KNode("HandTipRight", JointType_HandRight);
-
-	// Set children
-	for (uint i = 0; i < JointType_Count; i++) {
-		uint p = m_nodes[i].parentId;
-		if (p != INVALID_JOINT_ID) {
-			(m_nodes[p].childrenId).push_back(i);
-		}
-	}
-}
-// Frame sequence must be initialized before calling this
-void KSkeleton::initLimbs()
-{
-	// Core
-	m_limbs[0 ] = KLimb(JointType_SpineBase    , JointType_SpineShoulder    );
-	// Legs 
-	m_limbs[1 ] = KLimb(JointType_SpineBase    , JointType_HipLeft      ,  2);
-	m_limbs[2 ] = KLimb(JointType_SpineBase    , JointType_HipRight     ,  1);
-	m_limbs[3 ] = KLimb(JointType_HipLeft      , JointType_KneeLeft     ,  4);
-	m_limbs[4 ] = KLimb(JointType_HipRight     , JointType_KneeRight    ,  3);
-	m_limbs[5 ] = KLimb(JointType_KneeLeft     , JointType_AnkleLeft    ,  6);
-	m_limbs[6 ] = KLimb(JointType_KneeRight    , JointType_AnkleRight   ,  5);
-	m_limbs[7 ] = KLimb(JointType_AnkleLeft    , JointType_FootLeft     ,  8);
-	m_limbs[8 ] = KLimb(JointType_AnkleRight   , JointType_FootRight    ,  7);
-	// Arms																 			  
-	m_limbs[9 ] = KLimb(JointType_SpineBase    , JointType_ShoulderLeft	    ); // helper limb, must be before limb 11
-	m_limbs[10] = KLimb(JointType_SpineBase    , JointType_ShoulderRight    ); // helper limb, must be before limb 12
-	m_limbs[11] = KLimb(JointType_SpineShoulder, JointType_ShoulderLeft , 12);
-	m_limbs[12] = KLimb(JointType_SpineShoulder, JointType_ShoulderRight, 11);
-	m_limbs[13] = KLimb(JointType_ShoulderLeft , JointType_ElbowLeft    , 14);
-	m_limbs[14] = KLimb(JointType_ShoulderRight, JointType_ElbowRight   , 13);
-	m_limbs[15] = KLimb(JointType_ElbowLeft    , JointType_WristLeft    , 16);
-	m_limbs[16] = KLimb(JointType_ElbowRight   , JointType_WristRight   , 15);
-	m_limbs[17] = KLimb(JointType_WristLeft    , JointType_HandLeft     , 18);
-	m_limbs[18] = KLimb(JointType_WristRight   , JointType_HandRight    , 17);
-	m_limbs[19] = KLimb(JointType_WristLeft    , JointType_HandTipLeft  , 20);
-	m_limbs[20] = KLimb(JointType_WristRight   , JointType_HandTipRight , 19);
-	m_limbs[21] = KLimb(JointType_HandLeft     , JointType_ThumbLeft    , 22);
-	m_limbs[22] = KLimb(JointType_HandRight    , JointType_ThumbRight   , 21);
-	m_limbs[23] = KLimb(JointType_HandLeft, JointType_HandRight);
-	
-	calculateLimbLengths(m_filteredSequence);
-
-	for (uint l = 0; l < m_limbs.size(); l++) {
-		m_limbs[l].name = m_nodes[m_limbs[l].start].name + "->" + m_nodes[m_limbs[l].end].name;
-		m_limbs[l].desiredLength = (
-			m_limbs[l].sibling == INVALID_JOINT_ID ?
-			m_limbs[l].averageLength :
-			(m_limbs[l].averageLength + m_limbs[m_limbs[l].sibling].averageLength) / 2.f
-			);
-	}
-}
-void KSkeleton::interpolateFrames()
+void KSkeleton::interpolateSequence()
 {
 	if (m_rawSequence.empty()) {
 		cout << "No recorded frames!" << endl;
@@ -208,7 +204,9 @@ void KSkeleton::interpolateFrames()
 	}
 
 	cout << "Interpolating recorded frames." << endl;
-	m_recordingDuration = (m_rawSequence.end() - m_framesDelayed - 1)->timestamp - (m_rawSequence.begin() + m_framesDelayed)->timestamp;
+	m_recordingDuration = 
+		(m_rawSequence.end() - m_framesDelayed - 1)->timestamp - 
+		(m_rawSequence.begin() + m_framesDelayed)->timestamp;
 	m_interpolationInterval = m_recordingDuration / (m_rawSequence.size() - 2 * m_framesDelayed - 1);
 	cout << "Recording duration: " << m_recordingDuration << endl;
 	cout << "Interpolation interval: " << m_interpolationInterval << endl;
@@ -230,7 +228,7 @@ void KSkeleton::interpolateFrames()
 	}
 	index = 0;
 }
-void KSkeleton::filterFrames()
+void KSkeleton::filterSequence()
 {
 	if (m_interpolatedSequence.empty()) {
 		cout << "No interpolated frames!" << endl;
@@ -242,17 +240,15 @@ void KSkeleton::filterFrames()
 	}
 
 	cout << "Filtering recorded frames." << endl;
-	uint np = m_sgCoefficients25.size() - 1; // number of points used
+	uint np = m_sgCoefficients.size() - 1; // number of points used
 	for (uint i = m_framesDelayed; i < m_interpolatedSequence.size() - m_framesDelayed; i++) {
 		KFrame filteredFrame;
 		for (uint j = 0; j < JointType_Count; j++) {
 			filteredFrame.joints[j].position = QVector3D(0.f, 0.f, 0.f);
 			for (uint k = 0; k < 2 * m_framesDelayed + 1; k++) {
-				filteredFrame.joints[j].position += m_interpolatedSequence[i + k - np / 2].joints[j].position *	m_sgCoefficients25[k] / m_sgCoefficients25.back();
-				//if (j == 0) cout << (i + k - np / 2 == i ? "F:" : "") << i + k - np / 2 << ",";
+				filteredFrame.joints[j].position += m_interpolatedSequence[i + k - np / 2].joints[j].position *	m_sgCoefficients[k] / m_sgCoefficients.back();
 			}
 		}
-		//cout << endl;
 		filteredFrame.serial = m_interpolatedSequence[i].serial;
 		filteredFrame.timestamp = m_interpolatedSequence[i].timestamp;
 		m_filteredSequence.push_back(filteredFrame);
@@ -269,7 +265,7 @@ void KSkeleton::filterFrames()
 	cout << "Raw sequence size after crop:" << m_rawSequence.size() << endl;
 	cout << "Filtered sequence size:" << m_filteredSequence.size() << endl;
 }
-void KSkeleton::adjustFrames()
+void KSkeleton::adjustSequence()
 {
 	if (m_filteredSequence.empty()) {
 		cout << "No filtered frames! Returning." << endl;
@@ -460,7 +456,7 @@ void KSkeleton::record()
 	else {
 		cout << "Recording stopped." << endl;
 		m_isRecording = false;
-		m_finalizingOn = true;
+		m_isFinalizing = true;
 	}
 }
 const array<KNode, JointType_Count>& KSkeleton::nodes() const
@@ -646,14 +642,14 @@ void KSkeleton::saveFrameSequences()
 	qf.close();
 
 	//*
-	m_forSequencesLog << "Saved sequences:" << endl;
-	m_forSequencesLog << "Raw: " << endl;
+	m_sequenceLogData << "Saved sequences:" << endl;
+	m_sequenceLogData << "Raw: " << endl;
 	printSequenceToLog(m_rawSequence);
-	m_forSequencesLog << "Interpolated: " << endl;
+	m_sequenceLogData << "Interpolated: " << endl;
 	printSequenceToLog(m_interpolatedSequence);
-	m_forSequencesLog << "Filtered: " << endl;
+	m_sequenceLogData << "Filtered: " << endl;
 	printSequenceToLog(m_filteredSequence);
-	m_forSequencesLog << "Adjusted: " << endl;
+	m_sequenceLogData << "Adjusted: " << endl;
 	printSequenceToLog(m_adjustedSequence);
 	//*/
 }
@@ -677,22 +673,22 @@ void KSkeleton::loadFrameSequences()
 	qf.close();
 
 	//*
-	m_forSequencesLog    << "Loaded sequences:" << endl;
-	m_forSequencesLog    << "Raw: "             << endl;
+	m_sequenceLogData    << "Loaded sequences:" << endl;
+	m_sequenceLogData    << "Raw: "             << endl;
 	printSequenceToLog(m_rawSequence);
-	m_forSequencesLog    << "Interpolated:      " << endl;
+	m_sequenceLogData    << "Interpolated:      " << endl;
 	printSequenceToLog(m_interpolatedSequence);
-	m_forSequencesLog    << "Filtered:          " << endl;
+	m_sequenceLogData    << "Filtered:          " << endl;
 	printSequenceToLog(m_filteredSequence);
-	m_forSequencesLog    << "Adjusted:          " << endl;
+	m_sequenceLogData    << "Adjusted:          " << endl;
 	printSequenceToLog(m_adjustedSequence);
 	//*/
 }
 void KSkeleton::printSequenceToLog(const QVector<KFrame>& seq)
 {
-	m_forSequencesLog << "Size=" << seq.size() << " Duration=" << seq.back().timestamp - seq.front().timestamp << endl;
+	m_sequenceLogData << "Size=" << seq.size() << " Duration=" << seq.back().timestamp - seq.front().timestamp << endl;
 	for (uint i = 0; i < seq.size(); i++) {
-		m_forSequencesLog << qSetFieldWidth(4) << i << reset << ": " << seq[i].toString() << endl;
+		m_sequenceLogData << qSetFieldWidth(4) << i << reset << ": " << seq[i].toString() << endl;
 	}
 }
 void KSkeleton::clearSequences()
@@ -709,7 +705,7 @@ const array<KLimb, NUM_LIMBS>& KSkeleton::limbs() const
 }
 void KSkeleton::processFrames()
 {
-	interpolateFrames();
-	filterFrames();
-	adjustFrames();
+	interpolateSequence();
+	filterSequence();
+	adjustSequence();
 }
