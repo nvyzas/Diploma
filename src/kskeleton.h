@@ -148,7 +148,7 @@ public:
 	void printMotionsToLog();
 
 	// files
-	bool saveToTrc();
+	bool exportToTRC();
 
 
 	void saveFrameSequences();
@@ -160,26 +160,16 @@ public:
 	bool m_isFinalizing = false;
 
 	array<KJoint, JointType_Count>& activeJoints();
-	void setActiveJoints(uint frameIndex);
-	double timestamp(uint frameIndex) const;
+	void setActiveJoints(array<KJoint, JointType_Count>& joints);
 	
-	void nextActiveSequence();
-
 	double m_interpolationInterval; // calculated from trainer's motion
 
 	const array<KLimb, NUM_LIMBS>& limbs() const;
 	const array<KNode, JointType_Count>& nodes() const;
 	void calculateLimbLengths(const QVector<KFrame>& sequence);
 
-	QVector<KFrame>* m_activeSequence;
-
-
 	void record();
 	void setTrainerRecording(bool state);
-
-private:
-	array<KNode, JointType_Count> m_nodes; // these define the kinect skeleton hierarchy
-	array<KJoint, JointType_Count> m_activeJoints;
 
 	// Motions
 	QVector<KFrame> m_athleteRawMotion;
@@ -187,7 +177,7 @@ private:
 	QVector<KFrame> m_athleteFilteredMotion;
 	QVector<KFrame> m_athleteAdjustedMotion;
 	QVector<KFrame> m_athleteResizedMotion;
-	
+
 	QVector<KFrame> m_trainerRawMotion;
 	QVector<KFrame> m_trainerInterpolatedMotion;
 	QVector<KFrame> m_trainerFilteredMotion;
@@ -195,6 +185,10 @@ private:
 
 	bool m_trainerRecording;
 	QVector<KFrame>* m_recordedMotion;
+
+private:
+	array<KNode, JointType_Count> m_nodes; // these define the kinect skeleton hierarchy
+	array<KJoint, JointType_Count> m_activeJoints;
 
 	QFile m_sequenceLog;
 	QTextStream m_sequenceLogData;

@@ -79,12 +79,14 @@ void MainWidget::setup()
 	cout << "MainWidget setup start." << endl;
 
 	// Setup mode
-	m_activeMode = Mode::CAPTURE;
+	m_activeMode = Mode::PLAYBACK;
+	m_activeMotionType = 0;
+	m_activeMotion = &m_ksensor->skeleton()->m_athleteRawMotion;
 
 	// Setup timer
 	connect(&m_timer, SIGNAL(timeout()), this, SLOT(intervalPassed()));
 	m_timer.setTimerType(Qt::PreciseTimer);
-	m_playbackInterval = m_ksensor->skeleton()->m_interpolationInterval * 1000;
+	m_playbackInterval = (m_activeMotion->operator[](1).timestamp - m_activeMotion->operator[](0).timestamp) * 1000;
 	cout << "Playback interval: " << m_playbackInterval << endl;
 	m_timer.setInterval(m_playbackInterval);
 	m_timer.start();
@@ -105,7 +107,7 @@ void MainWidget::setup()
 	m_pipeline->setCamera(m_camera->GetPos(), m_camera->GetTarget(), m_camera->GetUp());
 
 	// Setup offsets
-	m_kinectSkeletonOffset = -m_ksensor->skeleton()->m_activeSequence->at(0).joints[JointType_SpineBase].position;
+	m_kinectSkeletonOffset = -m_activeMotion->at(0).joints[JointType_SpineBase].position;
 	cout << "Kinect skeleton offset=" << toStringCartesian(m_kinectSkeletonOffset).toStdString() << endl;
 	m_skinnedMeshOffset = -m_skinnedMesh->getPelvisOffset();
 	cout << "Skinned mesh offset=" << toStringCartesian(m_skinnedMeshOffset).toStdString() << endl;
@@ -237,12 +239,12 @@ void MainWidget::paintGL()
 		m_ksensor->getBodyFrame();
 	}
 	else if (m_activeMode == Mode::PLAYBACK){
-		m_ksensor->skeleton()->setActiveJoints(m_activeFrameIndex);
+		m_ksensor->skeleton()->setActiveJoints(m_activeMotion->operator[](m_activeFrameIndex).joints);
 	}
 	else {
 		cout << "Unknown mode of operation." << endl;
 	}
-	m_activeFrameTimestamp = m_ksensor->skeleton()->timestamp(m_activeFrameIndex);
+	m_activeFrameTimestamp = m_activeMotion->operator[](m_activeFrameIndex).timestamp;
 
 	// prepare pipeline for drawing skinned mesh related stuff
 	if (m_defaultPose) {
@@ -264,7 +266,7 @@ void MainWidget::paintGL()
 	for (uint i = 0; i < m_skinnedMesh->numBones(); i++) {
 		m_skinningTechnique->setBoneTransform(i, m_skinnedMesh->boneInfo(i).combined);
 	}
-	if (m_renderSkinnedMesh && m_skinnedMesh->m_successfullyLoaded) {
+	if (m_skinnedMeshDrawing && m_skinnedMesh->m_successfullyLoaded) {
 		m_skinningTechnique->setWVP(m_pipeline->getWVPtrans());
 		drawSkinnedMesh();
 	}
@@ -272,7 +274,7 @@ void MainWidget::paintGL()
 	// bind lighting shaders
 	m_lighting->bind();
 
-	if (m_drawBarbell) {
+	if (m_barbellDrawing) {
 		// draw barbell #todo make barbell connect to skinned mesh thumbs
 		QVector3D skinnedMeshLeftHand = QVector3D(-1, 0, 0); //m_skinnedMesh->boneEndPosition(m_skinnedMesh->findBoneId("LThumb"));
 		QVector3D skinnedMeshRightHand = QVector3D(1, 0, 0); // m_skinnedMesh->boneEndPosition(m_skinnedMesh->findBoneId("RThumb"));
@@ -291,7 +293,7 @@ void MainWidget::paintGL()
 	m_technique->enable();
 
 	// draw skinned mesh bone axes
-	if (m_drawAxes) {
+	if (m_axesDrawing) {
 		m_technique->setSpecific(m_skinnedMesh->boneGlobal(m_activeBoneId));
 		m_technique->setMVP(m_pipeline->getWVPtrans());
 		drawAxes();
@@ -305,7 +307,7 @@ void MainWidget::paintGL()
 	}
 
 	// draw basic axes
-	if (m_drawAxes) {
+	if (m_axesDrawing) {
 		m_technique->setSpecific(QMatrix4x4());
 		m_technique->setMVP(m_pipeline->getVPtrans()); // only VP transformation! 
 		drawAxes();
@@ -318,7 +320,7 @@ void MainWidget::paintGL()
 	else m_pipeline->setWorldPosition(m_kinectSkeletonOffset);
 
 	// draw kinect skeleton
-	if (m_drawKinectSkeleton) {
+	if (m_kinectSkeletonDrawing) {
 		m_technique->setMVP(m_pipeline->getWVPtrans());
 		drawKinectSkeletonJoints();
 		for (uint i = 0; i < JointType_Count; i++) {
@@ -332,7 +334,7 @@ void MainWidget::paintGL()
 		drawCube();
 
 		// draw kinect joint axes
-		if (m_drawAxes) {
+		if (m_axesDrawing) {
 			m_technique->setMVP(m_pipeline->getWVPtrans());
 			QMatrix4x4 T(fromTranslation(m_ksensor->skeleton()->activeJoints()[m_activeJointId].position));
 			QMatrix4x4 R(fromRotation(m_skinnedMesh->boneInfo(m_activeBoneId).globalJointOrientation));
@@ -358,7 +360,7 @@ void MainWidget::paintGL()
 	m_shaderProgram->bind();
 	
 	// draw plane
-	if (m_drawPlane) {
+	if (m_floorDrawing) {
 		m_pipeline->setWorldPosition(QVector3D());
 		m_pipeline->setWorldOrientation(QQuaternion());
 		m_shaderProgram->setUniformValue(m_mvpLocation, m_pipeline->getWVPtrans());
@@ -384,7 +386,7 @@ void MainWidget::paintGL()
 	
 
 	if (!m_isPaused && m_shouldUpdate) {
-		if (++m_activeFrameIndex > m_ksensor->skeleton()->m_activeSequence->size())  m_activeFrameIndex = 0;
+		if (++m_activeFrameIndex > m_activeMotion->size())  m_activeFrameIndex = 0;
 		emit frameChanged(activeMotionProgress());
 		m_shouldUpdate = false;
 		calculateFPS();
@@ -447,7 +449,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		m_timer.setInterval(m_playbackInterval);
 		break;
 	case Qt::Key_C:
-		m_ksensor->skeleton()->calculateLimbLengths(*m_ksensor->skeleton()->m_activeSequence);
+		m_ksensor->skeleton()->calculateLimbLengths(*m_activeMotion);
 		m_ksensor->skeleton()->printLimbLengths();
 		break;
 	case Qt::Key_D:
@@ -462,9 +464,6 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		break;
 	case Qt::Key_L:
 		m_ksensor->skeleton()->loadFrameSequences();
-		break;
-	case Qt::Key_N:
-		m_ksensor->skeleton()->nextActiveSequence();
 		break;
 	case Qt::Key_P:
 		if (m_isPaused) {
@@ -489,7 +488,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		m_skinnedMesh->printInfo();
 		break;
 	case Qt::Key_T:
-		m_ksensor->skeleton()->saveToTrc();
+		m_ksensor->skeleton()->exportToTRC();
 		break;
 	case Qt::Key_Escape:
 		event->ignore();	// event passed to MainWidget's parent (MainWindow)
@@ -545,42 +544,63 @@ void MainWidget::wheelEvent(QWheelEvent *event)
 	m_technique->setMVP(m_pipeline->getVPtrans());
 	update();
 }
-void MainWidget::setRenderAxes(bool state)
-{
-	if (m_drawAxes != state) {
-		m_drawAxes = state;		
-		update();
-	}
-}
-KSensor * MainWidget::ksensor()
+KSensor* MainWidget::ksensor()
 {
 	return m_ksensor;
 }
-void MainWidget::setRenderModel(bool state)
+void MainWidget::setAxesDrawing(bool state)
 {
-	if (m_renderSkinnedMesh != state) {
-		m_renderSkinnedMesh = state;
-		update();
-	}
+	m_axesDrawing = state;		
+	update();
 }
-void MainWidget::setRenderSkeleton(bool state)
+void MainWidget::setSkinnedMeshDrawing(bool state)
 {
-	if (m_drawKinectSkeleton != state) {
-		m_drawKinectSkeleton = state;
-		update();
-	}
+	m_skinnedMeshDrawing = state;
+	update();
 }
-bool MainWidget::renderAxes() const
+void MainWidget::setKinectSkeletonDrawing(bool state)
 {
-	return m_drawAxes;
+	m_kinectSkeletonDrawing = state;
+	update();
 }
-bool MainWidget::renderSkinnedMesh() const
+void MainWidget::setFloorDrawing(bool state)
 {
-	return m_renderSkinnedMesh;
+	m_floorDrawing = state;
+	update();
 }
-bool MainWidget::renderKinectSkeleton() const
+void MainWidget::setBarbellDrawing(bool state)
 {
-	return m_drawKinectSkeleton;
+	m_barbellDrawing = state;
+	update();
+}
+void MainWidget::setTipsDrawing(bool state)
+{
+	m_tipsDrawing = state;
+	update();
+}
+bool MainWidget::axesDrawing() const
+{
+	return m_axesDrawing;
+}
+bool MainWidget::skinnedMeshDrawing() const
+{
+	return m_skinnedMeshDrawing;
+}
+bool MainWidget::kinectSkeletonDrawing() const
+{
+	return m_kinectSkeletonDrawing;
+}
+bool MainWidget::floorDrawing() const
+{
+	return m_floorDrawing;
+}
+bool MainWidget::barbellDrawing() const
+{
+	return m_barbellDrawing;
+}
+bool MainWidget::tipsDrawing() const
+{
+	return m_tipsDrawing;
 }
 bool MainWidget::modelSkinning() const
 {
@@ -646,6 +666,24 @@ int MainWidget::activeMotionType() const
 void MainWidget::setActiveMotionType(int motionType)
 {	
 	m_activeMotionType = motionType;
+	if (motionType == 0) {
+		m_activeMotion = &m_ksensor->skeleton()->m_athleteRawMotion;
+	}
+	else if (motionType == 1) {
+		m_activeMotion = &m_ksensor->skeleton()->m_athleteInterpolatedMotion;
+	}
+	else if (motionType == 2) {
+		m_activeMotion = &m_ksensor->skeleton()->m_athleteFilteredMotion;
+	}
+	else if (motionType == 3) {
+		m_activeMotion = &m_ksensor->skeleton()->m_athleteAdjustedMotion;
+	}
+	else if (motionType == 4) {
+		m_activeMotion = &m_ksensor->skeleton()->m_athleteResizedMotion;
+	}
+	else {
+		cout << "Error: Motion type = " << m_activeMotion << endl;
+	}
 	cout << "Motion type: " << m_motionTypeList[m_activeMotionType].toStdString() << endl;
 }
 void MainWidget::setModelName(const QString &modelName)
@@ -685,6 +723,14 @@ void MainWidget::unloadSkinnedMesh()
 		m_skinnedMeshVAO = 0;
 	}
 }
+bool MainWidget::isPaused() const
+{
+	return m_isPaused;
+}
+void MainWidget::setIsPaused(bool state)
+{
+	m_isPaused = state;
+}
 void MainWidget::intervalPassed()
 {
 	m_shouldUpdate = true;
@@ -692,7 +738,8 @@ void MainWidget::intervalPassed()
 }
 int MainWidget::activeMotionProgress() const
 {
-	return (int)(m_activeFrameIndex / m_ksensor->skeleton()->m_activeSequence->size() *100.f);
+	int progressPercent = (int)((float)m_activeFrameIndex / m_activeMotion->size() * 100.f);
+	return progressPercent;
 }
 void MainWidget::setActiveMotionProgress(int progressPercent)
 {
@@ -700,10 +747,10 @@ void MainWidget::setActiveMotionProgress(int progressPercent)
 		cout << "Progress percent out of bounds: " << progressPercent << endl;
 		return;
 	}
-	int newFrameIndex = (int)(progressPercent / 100.f * m_ksensor->skeleton()->m_activeSequence->size());
-	if (newFrameIndex > m_ksensor->skeleton()->m_activeSequence->size() || newFrameIndex < 0) {
+	int newFrameIndex = (int)(progressPercent / 100.f * m_activeMotion->size());
+	m_activeFrameIndex = newFrameIndex;
+	if (newFrameIndex > m_activeMotion->size() || newFrameIndex < 0) {
 		cout << "New frame index out of bounds: " << newFrameIndex << endl;
-		m_activeFrameIndex = newFrameIndex;
 		return;
 	}
 	update();

@@ -76,7 +76,7 @@ void MainWindow::setActiveBoneRotationX(int value)
 	const QString &boneName = ui->comboBox_activeBone->currentText();
 	if (boneName.isEmpty()) return;
 	ui->openGLWidget->skinnedMesh()->setBoneRotationX(boneName, value);
-	//ui->openGLWidget->update();
+	ui->openGLWidget->update();
 	loadActiveBoneRotationX();
 	ui->openGLWidget->update();
 }
@@ -104,12 +104,16 @@ void MainWindow::printActiveBoneTransforms() const
 	if (boneName.isEmpty()) return;
 	cout << ui->openGLWidget->skinnedMesh()->boneTransformInfo(boneName).toStdString() << endl;
 }
+void MainWindow::togglePlayback()
+{
+	ui->openGLWidget->setIsPaused(!ui->openGLWidget->isPaused());
+	ui->pushButton_play->setText(ui->openGLWidget->isPaused() ? "Play" : "Pause");
+}
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
 	cout << "MainWindow saw this keyboard event" << endl;
 	int key = event->key();
 	switch (key) {
-	// do not put any other keys here!
 	case Qt::Key_Escape:
 		close(); // implicitly makes the application quit by generating close event
 		break;
@@ -160,7 +164,7 @@ void MainWindow::setupObjects()
 
 	// Main Status
 	ui->radioButton_capture->setChecked(ui->openGLWidget->captureIsEnabled());
-	//ui->radioButton_playback->setChecked(!ui->openGLWidget->captureIsEnabled());
+	ui->radioButton_playback->setChecked(!ui->openGLWidget->captureIsEnabled());
 	ui->checkBox_athlete->setChecked(ui->openGLWidget->athleteEnabled());
 	ui->checkBox_trainer->setChecked(ui->openGLWidget->trainerEnabled());
 	ui->comboBox_motionType->addItems(ui->openGLWidget->motionTypeList());
@@ -170,9 +174,15 @@ void MainWindow::setupObjects()
 	ui->comboBox_activeBone->addItems(ui->openGLWidget->modelBoneList());
 	loadActiveBoneInfo();
 
-	ui->checkBox_axes->setChecked(ui->openGLWidget->renderAxes());
-	ui->checkBox_model->setChecked(ui->openGLWidget->renderSkinnedMesh());
-	ui->checkBox_skeleton->setChecked(ui->openGLWidget->renderKinectSkeleton());
+	ui->checkBox_axes->setChecked(ui->openGLWidget->axesDrawing());
+	ui->checkBox_model->setChecked(ui->openGLWidget->skinnedMeshDrawing());
+	ui->checkBox_skeleton->setChecked(ui->openGLWidget->kinectSkeletonDrawing());
+	ui->checkBox_floor->setChecked(ui->openGLWidget->floorDrawing());
+	ui->checkBox_barbell->setChecked(ui->openGLWidget->barbellDrawing());
+	ui->checkBox_tips->setChecked(ui->openGLWidget->tipsDrawing());
+
+	// Playback controls
+	ui->pushButton_play->setText(ui->openGLWidget->isPaused() ? "Play" : "Pause");
 
 	m_guiTimer = new QTimer(this);
 	m_guiTimer->setTimerType(Qt::CoarseTimer);
@@ -211,17 +221,18 @@ void MainWindow::setupConnections()
 	connect(ui->spinBox_yRot                    , SIGNAL(valueChanged(int))           , SLOT(setActiveBoneRotationY(int)));
 	connect(ui->spinBox_zRot                    , SIGNAL(valueChanged(int))           , SLOT(setActiveBoneRotationZ(int)));
 	
-	// drawing related
-	// toggle draw axes
-	connect(ui->checkBox_axes                   , SIGNAL(toggled(bool))               , ui->openGLWidget, SLOT(setRenderAxes(bool)));
-	// toggle draw skineed mesh
-	connect(ui->checkBox_model                  , SIGNAL(toggled(bool))               , ui->openGLWidget, SLOT(setRenderModel(bool)));
-	// toggle draw kinect skeleton
-	connect(ui->checkBox_skeleton               , SIGNAL(toggled(bool))               , ui->openGLWidget, SLOT(setRenderSkeleton(bool)));
-	
+	// render
+	connect(ui->checkBox_axes, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setAxesDrawing(bool)));
+	connect(ui->checkBox_model, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setSkinnedMeshDrawing(bool)));
+	connect(ui->checkBox_skeleton, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setKinectSkeletonDrawing(bool)));
+	connect(ui->checkBox_floor, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setFloorDrawing(bool)));
+	connect(ui->checkBox_barbell, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setBarbellDrawing(bool)));
+	connect(ui->checkBox_tips, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setTipsDrawing(bool)));
+
 	// Play controls
 	connect(ui->horizontalSlider_progressPercent, SIGNAL(valueChanged(int))           , ui->openGLWidget, SLOT(setActiveMotionProgress(int)));
 	connect(ui->openGLWidget, SIGNAL(frameChanged(int)), ui->horizontalSlider_progressPercent, SLOT(setValue(int)));
+	connect(ui->pushButton_play, SIGNAL(clicked()), this, SLOT(togglePlayback()));
 
 	// gui timer
 	connect(m_guiTimer, SIGNAL(timeout()), this, SLOT(updateInfo()));

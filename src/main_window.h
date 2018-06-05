@@ -29,7 +29,8 @@ private slots:
 	void setActiveBoneRotationZ(int value);
 	void printActiveBoneTransforms() const;
 
-	// Kinect
+	void togglePlayback();
+	
 	void updateInfo();
 
 protected:

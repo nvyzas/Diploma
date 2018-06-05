@@ -62,8 +62,14 @@ public:
 	float m_barAngle;
 	QVector3D m_barSpeed;
 
+
+	QVector<KFrame>* m_activeMotion;
+	QVector<KFrame>* m_activeAthleteMotion;
+	QVector<KFrame>* m_activeTrainerMotion;
+
 	uint m_activeFrameIndex = 0;
 	double m_activeFrameTimestamp;
+
 	uint m_activeBoneId = 0;
 	uint m_activeJointId = 0;
 
@@ -72,9 +78,6 @@ public:
 	SkinningTechnique* skinningTechnique();
 	Technique* technique();
 	KSensor* ksensor();
-	bool renderAxes() const;
-	bool renderSkinnedMesh() const;
-	bool renderKinectSkeleton() const;
 	bool modelSkinning() const;
 	QStringList modelBoneList() const;
 	QStringList motionTypeList() const;
@@ -108,6 +111,16 @@ public:
 
 	int activeMotionProgress() const;
 
+	bool isPaused() const;
+
+
+	bool axesDrawing() const;
+	bool skinnedMeshDrawing() const;
+	bool kinectSkeletonDrawing() const;
+	bool floorDrawing() const;
+	bool barbellDrawing() const;
+	bool tipsDrawing() const;
+
 public slots:
 	void enableCaptureMode(bool state);
 
@@ -117,9 +130,14 @@ public slots:
 	void setActiveMotionType(int motionType);
 	void setActiveMotionProgress(int progressPercent);
 
-	void setRenderAxes(bool state);
-	void setRenderModel(bool state);
-	void setRenderSkeleton(bool state);
+	void setIsPaused(bool state);
+
+	void setAxesDrawing(bool state);
+	void setSkinnedMeshDrawing(bool state);
+	void setKinectSkeletonDrawing(bool state);
+	void setFloorDrawing(bool state);
+	void setBarbellDrawing(bool state);
+	void setTipsDrawing(bool state);
 
 	void setModelName(const QString& modelName);
 	void setModelSkinning(bool state);
@@ -153,13 +171,23 @@ private:
 
 
 	Mode m_activeMode;
-	Person m_activePerson;
+
 	bool m_athleteEnabled;
 	bool m_trainerEnabled;
-	int m_activeMotionType = 3;
 
-	QVector<KFrame>* m_activeAthleteMotion;
-	QVector<KFrame>* m_activeTrainerMotion;
+	int m_activeMotionType;
+
+	// render
+	bool m_axesDrawing = true;
+	bool m_skinnedMeshDrawing = true;
+	bool m_kinectSkeletonDrawing = true;
+	bool m_barbellDrawing = false;
+	bool m_floorDrawing = false;
+	bool m_tipsDrawing = true;
+
+	bool m_drawSkinnedMeshJoints = true;
+
+
 
 	QPoint m_lastMousePosition;
 	bool m_isPaused = true;	
@@ -171,7 +199,6 @@ private:
 	QString m_skinnedMeshModelName;
 	QVector3D m_skinnedMeshOffset;
 	bool m_skinningEnabled = true;
-	bool m_renderSkinnedMesh = true;
 	void loadSkinnedMesh();
 	void unloadSkinnedMesh();
 	enum VB_TYPES {
@@ -190,7 +217,6 @@ private:
 
 	// Skinned mesh joint dots
 #define NUM_BONES 53
-	bool m_drawSkinnedMeshJoints = true;
 	GLuint m_skinnedMeshJointsVAO;
 	GLuint m_skinnedMeshJointsVBO;
 	float m_skinnedMeshJoints[2 * 3 * NUM_BONES];
@@ -198,7 +224,6 @@ private:
 	void drawSkinnedMeshJoints();
 
 	// kinect skeleton
-	bool m_drawKinectSkeleton = true;
 	QVector3D m_kinectSkeletonOffset;
 	GLuint m_kinectSkeletonJointsVAO;
 	GLuint m_kinectSkeletonJointsVBO;
@@ -212,7 +237,6 @@ private:
 	void drawArrow();
 
 	// axes
-	bool m_drawAxes = true;
 	GLuint m_axesVAO;
 	void loadAxes();
 	void drawAxes();
@@ -231,14 +255,12 @@ private:
 
 	// plane
 #define PLANE_VERTICES 4
-	bool m_drawPlane = false;
 	QOpenGLTexture* m_planeTexture;
 	GLuint m_planeVAO;
 	void loadPlane();
 	void drawPlane();
 
 	// barbell
-	bool m_drawBarbell = false;
 	QVector<QOpenGLTexture*> m_barbellTextures;
 	QVector<MeshEntry> m_barbellMeshEntries;
 	GLuint m_barbellVAO;

@@ -56,8 +56,7 @@ KSkeleton::KSkeleton()
 	calculateLimbLengths(m_athleteAdjustedMotion);
 	printLimbLengths();
 
-	m_activeSequence = &m_athleteRawMotion;
-	m_interpolationInterval = m_activeSequence->at(1).timestamp - m_activeSequence->at(0).timestamp;
+	//m_interpolationInterval = m_activeMotion->at(1).timestamp - m_activeMotion->at(0).timestamp;
 	cout << "Frame interval in active sequence: " << m_interpolationInterval << endl;
 
 	cout << "KSkeleton constructor end.\n" << endl;
@@ -557,42 +556,16 @@ void KSkeleton::printActiveJoints() const
 	}
 	cout << endl;
 }
-void KSkeleton::nextActiveSequence()
-{
-	if (m_activeSequence == &m_athleteRawMotion) {
-		m_activeSequence = &m_athleteInterpolatedMotion;
-		cout << "Active frame sequence: Interpolated" << endl;
-	}
-	else if (m_activeSequence == &m_athleteInterpolatedMotion) {
-		m_activeSequence = &m_athleteFilteredMotion;
-		cout << "Active frame sequence: Filtered" << endl;
-	} 
-	else if (m_activeSequence == &m_athleteFilteredMotion) {
-		m_activeSequence = &m_athleteAdjustedMotion;
-		cout << "Active frame sequence: Adjusted" << endl;
-	}
-	else if (m_activeSequence == &m_athleteAdjustedMotion) {
-		m_activeSequence = &m_athleteRawMotion;
-		cout << "Active frame sequence: Raw" << endl;
-	}
-	else {
-		cout << "Unknown active frame sequence." << endl;
-	}
-}
-void KSkeleton::setActiveJoints(uint frameIndex)
-{
-	m_activeJoints = m_activeSequence->at(frameIndex).joints;
-}
-double KSkeleton::timestamp(uint frameIndex) const
-{
-	return m_activeSequence->at(frameIndex).timestamp;
-}
 array<KJoint, JointType_Count>& KSkeleton::activeJoints()
 {
 	return m_activeJoints;
 }
+void KSkeleton::setActiveJoints(array<KJoint, JointType_Count>& joints)
+{
+	m_activeJoints = joints;
+}
 // saves filtered frame sequence to trc
-bool KSkeleton::saveToTrc()
+bool KSkeleton::exportToTRC()
 {
 	QString fileName("joint_positions.trc");
 	QFile qf(fileName);

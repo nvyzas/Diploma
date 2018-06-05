@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>520</width>
-    <height>776</height>
+    <width>524</width>
+    <height>772</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,8 +29,8 @@
          <widget class="MainWidget" name="openGLWidget">
           <property name="baseSize">
            <size>
-            <width>512</width>
-            <height>424</height>
+            <width>400</width>
+            <height>300</height>
            </size>
           </property>
           <property name="focusPolicy">
@@ -86,10 +86,10 @@
              <string>Render</string>
             </property>
             <layout class="QGridLayout" name="gridLayout_3">
-             <item row="6" column="0">
-              <widget class="QCheckBox" name="checkBox_barbell">
+             <item row="8" column="0">
+              <widget class="QCheckBox" name="checkBox_velocity">
                <property name="text">
-                <string>Barbell</string>
+                <string>Velocity</string>
                </property>
               </widget>
              </item>
@@ -100,6 +100,13 @@
                </property>
               </widget>
              </item>
+             <item row="5" column="0">
+              <widget class="QCheckBox" name="checkBox_floor">
+               <property name="text">
+                <string>Floor</string>
+               </property>
+              </widget>
+             </item>
              <item row="4" column="1">
               <widget class="QCheckBox" name="checkBox_model">
                <property name="text">
@@ -107,10 +114,10 @@
                </property>
               </widget>
              </item>
-             <item row="5" column="0">
-              <widget class="QCheckBox" name="checkBox_joint">
+             <item row="6" column="0">
+              <widget class="QCheckBox" name="checkBox_barbell">
                <property name="text">
-                <string>Floor</string>
+                <string>Barbell</string>
                </property>
               </widget>
              </item>
@@ -124,21 +131,14 @@
              <item row="6" column="1">
               <widget class="QCheckBox" name="checkBox_trajectory">
                <property name="text">
-                <string>Trajectory</string>
+                <string>Path</string>
                </property>
               </widget>
              </item>
-             <item row="7" column="0">
-              <widget class="QCheckBox" name="checkBox_velocity">
+             <item row="8" column="1">
+              <widget class="QCheckBox" name="checkBox_tips">
                <property name="text">
-                <string>Velocity</string>
-               </property>
-              </widget>
-             </item>
-             <item row="7" column="1">
-              <widget class="QCheckBox" name="checkBox_angle">
-               <property name="text">
-                <string>Angle</string>
+                <string>Tips</string>
                </property>
               </widget>
              </item>
@@ -153,6 +153,12 @@
             <layout class="QVBoxLayout" name="verticalLayout">
              <item>
               <widget class="QLabel" name="label_activeJoint">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
                <property name="text">
                 <string>Active Joint</string>
                </property>
@@ -174,13 +180,6 @@
               <widget class="QLabel" name="label_zRot">
                <property name="text">
                 <string>z-Rot:</string>
-               </property>
-              </widget>
-             </item>
-             <item row="13" column="0" colspan="2">
-              <widget class="QPushButton" name="pushButton_info">
-               <property name="text">
-                <string>Print info</string>
                </property>
               </widget>
              </item>
@@ -310,6 +309,13 @@
                </property>
               </widget>
              </item>
+             <item row="2" column="1">
+              <widget class="QPushButton" name="pushButton_info">
+               <property name="text">
+                <string>Print</string>
+               </property>
+              </widget>
+             </item>
             </layout>
            </widget>
           </item>
@@ -322,10 +328,52 @@
         <item>
          <widget class="QGroupBox" name="groupBox_playback">
           <property name="title">
-           <string>Motion</string>
+           <string>Motion Playback</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_2">
-           <item row="0" column="0" colspan="3">
+           <item row="6" column="1">
+            <widget class="QPushButton" name="pushButton_play">
+             <property name="text">
+              <string>Play_Pause</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="2">
+            <widget class="QPushButton" name="pushButton_nextPhase">
+             <property name="text">
+              <string>-&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="0">
+            <widget class="QPushButton" name="pushButton_previousPhase">
+             <property name="text">
+              <string>&lt;-</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_serial">
+             <property name="text">
+              <string>Serial:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="2">
+            <widget class="QLabel" name="label_speed">
+             <property name="text">
+              <string>Speed:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QLabel" name="label_time">
+             <property name="text">
+              <string>Time:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0" colspan="3">
             <widget class="QSlider" name="horizontalSlider_progressPercent">
              <property name="minimum">
               <number>0</number>
@@ -335,48 +383,6 @@
              </property>
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="1">
-            <widget class="QPushButton" name="pushButton_play">
-             <property name="text">
-              <string>Play</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QLabel" name="label_time">
-             <property name="text">
-              <string>Time:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="label_serial">
-             <property name="text">
-              <string>Serial:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="2">
-            <widget class="QLabel" name="label_speed">
-             <property name="text">
-              <string>Speed:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="2">
-            <widget class="QPushButton" name="pushButton">
-             <property name="text">
-              <string>-&gt;</string>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="0">
-            <widget class="QPushButton" name="pushButton_2">
-             <property name="text">
-              <string>&lt;-</string>
              </property>
             </widget>
            </item>
