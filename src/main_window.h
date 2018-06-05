@@ -30,8 +30,7 @@ private slots:
 	void printActiveBoneTransforms() const;
 
 	// Kinect
-	void setActiveKinectSkeletonFrame(int progressPercent);
-	void updateStatusBar();
+	void updateInfo();
 
 protected:
 	void keyPressEvent(QKeyEvent *event) override;

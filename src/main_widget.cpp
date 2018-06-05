@@ -31,8 +31,10 @@ MainWidget::MainWidget(QWidget *parent)
 	m_pipeline(new Pipeline())
 {
 	cout << "MainWidget class constructor start." << endl;
+
 	m_skinnedMesh->setKSkeleton(m_ksensor->skeleton());
 	setup();
+
 	cout << "MainWidget class constructor end.\n" << endl;
 }
 MainWidget::~MainWidget()
@@ -77,11 +79,10 @@ void MainWidget::setup()
 	cout << "MainWidget setup start." << endl;
 
 	// Setup mode
-	m_mode = Mode::PLAYBACK;
-	cout << "Mode: " << mode().toStdString() << endl;
+	m_activeMode = Mode::CAPTURE;
 
 	// Setup timer
-	connect(&m_timer, SIGNAL(timeout()), this, SLOT(updateIndirect()));
+	connect(&m_timer, SIGNAL(timeout()), this, SLOT(intervalPassed()));
 	m_timer.setTimerType(Qt::PreciseTimer);
 	m_playbackInterval = m_ksensor->skeleton()->m_interpolationInterval * 1000;
 	cout << "Playback interval: " << m_playbackInterval << endl;
@@ -232,10 +233,10 @@ void MainWidget::paintGL()
 	glClearColor(0.f, 0.f, 0.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	if (m_mode == Mode::CAPTURE) {
+	if (m_activeMode == Mode::CAPTURE) {
 		m_ksensor->getBodyFrame();
 	}
-	else if (m_mode == Mode::PLAYBACK){
+	else if (m_activeMode == Mode::PLAYBACK){
 		m_ksensor->skeleton()->setActiveJoints(m_activeFrameIndex);
 	}
 	else {
@@ -313,7 +314,7 @@ void MainWidget::paintGL()
 	// prepare pipeline to draw kinect skeleton related stuff
 	m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
 	m_pipeline->setWorldOrientation(QQuaternion());
-	if (m_mode == Mode::CAPTURE) m_pipeline->setWorldPosition(QVector3D());
+	if (m_activeMode == Mode::CAPTURE) m_pipeline->setWorldPosition(QVector3D());
 	else m_pipeline->setWorldPosition(m_kinectSkeletonOffset);
 
 	// draw kinect skeleton
@@ -382,8 +383,9 @@ void MainWidget::paintGL()
 	m_kneeAngle = ToDegrees(acos(QVector3D::dotProduct(kneeToHip, kneeToAnkle)));
 	
 
-	if (!m_paused && m_shouldUpdate) {
+	if (!m_isPaused && m_shouldUpdate) {
 		if (++m_activeFrameIndex > m_ksensor->skeleton()->m_activeSequence->size())  m_activeFrameIndex = 0;
+		emit frameChanged(activeMotionProgress());
 		m_shouldUpdate = false;
 		calculateFPS();
 	}
@@ -444,9 +446,6 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		cout << "Playback interval: " << m_playbackInterval << endl;
 		m_timer.setInterval(m_playbackInterval);
 		break;
-	case Qt::Key_A:
-		m_ksensor->skeleton()->processFrames();
-		break;
 	case Qt::Key_C:
 		m_ksensor->skeleton()->calculateLimbLengths(*m_ksensor->skeleton()->m_activeSequence);
 		m_ksensor->skeleton()->printLimbLengths();
@@ -464,26 +463,23 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_L:
 		m_ksensor->skeleton()->loadFrameSequences();
 		break;
-	case Qt::Key_M:
-		changeMode();
-		break;
 	case Qt::Key_N:
 		m_ksensor->skeleton()->nextActiveSequence();
 		break;
 	case Qt::Key_P:
-		if (m_paused) {
-			m_paused = false;
+		if (m_isPaused) {
+			m_isPaused = false;
 			cout << "Playback Resumed" << endl;
 			m_timer.start();
 		}
 		else {
-			m_paused = true;
+			m_isPaused = true;
 			cout << "Playback paused" << endl;
 			m_timer.stop();
 		}
 		break;
 	case Qt::Key_R:
-		if (m_mode==Mode::CAPTURE) m_ksensor->skeleton()->record();
+		if (m_activeMode==Mode::CAPTURE) m_ksensor->skeleton()->record();
 		else cout << "Record does not work in this mode." << endl;
 		break;
 	case Qt::Key_S:
@@ -596,9 +592,61 @@ QStringList MainWidget::modelBoneList() const
 	for (const auto& it : m_skinnedMesh->boneMap()) qsl << QString::fromLocal8Bit(it.first.c_str());
 	return qsl;
 }
-QString MainWidget::mode() const
+QStringList MainWidget::motionTypeList() const
 {
-	return QString(m_mode==Mode::PLAYBACK ? "PLAYBACK" : "CAPTURE");
+	return m_motionTypeList;
+}
+bool MainWidget::captureIsEnabled() const
+{
+	if (m_activeMode == Mode::CAPTURE) return true;
+	else return false;
+}
+void MainWidget::enableCaptureMode(bool state)
+{
+	if (state == true) {
+		m_activeMode = Mode::CAPTURE;
+		cout << "Active mode: Capture" << endl;
+		m_timer.setInterval(m_captureInterval);
+	}
+	else {
+		m_activeMode = Mode::PLAYBACK;
+		cout << "Active mode: Playback" << endl;
+		m_timer.setInterval(m_playbackInterval);
+	}
+}
+bool MainWidget::athleteEnabled() const
+{
+	return m_athleteEnabled;
+}
+bool MainWidget::trainerEnabled() const
+{
+	return m_trainerEnabled;
+}
+void MainWidget::enableAthlete(bool state)
+{
+	m_athleteEnabled = state;
+	cout << "Athlete " << ( m_athleteEnabled ? "enabled" : "disabled" ) << endl;
+	m_timer.start();
+}void MainWidget::enableTrainer(bool state)
+{
+	m_trainerEnabled = state;
+	if (m_trainerEnabled) {
+		m_ksensor->skeleton()->setTrainerRecording(true);
+	}
+	else {
+		m_ksensor->skeleton()->setTrainerRecording(false);
+	}
+	cout << "Trainer " << (m_trainerEnabled ? "enabled" : "disabled") << endl;
+	m_timer.start();
+}
+int MainWidget::activeMotionType() const
+{
+	return m_activeMotionType;
+}
+void MainWidget::setActiveMotionType(int motionType)
+{	
+	m_activeMotionType = motionType;
+	cout << "Motion type: " << m_motionTypeList[m_activeMotionType].toStdString() << endl;
 }
 void MainWidget::setModelName(const QString &modelName)
 {
@@ -637,27 +685,28 @@ void MainWidget::unloadSkinnedMesh()
 		m_skinnedMeshVAO = 0;
 	}
 }
-void MainWidget::updateIndirect()
+void MainWidget::intervalPassed()
 {
 	m_shouldUpdate = true;
-	update(); // #? use QWidget->update or QWidget->repaint
+	update();
 }
-void MainWidget::setActiveFrame(uint index)
+int MainWidget::activeMotionProgress() const
 {
-	m_activeFrameIndex = (uint)(index / 100.f * m_ksensor->skeleton()->m_activeSequence->size());
+	return (int)(m_activeFrameIndex / m_ksensor->skeleton()->m_activeSequence->size() *100.f);
 }
-void MainWidget::changeMode()
+void MainWidget::setActiveMotionProgress(int progressPercent)
 {
-		if (m_mode == Mode::CAPTURE) {
-			m_mode = Mode::PLAYBACK;
-			m_timer.setInterval(m_playbackInterval);
-		}
-		else {
-			m_mode = Mode::CAPTURE;
-			m_timer.setInterval(m_captureInterval);
-		}
-		cout << "Mode: " << mode().toStdString() << endl;
-		m_timer.start();
+	if (progressPercent > 100 || progressPercent < 0) {
+		cout << "Progress percent out of bounds: " << progressPercent << endl;
+		return;
+	}
+	int newFrameIndex = (int)(progressPercent / 100.f * m_ksensor->skeleton()->m_activeSequence->size());
+	if (newFrameIndex > m_ksensor->skeleton()->m_activeSequence->size() || newFrameIndex < 0) {
+		cout << "New frame index out of bounds: " << newFrameIndex << endl;
+		m_activeFrameIndex = newFrameIndex;
+		return;
+	}
+	update();
 }
 void MainWidget::setActiveBone(const QString& boneName)
 {

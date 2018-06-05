@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>520</width>
-    <height>707</height>
+    <height>776</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -24,7 +24,7 @@
        <bool>false</bool>
       </property>
       <widget class="QWidget" name="layoutWidget">
-       <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,0">
+       <layout class="QHBoxLayout" name="horizontalLayout_top" stretch="1,0">
         <item>
          <widget class="MainWidget" name="openGLWidget">
           <property name="baseSize">
@@ -39,23 +39,168 @@
          </widget>
         </item>
         <item>
-         <layout class="QVBoxLayout" name="verticalLayout">
+         <layout class="QVBoxLayout" name="verticalLayout_right">
+          <item>
+           <widget class="QGroupBox" name="groupBox_mainStatus">
+            <property name="title">
+             <string>Main Status</string>
+            </property>
+            <layout class="QGridLayout" name="gridLayout_4">
+             <item row="3" column="0">
+              <widget class="QCheckBox" name="checkBox_athlete">
+               <property name="text">
+                <string>Athlete</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="1">
+              <widget class="QCheckBox" name="checkBox_trainer">
+               <property name="text">
+                <string>Trainer</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="0" colspan="2">
+              <widget class="QComboBox" name="comboBox_motionType"/>
+             </item>
+             <item row="1" column="0">
+              <widget class="QRadioButton" name="radioButton_capture">
+               <property name="text">
+                <string>Capture</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QRadioButton" name="radioButton_playback">
+               <property name="text">
+                <string>Playback</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="groupBox_render">
+            <property name="title">
+             <string>Render</string>
+            </property>
+            <layout class="QGridLayout" name="gridLayout_3">
+             <item row="6" column="0">
+              <widget class="QCheckBox" name="checkBox_barbell">
+               <property name="text">
+                <string>Barbell</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="0">
+              <widget class="QCheckBox" name="checkBox_skeleton">
+               <property name="text">
+                <string>Skeleton</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="1">
+              <widget class="QCheckBox" name="checkBox_model">
+               <property name="text">
+                <string>Model</string>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="0">
+              <widget class="QCheckBox" name="checkBox_joint">
+               <property name="text">
+                <string>Floor</string>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="1">
+              <widget class="QCheckBox" name="checkBox_axes">
+               <property name="text">
+                <string>Axes</string>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="1">
+              <widget class="QCheckBox" name="checkBox_trajectory">
+               <property name="text">
+                <string>Trajectory</string>
+               </property>
+              </widget>
+             </item>
+             <item row="7" column="0">
+              <widget class="QCheckBox" name="checkBox_velocity">
+               <property name="text">
+                <string>Velocity</string>
+               </property>
+              </widget>
+             </item>
+             <item row="7" column="1">
+              <widget class="QCheckBox" name="checkBox_angle">
+               <property name="text">
+                <string>Angle</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="groupBox_skeleton">
+            <property name="title">
+             <string>Skeleton</string>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout">
+             <item>
+              <widget class="QLabel" name="label_activeJoint">
+               <property name="text">
+                <string>Active Joint</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="comboBox_activeJoint"/>
+             </item>
+            </layout>
+           </widget>
+          </item>
           <item>
            <widget class="QGroupBox" name="groupBox_model">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
             <property name="title">
-             <string>Skinned Mesh</string>
+             <string>Model</string>
             </property>
             <layout class="QGridLayout" name="gridLayout">
              <item row="24" column="0">
               <widget class="QLabel" name="label_zRot">
                <property name="text">
                 <string>z-Rot:</string>
+               </property>
+              </widget>
+             </item>
+             <item row="13" column="0" colspan="2">
+              <widget class="QPushButton" name="pushButton_info">
+               <property name="text">
+                <string>Print info</string>
+               </property>
+              </widget>
+             </item>
+             <item row="24" column="1">
+              <widget class="QSpinBox" name="spinBox_zRot">
+               <property name="minimum">
+                <number>-180</number>
+               </property>
+               <property name="maximum">
+                <number>180</number>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="0" colspan="2">
+              <widget class="QComboBox" name="comboBox_activeBone"/>
+             </item>
+             <item row="20" column="0">
+              <widget class="QLabel" name="label_xRot">
+               <property name="text">
+                <string>x-Rot:</string>
                </property>
               </widget>
              </item>
@@ -85,57 +230,6 @@
                </property>
               </widget>
              </item>
-             <item row="24" column="1">
-              <widget class="QSpinBox" name="spinBox_zRot">
-               <property name="minimum">
-                <number>-180</number>
-               </property>
-               <property name="maximum">
-                <number>180</number>
-               </property>
-              </widget>
-             </item>
-             <item row="20" column="0">
-              <widget class="QLabel" name="label_xRot">
-               <property name="text">
-                <string>x-Rot:</string>
-               </property>
-              </widget>
-             </item>
-             <item row="27" column="0">
-              <widget class="QLabel" name="label_activeJoint">
-               <property name="text">
-                <string>Active Joint</string>
-               </property>
-              </widget>
-             </item>
-             <item row="13" column="0" colspan="2">
-              <widget class="QPushButton" name="pushButton_info">
-               <property name="text">
-                <string>Print info</string>
-               </property>
-              </widget>
-             </item>
-             <item row="5" column="0" colspan="2">
-              <widget class="QComboBox" name="comboBox_activeBone"/>
-             </item>
-             <item row="14" column="1">
-              <widget class="QCheckBox" name="checkBox_boneFocused">
-               <property name="text">
-                <string>Focused</string>
-               </property>
-              </widget>
-             </item>
-             <item row="28" column="0" colspan="2">
-              <widget class="QComboBox" name="comboBox_activeJoint"/>
-             </item>
-             <item row="22" column="0">
-              <widget class="QLabel" name="label_yRot">
-               <property name="text">
-                <string>y-Rot:</string>
-               </property>
-              </widget>
-             </item>
              <item row="22" column="1">
               <widget class="QSpinBox" name="spinBox_yRot">
                <property name="minimum">
@@ -143,6 +237,13 @@
                </property>
                <property name="maximum">
                 <number>180</number>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0" colspan="2">
+              <widget class="QCheckBox" name="checkBox_modelSkinning">
+               <property name="text">
+                <string>Skinning</string>
                </property>
               </widget>
              </item>
@@ -165,10 +266,17 @@
                </property>
               </widget>
              </item>
-             <item row="1" column="0" colspan="2">
-              <widget class="QCheckBox" name="checkBox_modelSkinning">
+             <item row="14" column="1">
+              <widget class="QCheckBox" name="checkBox_boneFocused">
                <property name="text">
-                <string>Skinning</string>
+                <string>Focused</string>
+               </property>
+              </widget>
+             </item>
+             <item row="22" column="0">
+              <widget class="QLabel" name="label_yRot">
+               <property name="text">
+                <string>y-Rot:</string>
                </property>
               </widget>
              </item>
@@ -205,103 +313,84 @@
             </layout>
            </widget>
           </item>
-          <item>
-           <widget class="QGroupBox" name="groupBox_render">
-            <property name="title">
-             <string>Render</string>
-            </property>
-            <layout class="QVBoxLayout" name="verticalLayout_2">
-             <item>
-              <widget class="QCheckBox" name="checkBox_axes">
-               <property name="text">
-                <string>Axes</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="checkBox_model">
-               <property name="text">
-                <string>Model</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="checkBox_skeleton">
-               <property name="text">
-                <string>Skeleton</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="checkBox_joint">
-               <property name="text">
-                <string>Active Joint</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <widget class="QGroupBox" name="groupBox_movement">
-            <property name="title">
-             <string>Movement</string>
-            </property>
-            <layout class="QVBoxLayout" name="verticalLayout_3">
-             <item>
-              <widget class="QSlider" name="horizontalSlider_progressPercent">
-               <property name="maximum">
-                <number>100</number>
-               </property>
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="label_time">
-               <property name="text">
-                <string>Time</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
-          </item>
-          <item>
-           <spacer name="verticalSpacer">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
          </layout>
         </item>
        </layout>
       </widget>
       <widget class="QWidget" name="gridLayoutWidget">
-       <layout class="QHBoxLayout" name="horizontalLayout_3">
+       <layout class="QHBoxLayout" name="horizontalLayout_bottom">
+        <item>
+         <widget class="QGroupBox" name="groupBox_playback">
+          <property name="title">
+           <string>Motion</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_2">
+           <item row="0" column="0" colspan="3">
+            <widget class="QSlider" name="horizontalSlider_progressPercent">
+             <property name="minimum">
+              <number>0</number>
+             </property>
+             <property name="maximum">
+              <number>100</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1">
+            <widget class="QPushButton" name="pushButton_play">
+             <property name="text">
+              <string>Play</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QLabel" name="label_time">
+             <property name="text">
+              <string>Time:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_serial">
+             <property name="text">
+              <string>Serial:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="2">
+            <widget class="QLabel" name="label_speed">
+             <property name="text">
+              <string>Speed:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="2">
+            <widget class="QPushButton" name="pushButton">
+             <property name="text">
+              <string>-&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QPushButton" name="pushButton_2">
+             <property name="text">
+              <string>&lt;-</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
         <item>
          <widget class="QGroupBox" name="groupBox_info">
           <property name="title">
            <string>Info</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_5">
-           <item row="0" column="2">
-            <widget class="QLabel" name="label_barSpeedTitle">
-             <property name="text">
-              <string>Bar speed:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="3">
-            <widget class="QLabel" name="label_barSpeed">
+           <item row="1" column="3">
+            <widget class="QLabel" name="label_barAngle">
              <property name="text">
               <string>TextLabel</string>
              </property>
@@ -314,17 +403,10 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_fpsTitle">
+           <item row="0" column="3">
+            <widget class="QLabel" name="label_barSpeed">
              <property name="text">
-              <string>FPS:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="label_kneeAngleTitle">
-             <property name="text">
-              <string>Knee angle:</string>
+              <string>TextLabel</string>
              </property>
             </widget>
            </item>
@@ -335,6 +417,13 @@
              </property>
             </widget>
            </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_kneeAngleTitle">
+             <property name="text">
+              <string>Knee angle:</string>
+             </property>
+            </widget>
+           </item>
            <item row="1" column="1">
             <widget class="QLabel" name="label_kneeAngle">
              <property name="text">
@@ -342,10 +431,17 @@
              </property>
             </widget>
            </item>
-           <item row="1" column="3">
-            <widget class="QLabel" name="label_barAngle">
+           <item row="0" column="2">
+            <widget class="QLabel" name="label_barSpeedTitle">
              <property name="text">
-              <string>TextLabel</string>
+              <string>Bar speed:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_fpsTitle">
+             <property name="text">
+              <string>FPS:</string>
              </property>
             </widget>
            </item>

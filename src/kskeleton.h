@@ -108,9 +108,9 @@ struct KFrame
 		else if (interpolationTime > next.timestamp) cout << setw(16) << "Extrapolation+";
 		else cout << setw(16) << "Interpolation";
 		
-		cout << " " << setw(4) << previous.serial << " " << setw(4) << next.serial;
-		cout << " " << setw(10) << previous.timestamp << " " << setw(10) << next.timestamp;
-		cout << " @" << setw(10) << interpolationTime << "->" << setw(10) << percentDistance * 100 << " %";
+		cout << " " << setw(4) << previous.serial << " " << setw(4) << next.serial << " @" << setw(4) << serial;
+		cout << " " << setw(10) << previous.timestamp << " " << setw(10) << next.timestamp << " @" << setw(10) << interpolationTime;
+		cout << "->" << setw(10) << percentDistance * 100 << " %";
 		cout << " Interval=" << next.timestamp - previous.timestamp;
 		if (next.timestamp <= previous.timestamp) cout << " Error: next.timestamp <= previous.timestamp";
 		cout << endl;
@@ -140,54 +140,69 @@ public:
 	KSkeleton();
 	~KSkeleton();
 	void addFrame(const Joint* joints, const JointOrientation* orientations, const double& time);
-	void processFrames();
 
 	void printInfo() const;
 	void printJointHierarchy() const;
 	void printActiveJoints() const;
-	void printSequenceToLog(const QVector<KFrame>& seq);
 	void printLimbLengths() const;
+	void printMotionsToLog();
 
 	// files
 	bool saveToTrc();
+
+
 	void saveFrameSequences();
 	void loadFrameSequences();
 
 	void clearSequences();
 
-	bool m_playbackOn = false;
 	bool m_isRecording = false;
 	bool m_isFinalizing = false;
 
 	array<KJoint, JointType_Count>& activeJoints();
 	void setActiveJoints(uint frameIndex);
 	double timestamp(uint frameIndex) const;
-
-	QVector<KFrame>* m_activeSequence;
+	
 	void nextActiveSequence();
 
-	double m_interpolationInterval;
-	double m_recordingDuration;
+	double m_interpolationInterval; // calculated from trainer's motion
+
 	const array<KLimb, NUM_LIMBS>& limbs() const;
 	const array<KNode, JointType_Count>& nodes() const;
 	void calculateLimbLengths(const QVector<KFrame>& sequence);
+
+	QVector<KFrame>* m_activeSequence;
+
+
 	void record();
+	void setTrainerRecording(bool state);
 
 private:
 	array<KNode, JointType_Count> m_nodes; // these define the kinect skeleton hierarchy
 	array<KJoint, JointType_Count> m_activeJoints;
-	QVector<KFrame> m_rawSequence;
-	QVector<KFrame> m_interpolatedSequence;
-	QVector<KFrame> m_filteredSequence;
-	QVector<KFrame> m_adjustedSequence;
+
+	// Motions
+	QVector<KFrame> m_athleteRawMotion;
+	QVector<KFrame> m_athleteInterpolatedMotion;
+	QVector<KFrame> m_athleteFilteredMotion;
+	QVector<KFrame> m_athleteAdjustedMotion;
+	QVector<KFrame> m_athleteResizedMotion;
 	
+	QVector<KFrame> m_trainerRawMotion;
+	QVector<KFrame> m_trainerInterpolatedMotion;
+	QVector<KFrame> m_trainerFilteredMotion;
+	QVector<KFrame> m_trainerAdjustedMotion;
+
+	bool m_trainerRecording;
+	QVector<KFrame>* m_recordedMotion;
+
 	QFile m_sequenceLog;
 	QTextStream m_sequenceLogData;
 
 	// trc file
 	QFile *m_trcFile;
 	
-	// Savitzky-Golay filter, cubic order with symmetric coefficients
+	// Savitzky-Golay filter of cubic order with symmetric coefficients
 	static const uint m_framesDelayed = 12;
 	const array<float, 2*m_framesDelayed+2> m_sgCoefficients = { -253, -138, -33, 62, 147, 222, 287, 343, 387, 422, 447, 462, 467, 462, 447, 422, 387, 343, 278, 222, 147, 62, -33, -138, -253, 1 / 5175.f };
 	array<KFrame, m_framesDelayed> m_firstRawFrames;
@@ -196,7 +211,8 @@ private:
 	array<KLimb, NUM_LIMBS> m_limbs;
 	void initJoints();
 	void initLimbs();
-	void interpolateSequence();
+	QVector<KFrame> interpolateMotion(const QVector<KFrame>& motion);
+	QVector<KFrame> resizeMotion(const QVector<KFrame>& motion);
 	void filterSequence();
 	void adjustSequence();
 	void adjustLimbLength(uint frameLocation, uint jointId, const QVector3D& direction, float factor); // recursively adjust joints

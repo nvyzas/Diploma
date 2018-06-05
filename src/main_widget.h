@@ -77,18 +77,59 @@ public:
 	bool renderKinectSkeleton() const;
 	bool modelSkinning() const;
 	QStringList modelBoneList() const;
-	QString mode() const;
+	QStringList motionTypeList() const;
+
+	enum class Mode
+	{
+		CAPTURE,
+		PLAYBACK
+	};
+	enum class Person
+	{
+		ATHLETE,
+		TRAINER,
+		BOTH
+	};
+	enum class MotionType
+	{
+		RAW,
+		INTERPOLATED,
+		FILTERED,
+		ADJUSTED,
+		RESIZED
+	};
+
+	bool captureIsEnabled() const;
+
+	bool athleteEnabled() const;
+	bool trainerEnabled() const;
+
+	int activeMotionType() const;
+
+	int activeMotionProgress() const;
 
 public slots:
+	void enableCaptureMode(bool state);
+
+	void enableAthlete(bool state);
+	void enableTrainer(bool state);
+
+	void setActiveMotionType(int motionType);
+	void setActiveMotionProgress(int progressPercent);
+
 	void setRenderAxes(bool state);
 	void setRenderModel(bool state);
 	void setRenderSkeleton(bool state);
+
 	void setModelName(const QString& modelName);
 	void setModelSkinning(bool state);
-	void changeMode();
-	void updateIndirect(); // #todo replace it with something else
-	void setActiveFrame(uint index);
+
 	void setActiveBone(const QString& modelName);
+
+	void intervalPassed();
+
+signals:
+	void frameChanged(int progressPercent);
 
 protected:
 	void initializeGL();
@@ -108,19 +149,23 @@ private:
 	Pipeline* m_pipeline;
 	OpenSimModel m_osm;
 
-	enum class Mode
-	{
-		CAPTURE,
-		PLAYBACK
-	};
-	Mode m_mode;
-	
+	QStringList m_motionTypeList = { "Raw", "Interpolated", "Filtered", "Adjusted", "Resized" };
+
+
+	Mode m_activeMode;
+	Person m_activePerson;
+	bool m_athleteEnabled;
+	bool m_trainerEnabled;
+	int m_activeMotionType = 3;
+
+	QVector<KFrame>* m_activeAthleteMotion;
+	QVector<KFrame>* m_activeTrainerMotion;
+
 	QPoint m_lastMousePosition;
-	bool m_paused = true;	
+	bool m_isPaused = true;	
 	QTimer m_timer;
 	bool m_shouldUpdate = false;
 	void setup();
-
 
 	// Skinned mesh
 	QString m_skinnedMeshModelName;

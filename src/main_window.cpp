@@ -158,8 +158,15 @@ void MainWindow::setupObjects()
 {
 	cout << "MainWindow: Setting up objects" << endl;
 
-	ui->checkBox_modelSkinning->setChecked(ui->openGLWidget->modelSkinning());
+	// Main Status
+	ui->radioButton_capture->setChecked(ui->openGLWidget->captureIsEnabled());
+	//ui->radioButton_playback->setChecked(!ui->openGLWidget->captureIsEnabled());
+	ui->checkBox_athlete->setChecked(ui->openGLWidget->athleteEnabled());
+	ui->checkBox_trainer->setChecked(ui->openGLWidget->trainerEnabled());
+	ui->comboBox_motionType->addItems(ui->openGLWidget->motionTypeList());
+	ui->comboBox_motionType->setCurrentIndex(ui->openGLWidget->activeMotionType());
 
+	ui->checkBox_modelSkinning->setChecked(ui->openGLWidget->modelSkinning());
 	ui->comboBox_activeBone->addItems(ui->openGLWidget->modelBoneList());
 	loadActiveBoneInfo();
 
@@ -175,6 +182,13 @@ void MainWindow::setupConnections()
 {
 	cout << "MainWindow: Setting up connections" << endl;
 	
+	// Main Status
+	// only need to connect one of the two radio buttons
+	connect(ui->radioButton_capture, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(enableCaptureMode(bool)));
+	connect(ui->checkBox_athlete, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(enableAthlete(bool)));
+	connect(ui->checkBox_trainer, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(enableTrainer(bool)));
+	connect(ui->comboBox_motionType, SIGNAL(currentIndexChanged(int)), ui->openGLWidget, SLOT(setActiveMotionType(int)));
+
 	// Skinned mesh related
 	// toggle skinning
 	connect(ui->checkBox_modelSkinning          , SIGNAL(toggled(bool))               , ui->openGLWidget, SLOT(setModelSkinning(bool)));
@@ -205,25 +219,17 @@ void MainWindow::setupConnections()
 	// toggle draw kinect skeleton
 	connect(ui->checkBox_skeleton               , SIGNAL(toggled(bool))               , ui->openGLWidget, SLOT(setRenderSkeleton(bool)));
 	
-	// Kinect
-	connect(ui->horizontalSlider_progressPercent, SIGNAL(valueChanged(int))           , SLOT(setActiveKinectSkeletonFrame(int)));
+	// Play controls
+	connect(ui->horizontalSlider_progressPercent, SIGNAL(valueChanged(int))           , ui->openGLWidget, SLOT(setActiveMotionProgress(int)));
+	connect(ui->openGLWidget, SIGNAL(frameChanged(int)), ui->horizontalSlider_progressPercent, SLOT(setValue(int)));
 
 	// gui timer
-	connect(m_guiTimer, SIGNAL(timeout()), this, SLOT(updateStatusBar()));
+	connect(m_guiTimer, SIGNAL(timeout()), this, SLOT(updateInfo()));
+	connect(m_guiTimer, SIGNAL(timeout()), this, SLOT(updateInfo()));
+
 	m_guiTimer->start();
 }
-void MainWindow::setActiveKinectSkeletonFrame(int progressPercent)
-{
-	uint pp = progressPercent; // #? progressPercent implicitly cast to uint?
-	if (progressPercent > 100 || progressPercent < 0) {
-		cout << "Progress percent out of bounds: " << progressPercent << endl;
-	}
-	else {
-		ui->openGLWidget->setActiveFrame(progressPercent);
-		ui->openGLWidget->update();
-	}
-}
-void MainWindow::updateStatusBar()
+void MainWindow::updateInfo()
 {
 	ui->label_barAngle->setNum((double)ui->openGLWidget->m_barAngle);
 	ui->label_fps->setNum((int)ui->openGLWidget->m_fpsCount);
