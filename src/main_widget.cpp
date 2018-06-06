@@ -79,7 +79,7 @@ void MainWidget::setup()
 	cout << "MainWidget setup start." << endl;
 
 	// Setup mode
-	m_activeMode = Mode::PLAYBACK;
+	m_activeMode = Mode::CAPTURE;
 	m_activeMotionType = 0;
 	m_activeMotion = &m_ksensor->skeleton()->m_athleteRawMotion;
 

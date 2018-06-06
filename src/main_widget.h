@@ -7,7 +7,6 @@ class Camera;
 class Technique;
 class SkinningTechnique;
 class Pipeline;
-#include "opensim_model.h"
 #include "util.h"
 #include "skinned_mesh.h"
 
@@ -165,7 +164,6 @@ private:
 	Technique* m_technique;
 	SkinningTechnique* m_skinningTechnique;
 	Pipeline* m_pipeline;
-	OpenSimModel m_osm;
 
 	QStringList m_motionTypeList = { "Raw", "Interpolated", "Filtered", "Adjusted", "Resized" };
 

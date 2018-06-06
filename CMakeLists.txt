@@ -13,23 +13,16 @@ find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(OpenSim REQUIRED)
-IF(OpenSim_FOUND) 
-MESSAGE( "Project ${PROJECT_NAME} found OpenSim." ) 
-ENDIF(OpenSim_FOUND) 
-
 # Set Include Directories
 set(Diploma_INCLUDE_DIRS
 	${PROJECT_SOURCE_DIR}/res/assimp/include/
 	${PROJECT_SOURCE_DIR}/res/kinect/include/
-	#${OpenSim_INCLUDE_DIRS}
 )
 
 # Set Link Directories
 set(Diploma_LINK_DIRS
 	${PROJECT_SOURCE_DIR}/res/assimp/lib/
 	${PROJECT_SOURCE_DIR}/res/kinect/lib/
-	#${OpenSim_LIB_DIR}
 )
 
 # Set Link Libraries
@@ -39,20 +32,6 @@ set(Diploma_LINK_LIBS
 	Qt5::Core
 	Qt5::Gui
 	Qt5::Widgets
-	${OpenSim_LIBRARIES}
-	#libblas
-	#liblapack
-	#OpenSim_SimTKcommon
-	#OpenSim_SimTKmath
-	#OpenSim_SimTKsimbody
-	#osimActuators
-	#osimAnalyses
-	#osimCommon
-	#osimJavaJNI
-	#osimLepton
-	#osimSimulation
-	#osimTools
-	#pthreadVC2_x64
 )
 
 # Set Sources
@@ -61,7 +40,6 @@ set(Diploma_SRCS
 	src/main.cpp
 	src/main_widget.cpp
 	src/main_window.cpp
-	src/opensim_model.cpp
 	src/pipeline.cpp
 	src/ksensor.cpp
 	src/kskeleton.cpp
