@@ -101,7 +101,7 @@ public:
 		RESIZED
 	};
 
-	bool captureIsEnabled() const;
+	bool captureEnabled() const;
 
 	bool athleteEnabled() const;
 	bool trainerEnabled() const;
@@ -121,10 +121,10 @@ public:
 	bool tipsDrawing() const;
 
 public slots:
-	void enableCaptureMode(bool state);
+	void setCaptureEnabled(bool state);
 
-	void enableAthlete(bool state);
-	void enableTrainer(bool state);
+	void setAthleteEnabled(bool state);
+	void setTrainerEnabled(bool state);
 
 	void setActiveMotionType(int motionType);
 	void setActiveMotionProgress(int progressPercent);

@@ -148,10 +148,6 @@ bool KSensor::getBodyFrame()
 	hr = m_reader->AcquireLatestFrame(&frame);
 	if (FAILED(hr)) {
 		consecutiveFails++;
-		if (consecutiveFails == 10 && m_skeleton.m_isRecording) {
-			cout << "Too many consecutive fails." << endl;
-			m_skeleton.record();
-		}
 		return false;
 	}
 
@@ -205,8 +201,8 @@ bool KSensor::getBodyFrame()
 	if (discardFrame) {
 		m_sensorLogData << "Status=Discarded ";
 		if (m_skeleton.m_isRecording) {
-			cout << "Discarded frame during recording." << endl;
-			m_skeleton.record(); // stop recording
+			cout << "Stopping recording." << endl;
+			m_skeleton.m_isRecording = false; // stop recording
 		}
 	}
 	else {

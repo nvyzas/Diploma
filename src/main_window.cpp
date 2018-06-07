@@ -107,7 +107,7 @@ void MainWindow::printActiveBoneTransforms() const
 void MainWindow::togglePlayback()
 {
 	ui->openGLWidget->setIsPaused(!ui->openGLWidget->isPaused());
-	ui->pushButton_play->setText(ui->openGLWidget->isPaused() ? "Play" : "Pause");
+	ui->pushButton_playStartStop->setText(ui->openGLWidget->isPaused() ? "Play" : "Pause");
 }
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
@@ -163,8 +163,8 @@ void MainWindow::setupObjects()
 	cout << "MainWindow: Setting up objects" << endl;
 
 	// Main Status
-	ui->radioButton_capture->setChecked(ui->openGLWidget->captureIsEnabled());
-	ui->radioButton_playback->setChecked(!ui->openGLWidget->captureIsEnabled());
+	ui->radioButton_capture->setChecked(ui->openGLWidget->captureEnabled());
+	ui->radioButton_playback->setChecked(!ui->openGLWidget->captureEnabled());
 	ui->checkBox_athlete->setChecked(ui->openGLWidget->athleteEnabled());
 	ui->checkBox_trainer->setChecked(ui->openGLWidget->trainerEnabled());
 	ui->comboBox_motionType->addItems(ui->openGLWidget->motionTypeList());
@@ -182,7 +182,7 @@ void MainWindow::setupObjects()
 	ui->checkBox_tips->setChecked(ui->openGLWidget->tipsDrawing());
 
 	// Playback controls
-	ui->pushButton_play->setText(ui->openGLWidget->isPaused() ? "Play" : "Pause");
+	ui->pushButton_playStartStop->setText(ui->openGLWidget->isPaused() ? "Play" : "Pause");
 
 	m_guiTimer = new QTimer(this);
 	m_guiTimer->setTimerType(Qt::CoarseTimer);
@@ -194,9 +194,9 @@ void MainWindow::setupConnections()
 	
 	// Main Status
 	// only need to connect one of the two radio buttons
-	connect(ui->radioButton_capture, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(enableCaptureMode(bool)));
-	connect(ui->checkBox_athlete, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(enableAthlete(bool)));
-	connect(ui->checkBox_trainer, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(enableTrainer(bool)));
+	connect(ui->radioButton_capture, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setCaptureEnabled(bool)));
+	connect(ui->checkBox_athlete, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setAthleteEnabled(bool)));
+	connect(ui->checkBox_trainer, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setTrainerEnabled(bool)));
 	connect(ui->comboBox_motionType, SIGNAL(currentIndexChanged(int)), ui->openGLWidget, SLOT(setActiveMotionType(int)));
 
 	// Skinned mesh related
@@ -232,7 +232,7 @@ void MainWindow::setupConnections()
 	// Play controls
 	connect(ui->horizontalSlider_progressPercent, SIGNAL(valueChanged(int))           , ui->openGLWidget, SLOT(setActiveMotionProgress(int)));
 	connect(ui->openGLWidget, SIGNAL(frameChanged(int)), ui->horizontalSlider_progressPercent, SLOT(setValue(int)));
-	connect(ui->pushButton_play, SIGNAL(clicked()), this, SLOT(togglePlayback()));
+	connect(ui->pushButton_playStartStop, SIGNAL(clicked()), this, SLOT(togglePlayback()));
 
 	// gui timer
 	connect(m_guiTimer, SIGNAL(timeout()), this, SLOT(updateInfo()));

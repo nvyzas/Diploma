@@ -79,14 +79,17 @@ void MainWidget::setup()
 	cout << "MainWidget setup start." << endl;
 
 	// Setup mode
-	m_activeMode = Mode::CAPTURE;
-	m_activeMotionType = 0;
+	setCaptureEnabled(false);
+	setAthleteEnabled(true);
+	setTrainerEnabled(false);
+	setActiveMotionType(0);
+
 	m_activeMotion = &m_ksensor->skeleton()->m_athleteRawMotion;
 
 	// Setup timer
 	connect(&m_timer, SIGNAL(timeout()), this, SLOT(intervalPassed()));
 	m_timer.setTimerType(Qt::PreciseTimer);
-	m_playbackInterval = (m_activeMotion->operator[](1).timestamp - m_activeMotion->operator[](0).timestamp) * 1000;
+	m_playbackInterval = 0.0333333;
 	cout << "Playback interval: " << m_playbackInterval << endl;
 	m_timer.setInterval(m_playbackInterval);
 	m_timer.start();
@@ -478,7 +481,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		}
 		break;
 	case Qt::Key_R:
-		if (m_activeMode==Mode::CAPTURE) m_ksensor->skeleton()->record();
+		if (m_activeMode==Mode::CAPTURE) m_ksensor->skeleton()->record(m_trainerEnabled);
 		else cout << "Record does not work in this mode." << endl;
 		break;
 	case Qt::Key_S:
@@ -616,12 +619,12 @@ QStringList MainWidget::motionTypeList() const
 {
 	return m_motionTypeList;
 }
-bool MainWidget::captureIsEnabled() const
+bool MainWidget::captureEnabled() const
 {
 	if (m_activeMode == Mode::CAPTURE) return true;
 	else return false;
 }
-void MainWidget::enableCaptureMode(bool state)
+void MainWidget::setCaptureEnabled(bool state)
 {
 	if (state == true) {
 		m_activeMode = Mode::CAPTURE;
@@ -642,22 +645,15 @@ bool MainWidget::trainerEnabled() const
 {
 	return m_trainerEnabled;
 }
-void MainWidget::enableAthlete(bool state)
+void MainWidget::setAthleteEnabled(bool state)
 {
 	m_athleteEnabled = state;
 	cout << "Athlete " << ( m_athleteEnabled ? "enabled" : "disabled" ) << endl;
-	m_timer.start();
-}void MainWidget::enableTrainer(bool state)
+}
+void MainWidget::setTrainerEnabled(bool state)
 {
 	m_trainerEnabled = state;
-	if (m_trainerEnabled) {
-		m_ksensor->skeleton()->setTrainerRecording(true);
-	}
-	else {
-		m_ksensor->skeleton()->setTrainerRecording(false);
-	}
 	cout << "Trainer " << (m_trainerEnabled ? "enabled" : "disabled") << endl;
-	m_timer.start();
 }
 int MainWidget::activeMotionType() const
 {
@@ -667,19 +663,24 @@ void MainWidget::setActiveMotionType(int motionType)
 {	
 	m_activeMotionType = motionType;
 	if (motionType == 0) {
-		m_activeMotion = &m_ksensor->skeleton()->m_athleteRawMotion;
+		m_activeAthleteMotion = &m_ksensor->skeleton()->m_athleteRawMotion;
+		m_activeTrainerMotion = &m_ksensor->skeleton()->m_trainerRawMotion;
 	}
 	else if (motionType == 1) {
-		m_activeMotion = &m_ksensor->skeleton()->m_athleteInterpolatedMotion;
+		m_activeAthleteMotion = &m_ksensor->skeleton()->m_athleteInterpolatedMotion;
+		m_activeTrainerMotion = &m_ksensor->skeleton()->m_trainerInterpolatedMotion;
 	}
 	else if (motionType == 2) {
-		m_activeMotion = &m_ksensor->skeleton()->m_athleteFilteredMotion;
+		m_activeAthleteMotion = &m_ksensor->skeleton()->m_athleteFilteredMotion;
+		m_activeTrainerMotion = &m_ksensor->skeleton()->m_trainerFilteredMotion;
 	}
 	else if (motionType == 3) {
-		m_activeMotion = &m_ksensor->skeleton()->m_athleteAdjustedMotion;
+		m_activeAthleteMotion = &m_ksensor->skeleton()->m_athleteAdjustedMotion;
+		m_activeTrainerMotion = &m_ksensor->skeleton()->m_trainerAdjustedMotion;
 	}
 	else if (motionType == 4) {
-		m_activeMotion = &m_ksensor->skeleton()->m_athleteResizedMotion;
+		m_activeAthleteMotion = &m_ksensor->skeleton()->m_athleteResizedMotion;
+		m_activeTrainerMotion = &m_ksensor->skeleton()->m_trainerResizedMotion;
 	}
 	else {
 		cout << "Error: Motion type = " << m_activeMotion << endl;

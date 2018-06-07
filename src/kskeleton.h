@@ -141,6 +141,8 @@ public:
 	~KSkeleton();
 	void addFrame(const Joint* joints, const JointOrientation* orientations, const double& time);
 
+	void processRecording(bool trainerRecording);
+
 	void printInfo() const;
 	void printJointHierarchy() const;
 	void printActiveJoints() const;
@@ -166,8 +168,7 @@ public:
 	const array<KNode, JointType_Count>& nodes() const;
 	void calculateLimbLengths(const QVector<KFrame>& sequence);
 
-	void record();
-	void setTrainerRecording(bool state);
+	void record(bool trainerRecording);
 
 	// Motions
 	QVector<KFrame> m_athleteRawMotion;

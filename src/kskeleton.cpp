@@ -135,6 +135,44 @@ void KSkeleton::initLimbs()
 		m_limbs[l].name = m_nodes[m_limbs[l].start].name + "->" + m_nodes[m_limbs[l].end].name;
 	}
 }
+void KSkeleton::record(bool trainerRecording)
+{
+	if (!m_isRecording) {
+		cout << "Recording started." << endl;
+		m_recordedMotion.clear();
+		m_isRecording = true;
+	}
+	else {
+		cout << "Recording finished." << endl;
+		m_isRecording = false;
+		m_isFinalizing = true;
+		processRecording(trainerRecording);
+	}
+}
+void KSkeleton::processRecording(bool trainerRecording)
+{
+	if (trainerRecording) {
+		cout << "Processing trainer motion" << endl;
+		m_trainerRawMotion = m_recordedMotion;
+		m_trainerInterpolatedMotion = interpolateMotion(m_trainerRawMotion);
+		m_trainerFilteredMotion = filterMotion(m_trainerInterpolatedMotion);
+		m_trainerAdjustedMotion = adjustMotion(m_trainerFilteredMotion);
+		cropMotion(m_trainerRawMotion);
+		cropMotion(m_trainerInterpolatedMotion);
+		if (m_trainerRawMotion.size() > m_bigMotionSize) m_bigMotionSize = m_trainerRawMotion.size();
+	}
+	else {
+		cout << "Processing athlete motion" << endl;
+		m_athleteRawMotion = m_recordedMotion;
+		m_athleteInterpolatedMotion = interpolateMotion(m_athleteRawMotion);
+		m_athleteFilteredMotion = filterMotion(m_athleteInterpolatedMotion);
+		m_athleteAdjustedMotion = adjustMotion(m_athleteFilteredMotion);
+		cropMotion(m_athleteRawMotion);
+		cropMotion(m_athleteInterpolatedMotion);
+		if (m_athleteRawMotion.size() > m_bigMotionSize) m_bigMotionSize = m_athleteRawMotion.size();
+	}
+	printMotionsToLog();
+}
 void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientations, const double& time)
 {
 	static uint addedFrames = 0;
@@ -173,27 +211,6 @@ void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientatio
 				m_recordedMotion[i].timestamp -= timeOffset;
 				m_recordedMotion[i].serial -= serialOffset;
 			}
-			if (m_trainerRecording) {
-				cout << "Processing trainer motion" << endl;
-				m_trainerRawMotion = m_recordedMotion;
-				m_trainerInterpolatedMotion = interpolateMotion(m_trainerRawMotion);
-				m_trainerFilteredMotion = filterMotion(m_trainerInterpolatedMotion);
-				m_trainerAdjustedMotion = adjustMotion(m_trainerFilteredMotion);
-				cropMotion(m_trainerRawMotion);
-				cropMotion(m_trainerInterpolatedMotion);
-				if (m_trainerRawMotion.size() > m_bigMotionSize) m_bigMotionSize = m_trainerRawMotion.size();
-			}
-			else {
-				cout << "Processing athlete motion" << endl;
-				m_athleteRawMotion = m_recordedMotion;
-				m_athleteInterpolatedMotion = interpolateMotion(m_athleteRawMotion);
-				m_athleteFilteredMotion = filterMotion(m_athleteInterpolatedMotion);
-				m_athleteAdjustedMotion = adjustMotion(m_athleteFilteredMotion);
-				cropMotion(m_athleteRawMotion);
-				cropMotion(m_athleteInterpolatedMotion);
-				if (m_athleteRawMotion.size() > m_bigMotionSize) m_bigMotionSize = m_athleteRawMotion.size();
-			}
-			printMotionsToLog();
 			counter = 0;
 			addedFrames = 0;
 			m_firstFrameIndex = 0;
@@ -408,40 +425,6 @@ void KSkeleton::calculateLimbLengths(const QVector<KFrame>& sequence)
 			(m_limbs[l].averageLength + m_limbs[m_limbs[l].sibling].averageLength) / 2.f
 			);
 	}
-}
-void KSkeleton::record()
-{
-	if (!m_isRecording) {
-		cout << "Recording started." << endl;
-		if (m_trainerRecording) {
-			m_trainerRawMotion.clear();
-			m_trainerInterpolatedMotion.clear();
-			m_trainerFilteredMotion.clear();
-			m_trainerAdjustedMotion.clear();
-			m_trainerResizedMotion.clear();
-			m_athleteResizedMotion.clear();
-			m_recordedMotion.clear();
-		}
-		else {
-			m_athleteRawMotion.clear();
-			m_athleteInterpolatedMotion.clear();
-			m_athleteFilteredMotion.clear();
-			m_athleteAdjustedMotion.clear();
-			m_athleteResizedMotion.clear();
-			m_trainerResizedMotion.clear();
-			m_recordedMotion.clear();
-		}
-		m_isRecording = true;
-	}
-	else {
-		cout << "Recording stopped." << endl;
-		m_isRecording = false;
-		m_isFinalizing = true;
-	}
-}
-void KSkeleton::setTrainerRecording(bool state)
-{
-	m_trainerRecording = state;
 }
 const array<KNode, JointType_Count>& KSkeleton::nodes() const
 {
