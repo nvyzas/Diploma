@@ -84,8 +84,6 @@ void MainWidget::setup()
 	setTrainerEnabled(false);
 	setActiveMotionType(0);
 
-	m_activeMotion = &m_ksensor->skeleton()->m_athleteRawMotion;
-
 	// Setup timer
 	connect(&m_timer, SIGNAL(timeout()), this, SLOT(intervalPassed()));
 	m_timer.setTimerType(Qt::PreciseTimer);
@@ -109,12 +107,16 @@ void MainWidget::setup()
 	m_pipeline->setPersProjInfo(perspectiveProjectionInfo);
 	m_pipeline->setCamera(m_camera->GetPos(), m_camera->GetTarget(), m_camera->GetUp());
 
-	// Setup offsets
-	m_kinectSkeletonOffset = -m_activeMotion->at(0).joints[JointType_SpineBase].position;
-	cout << "Kinect skeleton offset=" << toStringCartesian(m_kinectSkeletonOffset).toStdString() << endl;
-	m_skinnedMeshOffset = -m_skinnedMesh->getPelvisOffset();
-	cout << "Skinned mesh offset=" << toStringCartesian(m_skinnedMeshOffset).toStdString() << endl;
-
+	// Setup skeleton offsets
+	if (m_activeAthleteMotion->size() > 0) {
+		m_athleteSkeletonOffset = -m_activeAthleteMotion->front().joints[JointType_SpineBase].position;
+	}
+	if (m_activeTrainerMotion->size() > 0) {
+		m_trainerSkeletonOffset = -m_activeTrainerMotion->front().joints[JointType_SpineBase].position;
+	}
+	cout << "Athlete skeleton offset: " << toStringCartesian(m_athleteSkeletonOffset).toStdString() << endl;
+	cout << "Trainer skeleton offset: " << toStringCartesian(m_trainerSkeletonOffset).toStdString() << endl;
+	
 	cout << "MainWidget setup end." << endl;
 }
 // This virtual function is called once before the first call to paintGL() or resizeGL().
@@ -239,15 +241,15 @@ void MainWidget::paintGL()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	if (m_activeMode == Mode::CAPTURE) {
-		m_ksensor->getBodyFrame();
+		m_ksensor->getBodyFrame(m_activeFrame);
 	}
 	else if (m_activeMode == Mode::PLAYBACK){
-		m_ksensor->skeleton()->setActiveJoints(m_activeMotion->operator[](m_activeFrameIndex).joints);
+		m_ksensor->skeleton()->setActiveJoints(m_activeAthleteMotion->operator[](m_activeFrameIndex).joints);
 	}
 	else {
 		cout << "Unknown mode of operation." << endl;
 	}
-	m_activeFrameTimestamp = m_activeMotion->operator[](m_activeFrameIndex).timestamp;
+	m_activeFrameTimestamp = m_activeAthleteMotion->operator[](m_activeFrameIndex).timestamp; // #!
 
 	// prepare pipeline for drawing skinned mesh related stuff
 	if (m_defaultPose) {
@@ -319,8 +321,7 @@ void MainWidget::paintGL()
 	// prepare pipeline to draw kinect skeleton related stuff
 	m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
 	m_pipeline->setWorldOrientation(QQuaternion());
-	if (m_activeMode == Mode::CAPTURE) m_pipeline->setWorldPosition(QVector3D());
-	else m_pipeline->setWorldPosition(m_kinectSkeletonOffset);
+	m_pipeline->setWorldPosition(m_athleteSkeletonOffset);
 
 	// draw kinect skeleton
 	if (m_kinectSkeletonDrawing) {
@@ -389,10 +390,10 @@ void MainWidget::paintGL()
 	
 
 	if (!m_isPaused && m_shouldUpdate) {
-		if (++m_activeFrameIndex > m_activeMotion->size())  m_activeFrameIndex = 0;
+		if (++m_activeFrameIndex > m_ksensor->skeleton()->m_bigMotionSize)  m_activeFrameIndex = 0;
 		emit frameChanged(activeMotionProgress());
-		m_shouldUpdate = false;
 		calculateFPS();
+		m_shouldUpdate = false;
 	}
 
 }
@@ -452,15 +453,23 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		m_timer.setInterval(m_playbackInterval);
 		break;
 	case Qt::Key_C:
-		m_ksensor->skeleton()->calculateLimbLengths(*m_activeMotion);
-		m_ksensor->skeleton()->printLimbLengths();
+		if (m_athleteEnabled) {
+			cout << "Athlete limbs" << endl;
+			m_ksensor->skeleton()->calculateLimbLengths(*m_activeAthleteMotion);
+			m_ksensor->skeleton()->printLimbLengths();
+		}
+		if (m_trainerEnabled) {
+			cout << "Trainer limbs" << endl;
+			m_ksensor->skeleton()->calculateLimbLengths(*m_activeTrainerMotion);
+			m_ksensor->skeleton()->printLimbLengths();
+		}
 		break;
 	case Qt::Key_D:
 		m_defaultPose = !m_defaultPose;
 		cout << "Default pause " << (m_defaultPose ? "ON" : "OFF") << endl;
 		break;
 	case Qt::Key_G:
-		if (!m_ksensor->getBodyFrame()) cout << "Could not update kinect data." << endl;
+		if (!m_ksensor->getBodyFrame(m_activeFrame)) cout << "Could not update kinect data." << endl;
 		break;
 	case Qt::Key_J:
 		m_ksensor->skeleton()->printActiveJoints();
@@ -683,7 +692,7 @@ void MainWidget::setActiveMotionType(int motionType)
 		m_activeTrainerMotion = &m_ksensor->skeleton()->m_trainerResizedMotion;
 	}
 	else {
-		cout << "Error: Motion type = " << m_activeMotion << endl;
+		cout << "Error: Motion type = " << m_activeMotionType << endl;
 	}
 	cout << "Motion type: " << m_motionTypeList[m_activeMotionType].toStdString() << endl;
 }
@@ -739,7 +748,7 @@ void MainWidget::intervalPassed()
 }
 int MainWidget::activeMotionProgress() const
 {
-	int progressPercent = (int)((float)m_activeFrameIndex / m_activeMotion->size() * 100.f);
+	int progressPercent = (int)((float)m_activeFrameIndex / m_ksensor->skeleton()->m_bigMotionSize * 100.f);
 	return progressPercent;
 }
 void MainWidget::setActiveMotionProgress(int progressPercent)
@@ -748,9 +757,9 @@ void MainWidget::setActiveMotionProgress(int progressPercent)
 		cout << "Progress percent out of bounds: " << progressPercent << endl;
 		return;
 	}
-	int newFrameIndex = (int)(progressPercent / 100.f * m_activeMotion->size());
+	int newFrameIndex = (int)(progressPercent / 100.f * m_ksensor->skeleton()->m_bigMotionSize);
 	m_activeFrameIndex = newFrameIndex;
-	if (newFrameIndex > m_activeMotion->size() || newFrameIndex < 0) {
+	if (newFrameIndex > m_ksensor->skeleton()->m_bigMotionSize || newFrameIndex < 0) {
 		cout << "New frame index out of bounds: " << newFrameIndex << endl;
 		return;
 	}

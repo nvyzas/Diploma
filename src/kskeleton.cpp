@@ -173,7 +173,7 @@ void KSkeleton::processRecording(bool trainerRecording)
 	}
 	printMotionsToLog();
 }
-void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientations, const double& time)
+KFrame KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientations, const double& time)
 {
 	static uint addedFrames = 0;
 	addedFrames++;
@@ -189,7 +189,7 @@ void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientatio
 	KFrame kframe;
 	kframe.timestamp = time;
 	kframe.joints = m_activeJoints;
-	kframe.serial = addedFrames; // serial = size - 1
+	kframe.serial = addedFrames; 
 
 	if (m_isRecording) {
 		m_recordedMotion.push_back(kframe);
@@ -225,6 +225,8 @@ void KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientatio
 			m_firstFrameIndex = addedFrames % m_framesDelayed;
 		}
 	}
+
+	return kframe;
 }
 QVector<KFrame> KSkeleton::resizeMotion(const QVector<KFrame>& motion)
 {

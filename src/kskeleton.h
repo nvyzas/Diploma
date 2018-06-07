@@ -139,7 +139,7 @@ class KSkeleton
 public:
 	KSkeleton();
 	~KSkeleton();
-	void addFrame(const Joint* joints, const JointOrientation* orientations, const double& time);
+	KFrame addFrame(const Joint* joints, const JointOrientation* orientations, const double& time);
 
 	void processRecording(bool trainerRecording);
 

@@ -61,12 +61,11 @@ public:
 	float m_barAngle;
 	QVector3D m_barSpeed;
 
-
-	QVector<KFrame>* m_activeMotion;
 	QVector<KFrame>* m_activeAthleteMotion;
 	QVector<KFrame>* m_activeTrainerMotion;
 
 	uint m_activeFrameIndex = 0;
+	KFrame m_activeFrame;
 	double m_activeFrameTimestamp;
 
 	uint m_activeBoneId = 0;
@@ -177,7 +176,7 @@ private:
 
 	// render
 	bool m_axesDrawing = true;
-	bool m_skinnedMeshDrawing = true;
+	bool m_skinnedMeshDrawing = false;
 	bool m_kinectSkeletonDrawing = true;
 	bool m_barbellDrawing = false;
 	bool m_floorDrawing = false;
@@ -222,7 +221,8 @@ private:
 	void drawSkinnedMeshJoints();
 
 	// kinect skeleton
-	QVector3D m_kinectSkeletonOffset;
+	QVector3D m_athleteSkeletonOffset = QVector3D(0, 0, 0);
+	QVector3D m_trainerSkeletonOffset = QVector3D(0, 0, 0);
 	GLuint m_kinectSkeletonJointsVAO;
 	GLuint m_kinectSkeletonJointsVBO;
 	float m_kinectSkeletonJoints[2 * 3 * JointType_Count]; // 2 attributes x 3 components x JointType_Count joints
