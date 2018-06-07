@@ -58,12 +58,14 @@ inline bool getBit(int number, int position)
 	return (number >> position) & 0;
 }
 float wrapAngle(float angle, float limit);
-QString toString(const QQuaternion& q);
-QString toString(const QMatrix4x4& m);
-QString toStringEulerAngles(const QQuaternion& q);
-QString toStringAxisAngle(const QQuaternion& q);
+
 QString toStringCartesian(const QVector3D& v);
 QString toStringSpherical(const QVector3D& v);
+QString toString(const QQuaternion& q);
+QString toStringEulerAngles(const QQuaternion& q);
+QString toStringAxisAngle(const QQuaternion& q);
+QString toString(const QMatrix4x4& m);
+
 double ticksToMilliseconds(clock_t ticks);
 std::ostream& operator<<(std::ostream& out, const QVector3D& v);
 QTextStream& operator<<(QTextStream& out, const QVector3D& v);

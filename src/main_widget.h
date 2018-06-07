@@ -65,7 +65,10 @@ public:
 	QVector<KFrame>* m_activeTrainerMotion;
 
 	uint m_activeFrameIndex = 0;
-	KFrame m_activeFrame;
+
+	KFrame m_activeAthleteFrame;
+	KFrame m_activeTrainerFrame;
+
 	double m_activeFrameTimestamp;
 
 	uint m_activeBoneId = 0;
@@ -223,11 +226,11 @@ private:
 	// kinect skeleton
 	QVector3D m_athleteSkeletonOffset = QVector3D(0, 0, 0);
 	QVector3D m_trainerSkeletonOffset = QVector3D(0, 0, 0);
-	GLuint m_kinectSkeletonJointsVAO;
-	GLuint m_kinectSkeletonJointsVBO;
-	float m_kinectSkeletonJoints[2 * 3 * JointType_Count]; // 2 attributes x 3 components x JointType_Count joints
-	void loadKinectSkeletonJoints();
-	void drawKinectSkeletonJoints();
+	GLuint m_skeletonVAO;
+	GLuint m_skeletonVBO;
+	float m_skeleton[2 * 3 * JointType_Count]; // 2 attributes x 3 components x JointType_Count joints
+	void loadSkeleton();
+	void drawSkeleton(const array<KJoint, JointType_Count>& joints);
 
 	// arrow
 	GLuint m_arrowVAO;
@@ -244,7 +247,7 @@ private:
 	GLuint m_cubeVBO;
 	float m_cubeColors[3 * 8];
 	void loadCube(float r);
-	void drawCube();
+	void drawCube(const KJoint& joint);
 
 	// shaders for plane drawing
 	QOpenGLShaderProgram* m_shaderProgram;

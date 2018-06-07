@@ -85,7 +85,6 @@ struct KJoint
 		trackingState(TrackingState_NotTracked)
 	{
 	}
-
 };
 
 QDataStream& operator<<(QDataStream& out, const KJoint& joint);
@@ -122,12 +121,31 @@ struct KFrame
 		}
 	}
 
-	QString toString() const
+	QString info() const
 	{
 		QString s;
 		QTextStream qts(&s);
 		qts << "Serial=" << qSetFieldWidth(4) << serial << " Timestamp=" << qSetFieldWidth(10) << timestamp << flush;
 		return s;
+	}
+
+	void printJoints() const
+	{
+		for (uint i = 0; i < JointType_Count; i++) {
+			const KJoint &jt = joints[i];
+			cout << setw(5) << i;
+			cout << " v:" << setw(15) << toStringCartesian(jt.position).toStdString();
+			cout << " q:" << setw(15) << toString(jt.orientation).toStdString();
+			cout <<   " " << setw(15) << toStringEulerAngles(jt.orientation).toStdString();
+			cout <<   " " << setw(15) << toStringAxisAngle(jt.orientation).toStdString();
+			string ts;
+			if (jt.trackingState == TrackingState_Tracked)  ts = "Tracked";
+			else if (jt.trackingState == TrackingState_Inferred) ts = "Inferred";
+			else ts = "Not tracked";
+			cout << " " << ts;
+			cout << endl;
+		}
+		cout << endl;
 	}
 };
 
@@ -143,9 +161,7 @@ public:
 
 	void processRecording(bool trainerRecording);
 
-	void printInfo() const;
 	void printJointHierarchy() const;
-	void printActiveJoints() const;
 	void printLimbLengths() const;
 	void printMotionsToLog();
 
@@ -159,9 +175,6 @@ public:
 	bool m_isRecording = false;
 	bool m_isFinalizing = false;
 
-	array<KJoint, JointType_Count>& activeJoints();
-	void setActiveJoints(array<KJoint, JointType_Count>& joints);
-	
 	const double m_interpolationInterval = 0.0333333; // calculated from trainer's motion
 
 	const array<KLimb, NUM_LIMBS>& limbs() const;
@@ -188,7 +201,6 @@ public:
 	int m_bigMotionSize = 0;
 private:
 	array<KNode, JointType_Count> m_nodes; // these define the kinect skeleton hierarchy
-	array<KJoint, JointType_Count> m_activeJoints;
 
 	QFile m_sequenceLog;
 	QTextStream m_sequenceLogData;

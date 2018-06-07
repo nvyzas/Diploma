@@ -178,17 +178,16 @@ KFrame KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientat
 	static uint addedFrames = 0;
 	addedFrames++;
 
+	KFrame kframe;
+
 	for (uint i = 0; i < JointType_Count; i++) {
 		const Joint& jt = joints[i];
 		const JointOrientation& or = orientations[i];
-		m_activeJoints[i].position = QVector3D(jt.Position.X, jt.Position.Y, jt.Position.Z);
-		m_activeJoints[i].orientation = QQuaternion(or.Orientation.w, or.Orientation.x, or.Orientation.y, or.Orientation.z);
-		m_activeJoints[i].trackingState = jt.TrackingState;
+		kframe.joints[i].position = QVector3D(jt.Position.X, jt.Position.Y, jt.Position.Z);
+		kframe.joints[i].orientation = QQuaternion(or.Orientation.w, or.Orientation.x, or.Orientation.y, or.Orientation.z);
+		kframe.joints[i].trackingState = jt.TrackingState;
 	}
-
-	KFrame kframe;
 	kframe.timestamp = time;
-	kframe.joints = m_activeJoints;
 	kframe.serial = addedFrames; 
 
 	if (m_isRecording) {
@@ -446,15 +445,6 @@ void KSkeleton::printLimbLengths() const
 	}
 	cout << "GapAverage=" << KLimb::gapAverage << endl;
 }
-void KSkeleton::printInfo() const
-{
-	cout << endl;
-	cout << "Joint hierarchy:" << endl;
-	printJointHierarchy();
-	cout << "Joint data:" << endl;
-	printActiveJoints();
-	cout << endl;
-}
 void KSkeleton::printJointHierarchy() const
 {
 	for (uint i = 0; i < JointType_Count; i++) {
@@ -469,32 +459,6 @@ void KSkeleton::printJointHierarchy() const
 		cout << endl;
 	}
 }
-void KSkeleton::printActiveJoints() const
-{
-	for (uint i = 0; i < JointType_Count; i++) {
-		const KJoint &jt = m_activeJoints[i];
-		cout << setw(15) << m_nodes[i].name.toStdString() << ": v:";
-		cout << setw(15) << toStringCartesian(m_activeJoints[i].position).toStdString() << " q:";
-		cout << setw(15) << toString(m_activeJoints[i].orientation).toStdString() << " ";
-		cout << setw(15) << toStringEulerAngles(m_activeJoints[i].orientation).toStdString() << " ";
-		cout << setw(15) << toStringAxisAngle(m_activeJoints[i].orientation).toStdString() << " ";
-		string ts;
-		if (m_activeJoints[i].trackingState == TrackingState_Tracked)  ts = "Tracked";
-		else if (m_activeJoints[i].trackingState == TrackingState_Inferred) ts = "Inferred";
-		else ts = "Not tracked";
-		cout << ts;
-		cout << endl;
-	}
-	cout << endl;
-}
-array<KJoint, JointType_Count>& KSkeleton::activeJoints()
-{
-	return m_activeJoints;
-}
-void KSkeleton::setActiveJoints(array<KJoint, JointType_Count>& joints)
-{
-	m_activeJoints = joints;
-}
 // saves filtered frame sequence to trc
 bool KSkeleton::exportToTRC()
 {
@@ -504,10 +468,10 @@ bool KSkeleton::exportToTRC()
 		cout << "Could not create " << fileName.toStdString() << endl;
 		return false;
 	}
-
-	QVector<KFrame>& framesToWrite = m_athleteAdjustedMotion;
-
 	QTextStream out(&qf);
+
+	QVector<KFrame>& exportedMotion = (m_trainerRecording) ? m_trainerAdjustedMotion : m_athleteAdjustedMotion;
+
 	// Line 1
 	out << "PathFileType\t";
 	out << "4\t";
@@ -525,12 +489,12 @@ bool KSkeleton::exportToTRC()
 	// Line 3
 	out << "30\t";
 	out << "30\t";
-	out << framesToWrite.size() << "\t";
+	out << exportedMotion.size() << "\t";
 	out << (JointType_Count + 1) << "\t";
 	out << "mm\t";
 	out << "30\t";
 	out << "1\t";
-	out << framesToWrite.size() << "\n";
+	out << exportedMotion.size() << "\n";
 	// Line 4
 	out << "Frame#\t";
 	out << "Time";
@@ -549,16 +513,16 @@ bool KSkeleton::exportToTRC()
 	out << "\n";
 	// Lines 6+
 	out.setFieldWidth(12);
-	for (uint i = 0; i < framesToWrite.size(); i++) {
-		out << "\n" << i << "\t" << framesToWrite[i].timestamp;
+	for (uint i = 0; i < exportedMotion.size(); i++) {
+		out << "\n" << i << "\t" << exportedMotion[i].timestamp;
 		for (int j = 0; j < JointType_Count; j++) {
-			out << "\t" << framesToWrite[i].joints[j].position.x()*1000.f;
-			out << "\t" << framesToWrite[i].joints[j].position.y()*1000.f;
-			out << "\t" << framesToWrite[i].joints[j].position.z()*1000.f;
+			out << "\t" << exportedMotion[i].joints[j].position.x()*1000.f;
+			out << "\t" << exportedMotion[i].joints[j].position.y()*1000.f;
+			out << "\t" << exportedMotion[i].joints[j].position.z()*1000.f;
 		}
-		out << "\t" << (framesToWrite[i].joints[JointType_HipLeft].position.x()*1000.f + framesToWrite[i].joints[JointType_HipRight].position.x()*1000.f) / 2.f;
-		out << "\t" << (framesToWrite[i].joints[JointType_HipLeft].position.y()*1000.f + framesToWrite[i].joints[JointType_HipRight].position.y()*1000.f) / 2.f;
-		out << "\t" << (framesToWrite[i].joints[JointType_HipLeft].position.z()*1000.f + framesToWrite[i].joints[JointType_HipRight].position.z()*1000.f) / 2.f;
+		out << "\t" << (exportedMotion[i].joints[JointType_HipLeft].position.x()*1000.f + exportedMotion[i].joints[JointType_HipRight].position.x()*1000.f) / 2.f;
+		out << "\t" << (exportedMotion[i].joints[JointType_HipLeft].position.y()*1000.f + exportedMotion[i].joints[JointType_HipRight].position.y()*1000.f) / 2.f;
+		out << "\t" << (exportedMotion[i].joints[JointType_HipLeft].position.z()*1000.f + exportedMotion[i].joints[JointType_HipRight].position.z()*1000.f) / 2.f;
 	}
 	out << flush;
 	qf.close();

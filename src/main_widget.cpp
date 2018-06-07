@@ -62,13 +62,13 @@ MainWidget::~MainWidget()
 	// delete VAOs
 	glDeleteVertexArrays(1, &m_axesVAO);
 	glDeleteVertexArrays(1, &m_arrowVAO);
-	glDeleteVertexArrays(1, &m_kinectSkeletonJointsVAO);
+	glDeleteVertexArrays(1, &m_skeletonVAO);
 	glDeleteVertexArrays(1, &m_skinnedMeshJointsVAO);
 	glDeleteVertexArrays(1, &m_cubeVAO);
 	glDeleteVertexArrays(1, &m_planeVAO);
 
 	// delete VBOs
-	glDeleteBuffers(1, &m_kinectSkeletonJointsVBO);
+	glDeleteBuffers(1, &m_skeletonVBO);
 	glDeleteBuffers(1, &m_skinnedMeshJointsVBO);
 	glDeleteBuffers(1, &m_cubeVBO);
 
@@ -227,7 +227,7 @@ void MainWidget::initializeGL()
 	loadSkinnedMesh();
 	loadAxes();
 	loadArrow();
-	loadKinectSkeletonJoints();
+	loadSkeleton();
 	loadSkinnedMeshJoints();
 	loadCube(0.02);
 	loadPlane();
@@ -240,16 +240,23 @@ void MainWidget::paintGL()
 	glClearColor(0.f, 0.f, 0.f, 1.f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	KFrame* activeFrame = (m_athleteEnabled ? &m_activeAthleteFrame : &m_activeTrainerFrame);
+
 	if (m_activeMode == Mode::CAPTURE) {
-		m_ksensor->getBodyFrame(m_activeFrame);
+		m_ksensor->getBodyFrame(*activeFrame);
 	}
 	else if (m_activeMode == Mode::PLAYBACK){
-		m_ksensor->skeleton()->setActiveJoints(m_activeAthleteMotion->operator[](m_activeFrameIndex).joints);
+		if (m_activeFrameIndex < m_activeAthleteMotion->size()) {
+			m_activeAthleteFrame = m_activeAthleteMotion->operator[](m_activeFrameIndex);
+		}
+		if (m_activeFrameIndex < m_activeTrainerMotion->size()) {
+			m_activeTrainerFrame = m_activeTrainerMotion->operator[](m_activeFrameIndex);
+		}
 	}
 	else {
-		cout << "Unknown mode of operation." << endl;
+		cout << "Error: Mode=" << (int)m_activeMode << endl;
 	}
-	m_activeFrameTimestamp = m_activeAthleteMotion->operator[](m_activeFrameIndex).timestamp; // #!
+	m_activeFrameTimestamp = activeFrame->timestamp;
 
 	// prepare pipeline for drawing skinned mesh related stuff
 	if (m_defaultPose) {
@@ -323,42 +330,28 @@ void MainWidget::paintGL()
 	m_pipeline->setWorldOrientation(QQuaternion());
 	m_pipeline->setWorldPosition(m_athleteSkeletonOffset);
 
-	// draw kinect skeleton
+	// draw athlete skeleton
 	if (m_kinectSkeletonDrawing) {
 		m_technique->setMVP(m_pipeline->getWVPtrans());
-		drawKinectSkeletonJoints();
+		
+		drawSkeleton(m_activeAthleteFrame.joints);
 		for (uint i = 0; i < JointType_Count; i++) {
-			m_technique->setSpecific(fromTranslation(m_ksensor->skeleton()->activeJoints()[i].position));
-			drawCube();
+			m_technique->setSpecific(fromTranslation(m_activeAthleteFrame.joints[i].position));
+			drawCube(m_activeAthleteFrame.joints[i]);
 		}
-		QVector3D HipsMid = 
-			m_ksensor->skeleton()->activeJoints()[JointType_HipLeft].position / 2.f +
-			m_ksensor->skeleton()->activeJoints()[JointType_HipRight].position / 2.f;
-		m_technique->setSpecific(fromTranslation(HipsMid));
-		drawCube();
 
 		// draw kinect joint axes
 		if (m_axesDrawing) {
 			m_technique->setMVP(m_pipeline->getWVPtrans());
-			QMatrix4x4 T(fromTranslation(m_ksensor->skeleton()->activeJoints()[m_activeJointId].position));
+			QMatrix4x4 T(fromTranslation(m_activeAthleteFrame.joints[m_activeJointId].position));
 			QMatrix4x4 R(fromRotation(m_skinnedMesh->boneInfo(m_activeBoneId).globalJointOrientation));
 			QMatrix4x4 S(fromScaling(0.5f, 0.5f, 0.5f));
 			m_technique->setSpecific(T * R * S);
 			drawAxes();
 		}
 	}
-	//
 	
-
-	// draw arrow
-	QVector3D leftHand = (m_ksensor->skeleton()->activeJoints())[JointType_HandLeft].position;
-	QVector3D rightHand = (m_ksensor->skeleton()->activeJoints())[JointType_HandRight].position;
-	QVector3D barDirection = rightHand - leftHand;
-	QMatrix4x4 S = fromScaling(QVector3D(1, (rightHand - leftHand).length(), 1));
-	QMatrix4x4 R = fromRotation(QQuaternion::rotationTo(QVector3D(0, 1, 0), barDirection));
-	QMatrix4x4 T = fromTranslation(leftHand);
-	m_technique->setSpecific(T * R * S);
-	drawArrow();
+	
 
 	// enable plane shaders
 	m_shaderProgram->bind();
@@ -371,6 +364,19 @@ void MainWidget::paintGL()
 		drawPlane();
 	}
 
+	// calculate barbell direction
+	QVector3D leftHand;
+	QVector3D rightHand;
+	if (m_athleteEnabled) {
+		leftHand = m_activeAthleteFrame.joints[JointType_HandLeft].position;
+		rightHand = m_activeAthleteFrame.joints[JointType_HandRight].position;
+	}
+	else {
+		leftHand = m_activeTrainerFrame.joints[JointType_HandLeft].position;
+		rightHand = m_activeTrainerFrame.joints[JointType_HandRight].position;
+	}
+	QVector3D barDirection = rightHand - leftHand;
+
 	// calculate bar horizontal angle
 	m_barAngle = ToDegrees(atan2(barDirection.y(), sqrt(pow(barDirection.x(), 2) + pow(barDirection.z(), 2))));
 	
@@ -381,21 +387,19 @@ void MainWidget::paintGL()
 	previousBarPosition = currentBarPosition;
 
 	// calculate knee angle
-	QVector3D hipRight = (m_ksensor->skeleton()->activeJoints())[JointType_HipRight].position;
-	QVector3D kneeRight = (m_ksensor->skeleton()->activeJoints())[JointType_KneeRight].position;
-	QVector3D ankleRight = (m_ksensor->skeleton()->activeJoints())[JointType_AnkleRight].position;
-	QVector3D kneeToHip = (hipRight - kneeRight).normalized();
+	QVector3D hipRight   = (m_activeAthleteFrame).joints[JointType_HipRight].position;
+	QVector3D kneeRight  = (m_activeAthleteFrame).joints[JointType_KneeRight].position;
+	QVector3D ankleRight = (m_activeAthleteFrame).joints[JointType_AnkleRight].position;
+	QVector3D kneeToHip  = (hipRight - kneeRight).normalized();
 	QVector3D kneeToAnkle = (ankleRight - kneeRight).normalized();
 	m_kneeAngle = ToDegrees(acos(QVector3D::dotProduct(kneeToHip, kneeToAnkle)));
 	
-
 	if (!m_isPaused && m_shouldUpdate) {
 		if (++m_activeFrameIndex > m_ksensor->skeleton()->m_bigMotionSize)  m_activeFrameIndex = 0;
 		emit frameChanged(activeMotionProgress());
 		calculateFPS();
 		m_shouldUpdate = false;
 	}
-
 }
 void MainWidget::calculateFPS()
 {
@@ -467,12 +471,6 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_D:
 		m_defaultPose = !m_defaultPose;
 		cout << "Default pause " << (m_defaultPose ? "ON" : "OFF") << endl;
-		break;
-	case Qt::Key_G:
-		if (!m_ksensor->getBodyFrame(m_activeFrame)) cout << "Could not update kinect data." << endl;
-		break;
-	case Qt::Key_J:
-		m_ksensor->skeleton()->printActiveJoints();
 		break;
 	case Qt::Key_L:
 		m_ksensor->skeleton()->loadFrameSequences();
@@ -968,7 +966,7 @@ void MainWidget::drawAxes()
 
 	glBindVertexArray(0);
 }
-void MainWidget::loadKinectSkeletonJoints()
+void MainWidget::loadSkeleton()
 {
 	GLushort indices[] =
 	{
@@ -1001,9 +999,9 @@ void MainWidget::loadKinectSkeletonJoints()
 		JointType_AnkleRight   , JointType_FootRight
 	};
 
-	glGenVertexArrays(1, &m_kinectSkeletonJointsVAO);
-	glBindVertexArray(m_kinectSkeletonJointsVAO);
-	cout << "kinectSkeletonJointsVAO=" << m_kinectSkeletonJointsVAO << endl;
+	glGenVertexArrays(1, &m_skeletonVAO);
+	glBindVertexArray(m_skeletonVAO);
+	cout << "kinectSkeletonJointsVAO=" << m_skeletonVAO << endl;
 
 	GLuint kinectSkeletonJointsIBO;
 	glGenBuffers(1, &kinectSkeletonJointsIBO);
@@ -1011,9 +1009,9 @@ void MainWidget::loadKinectSkeletonJoints()
 	cout << "kinectSkeletonJointsIBO=" << kinectSkeletonJointsIBO << endl;
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
 
-	glGenBuffers(1, &m_kinectSkeletonJointsVBO);
-	cout << "kinectSkeletonJointsVBO=" << m_kinectSkeletonJointsVBO << endl;
-	glBindBuffer(GL_ARRAY_BUFFER, m_kinectSkeletonJointsVBO);
+	glGenBuffers(1, &m_skeletonVBO);
+	cout << "kinectSkeletonJointsVBO=" << m_skeletonVBO << endl;
+	glBindBuffer(GL_ARRAY_BUFFER, m_skeletonVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * 2 * 3 * JointType_Count, NULL, GL_STREAM_DRAW);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 6, 0);
@@ -1022,21 +1020,21 @@ void MainWidget::loadKinectSkeletonJoints()
 
 	glBindVertexArray(0);
 }
-void MainWidget::drawKinectSkeletonJoints()
+void MainWidget::drawSkeleton(const array<KJoint, JointType_Count>& joints)
 {
 	for (uint i = 0; i < JointType_Count; i++) {
-		m_kinectSkeletonJoints[6 * i    ] = m_ksensor->skeleton()->activeJoints()[i].position.x();
-		m_kinectSkeletonJoints[6 * i + 1] = m_ksensor->skeleton()->activeJoints()[i].position.y();
-		m_kinectSkeletonJoints[6 * i + 2] = m_ksensor->skeleton()->activeJoints()[i].position.z();
-		m_kinectSkeletonJoints[6 * i + 3] = (m_ksensor->skeleton()->activeJoints()[i].trackingState == TrackingState_NotTracked ? 255.f : 0.f);
-		m_kinectSkeletonJoints[6 * i + 4] = (m_ksensor->skeleton()->activeJoints()[i].trackingState == TrackingState_Tracked ? 255.f : 0.f);
-		m_kinectSkeletonJoints[6 * i + 5] = (m_ksensor->skeleton()->activeJoints()[i].trackingState == TrackingState_Inferred ? 255.f : 0.f);
+		m_skeleton[6 * i    ] = joints[i].position.x();
+		m_skeleton[6 * i + 1] = joints[i].position.y();
+		m_skeleton[6 * i + 2] = joints[i].position.z();
+		m_skeleton[6 * i + 3] = joints[i].trackingState == TrackingState_NotTracked ? 255.f : 0.f;
+		m_skeleton[6 * i + 4] = joints[i].trackingState == TrackingState_Tracked ? 255.f : 0.f;
+		m_skeleton[6 * i + 5] = joints[i].trackingState == TrackingState_Inferred ? 255.f : 0.f;
 	}
-	//makeCurrent();
-	glBindBuffer(GL_ARRAY_BUFFER, m_kinectSkeletonJointsVBO);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(m_kinectSkeletonJoints), m_kinectSkeletonJoints);
 
-	glBindVertexArray(m_kinectSkeletonJointsVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_skeletonVBO);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(m_skeleton), m_skeleton);
+
+	glBindVertexArray(m_skeletonVAO);
 
 	glDrawElements(GL_LINES, 48, GL_UNSIGNED_SHORT, 0);
 
@@ -1133,18 +1131,16 @@ void MainWidget::loadCube(float r)
 
 	glBindVertexArray(0);
 }
-void MainWidget::drawCube()
+void MainWidget::drawCube(const KJoint& joint)
 {
-	for (uint i = 0; i < JointType_Count; i++) {
-		QVector3D color(0.f, 0.f, 0.f);
-		if (m_ksensor->skeleton()->activeJoints()[i].trackingState == TrackingState_NotTracked) color.setX(255.f);
-		else if (m_ksensor->skeleton()->activeJoints()[i].trackingState == TrackingState_Tracked) color.setY(255.f);
-		else color.setZ(255.f);
-		for (uint j = 0; j < 8; j++) {
-			m_cubeColors[3 * j + 0] = color.x();
-			m_cubeColors[3 * j + 1] = color.y();
-			m_cubeColors[3 * j + 2] = color.z();
-		}
+	QVector3D color(0.f, 0.f, 0.f);
+	if (joint.trackingState == TrackingState_NotTracked) color.setX(255.f);
+	else if (joint.trackingState == TrackingState_Tracked) color.setY(255.f);
+	else color.setZ(255.f);
+	for (uint j = 0; j < 8; j++) {
+		m_cubeColors[3 * j + 0] = color.x();
+		m_cubeColors[3 * j + 1] = color.y();
+		m_cubeColors[3 * j + 2] = color.z();
 	}
 
 	glBindVertexArray(m_cubeVAO);

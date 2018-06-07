@@ -576,7 +576,7 @@ void SkinnedMesh::calculateBoneTransforms(const aiNode* pNode, const QMatrix4x4&
 			// calculate scaling from Kinect
 			QMatrix4x4 kinectScaling = QMatrix();
 			
-			// calculate rotation form Kinect
+			// calculate rotation fromm Kinect
 			uint originId = m_boneInfo[it->second].originJointId;
 			uint childId = m_boneInfo[it->second].childJointId;
 			uint helperId = m_boneInfo[it->second].helperJointId;
