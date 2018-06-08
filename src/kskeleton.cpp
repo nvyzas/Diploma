@@ -51,7 +51,7 @@ KSkeleton::KSkeleton()
 	printJointHierarchy();
 	initLimbs();
 
-	loadFrameSequences();
+	loadMotion();
 	
 	cout << "KSkeleton constructor end.\n" << endl;
 }
@@ -200,7 +200,6 @@ KFrame KSkeleton::addFrame(const Joint* joints, const JointOrientation* jointOri
 				m_recordedMotion[i].timestamp -= timeOffset;
 				m_recordedMotion[i].serial -= serialOffset;
 			}
-
 			processRecording();
 			counter = 0;
 			addedFrames = 0;
@@ -235,9 +234,6 @@ void KSkeleton::processRecording()
 		calculateJointOrientations(m_athleteResizedMotion);
 		cropMotion(m_athleteRawMotion);
 		cropMotion(m_athleteInterpolatedMotion);
-		if (m_athleteRawMotion.size() > m_bigMotionSize) m_bigMotionSize = m_athleteRawMotion.size();
-		m_athletePelvisOffset = m_athleteRawMotion.front().joints[JointType_SpineBase].position;
-		cout << "Athlete pelvis offset: " << toStringCartesian(m_athletePelvisOffset).toStdString() << endl;
 	}
 	if (m_trainerRecording) {
 		cout << "Processing trainer motion" << endl;
@@ -253,9 +249,8 @@ void KSkeleton::processRecording()
 		cropMotion(m_trainerRawMotion);
 		cropMotion(m_trainerInterpolatedMotion);
 		if (m_trainerRawMotion.size() > m_bigMotionSize) m_bigMotionSize = m_trainerRawMotion.size();
-		m_trainerPelvisOffset = m_trainerRawMotion.front().joints[JointType_SpineBase].position;
-		cout << "Trainer pelvis offset: " << toStringCartesian(m_trainerPelvisOffset).toStdString() << endl;
 	}
+	calculateOffsets();
 	printMotionsToLog();
 }
 QVector<KFrame> KSkeleton::resizeMotion(const QVector<KFrame>& motion)
@@ -402,6 +397,27 @@ void KSkeleton::adjustLimbLength(KFrame& kframe, uint jointId, const QVector3D& 
 	for (uint i = 0; i < m_nodes[jointId].childrenId.size(); i++) {
 		uint childId = m_nodes[jointId].childrenId[i];
 		adjustLimbLength(kframe, childId, direction, factor);
+	}
+}
+void KSkeleton::calculateOffsets()
+{
+	if (m_athleteRawMotion.size() > 0) {
+		m_athletePelvisOffset = m_athleteAdjustedMotion.front().joints[JointType_SpineBase].position;
+		cout << "Athlete pelvis offset: " << toStringCartesian(m_athletePelvisOffset).toStdString() << endl;
+		m_athleteFeetOffset =
+			m_athleteAdjustedMotion.front().joints[JointType_AnkleLeft].position.y() / 2.f +
+			m_athleteAdjustedMotion.front().joints[JointType_AnkleRight].position.y() / 2.f -
+			m_athletePelvisOffset.y();
+		cout << "Athlete feet offset: " << m_athleteFeetOffset << endl;
+	}
+	if (m_trainerRawMotion.size() > 0) {
+		m_trainerPelvisOffset = m_trainerAdjustedMotion.front().joints[JointType_SpineBase].position;
+		cout << "Trainer pelvis offset: " << toStringCartesian(m_trainerPelvisOffset).toStdString() << endl;
+		m_trainerFeetOffset =
+			m_trainerAdjustedMotion.front().joints[JointType_AnkleLeft].position.y() / 2.f +
+			m_trainerAdjustedMotion.front().joints[JointType_AnkleRight].position.y() / 2.f -
+			m_trainerPelvisOffset.y();
+		cout << "Athlete feet offset: " << m_trainerFeetOffset << endl;
 	}
 }
 void KSkeleton::calculateJointOrientations(QVector<KFrame>& motion)
@@ -668,7 +684,7 @@ void KSkeleton::saveFrameSequences()
 	out << m_trainerResizedMotion;
 	qf.close();
 }
-void KSkeleton::loadFrameSequences()
+void KSkeleton::loadMotion()
 {
 	QFile qf("sequences.txt");
 	if (!qf.open(QIODevice::ReadOnly)) {
@@ -704,18 +720,12 @@ void KSkeleton::loadFrameSequences()
 	in >> m_trainerResizedMotion;
 	qf.close();
 
-	if (m_athleteRawMotion.size() > 0) {
-		m_athletePelvisOffset = m_athleteRawMotion.front().joints[JointType_SpineBase].position;
-		cout << "Athlete pelvis offset: " << toStringCartesian(m_athletePelvisOffset).toStdString() << endl;
-	}
-	if (m_trainerRawMotion.size() > 0) {
-		m_trainerPelvisOffset = m_trainerRawMotion.front().joints[JointType_SpineBase].position;
-		cout << "Trainer pelvis offset: " << toStringCartesian(m_trainerPelvisOffset).toStdString() << endl;
-	}
-
 	if (m_athleteRawMotion.size() > m_trainerRawMotion.size())  m_bigMotionSize = m_athleteRawMotion.size();
 	else m_bigMotionSize = m_trainerRawMotion.size();
 	cout << "Big motion size: " << m_bigMotionSize << endl;
+
+	calculateOffsets();
+
 	printMotionsToLog();
 }
 void KSkeleton::printMotionsToLog()

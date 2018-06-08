@@ -173,7 +173,7 @@ public:
 
 
 	void saveFrameSequences();
-	void loadFrameSequences();
+	void loadMotion();
 
 	bool m_isRecording = false;
 	bool m_isFinalizing = false;
@@ -193,6 +193,8 @@ public:
 	int m_bigMotionSize = 0;
 	QVector3D m_athletePelvisOffset = QVector3D(0.f, 0.f, 0.f);
 	QVector3D m_trainerPelvisOffset = QVector3D(0.f, 0.f, 0.f);
+	float m_athleteFeetOffset = 0.f;
+	float m_trainerFeetOffset = 0.f;
 
 	// Motions
 	QVector<KFrame> m_athleteRawMotion;
@@ -237,8 +239,8 @@ private:
 
 	QVector3D m_leftFootOffset;
 	QVector3D m_rightFootOffset;
-	QVector3D m_leftFootPosition;
-	QVector3D m_rightFootPosition;
+
+	void calculateOffsets();
 };
 
 #endif

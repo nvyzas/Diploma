@@ -82,8 +82,8 @@ void MainWidget::setup()
 
 	// Setup mode
 	setCaptureEnabled(false);
-	setAthleteEnabled(false);
-	setTrainerEnabled(false);
+	setAthleteEnabled(true);
+	setTrainerEnabled(true);
 	setActiveMotionType(0);
 
 	// Setup timer
@@ -262,7 +262,8 @@ void MainWidget::paintGL()
 			m_pipeline->setWorldOrientation(QQuaternion());
 			m_pipeline->setWorldPosition(
 				m_activeAthleteFrame.joints[JointType_SpineBase].position-
-				m_ksensor->skeleton()->m_athletePelvisOffset+
+				m_ksensor->skeleton()->m_athletePelvisOffset-
+				QVector3D(0.f, m_ksensor->skeleton()->m_trainerFeetOffset, 0.f)+
 				m_generalOffset
 			);
 
@@ -299,6 +300,7 @@ void MainWidget::paintGL()
 			m_pipeline->setWorldPosition(
 				m_activeTrainerFrame.joints[JointType_SpineBase].position -
 				m_ksensor->skeleton()->m_trainerPelvisOffset -
+				QVector3D(0.f, m_ksensor->skeleton()->m_trainerFeetOffset, 0.f) -
 				m_generalOffset
 			);
 
@@ -334,26 +336,27 @@ void MainWidget::paintGL()
 
 	if (m_barbellDrawing) {
 		if (m_athleteEnabled) {
-		m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
-		m_pipeline->setWorldOrientation(QQuaternion());
-		m_pipeline->setWorldPosition(
-			m_activeAthleteFrame.joints[JointType_SpineBase].position -
-			m_ksensor->skeleton()->m_athletePelvisOffset +
-			m_generalOffset
-		);
+			m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
+			m_pipeline->setWorldOrientation(QQuaternion());
+			m_pipeline->setWorldPosition(
+				m_activeAthleteFrame.joints[JointType_SpineBase].position -
+				m_ksensor->skeleton()->m_athletePelvisOffset -
+				QVector3D(0.f, m_ksensor->skeleton()->m_trainerFeetOffset, 0.f)+
+				m_generalOffset
+			);
 		
-		// draw barbell #todo make barbell connect to skinned mesh thumbs
-		QVector3D skinnedMeshLeftHand = m_athlete->boneEndPosition(m_athlete->findBoneId("thumb_01_l"));
-		QVector3D skinnedMeshRightHand = m_athlete->boneEndPosition(m_athlete->findBoneId("thumb_01_r"));
-		QVector3D barbellDirection = skinnedMeshRightHand - skinnedMeshLeftHand;
-		QVector3D skinnedMeshHandsMid = (skinnedMeshLeftHand + skinnedMeshRightHand) / 2.f;
-		QMatrix4x4 barbellScaling(fromScaling(QVector3D(1.f, 0.75f, 0.75f)));
-		QMatrix4x4 barbellRotation(fromRotation(QQuaternion::rotationTo(QVector3D(1.f, 0.f, 0.f), barbellDirection)));
-		QMatrix4x4 barbellTranslation = fromTranslation(skinnedMeshHandsMid);
-		QMatrix4x4 barbellTransform = barbellTranslation * barbellRotation * barbellScaling;
-		m_lighting->setUniformValue(m_modelViewLocation, m_pipeline->GetWVTrans() * barbellTransform);
-		m_lighting->setUniformValue(m_projectionLocation, m_pipeline->GetProjTrans());
-		drawBarbell();
+			// draw barbell #todo make barbell connect to skinned mesh thumbs
+			QVector3D skinnedMeshLeftHand = m_athlete->boneEndPosition(m_athlete->findBoneId("thumb_01_l"));
+			QVector3D skinnedMeshRightHand = m_athlete->boneEndPosition(m_athlete->findBoneId("thumb_01_r"));
+			QVector3D barbellDirection = skinnedMeshRightHand - skinnedMeshLeftHand;
+			QVector3D skinnedMeshHandsMid = (skinnedMeshLeftHand + skinnedMeshRightHand) / 2.f;
+			QMatrix4x4 barbellScaling(fromScaling(QVector3D(1.f, 0.75f, 0.75f)));
+			QMatrix4x4 barbellRotation(fromRotation(QQuaternion::rotationTo(QVector3D(1.f, 0.f, 0.f), barbellDirection)));
+			QMatrix4x4 barbellTranslation = fromTranslation(skinnedMeshHandsMid);
+			QMatrix4x4 barbellTransform = barbellTranslation * barbellRotation * barbellScaling;
+			m_lighting->setUniformValue(m_modelViewLocation, m_pipeline->GetWVTrans() * barbellTransform);
+			m_lighting->setUniformValue(m_projectionLocation, m_pipeline->GetProjTrans());
+			drawBarbell();
 		}
 
 		if (m_trainerEnabled) {
@@ -362,12 +365,13 @@ void MainWidget::paintGL()
 			m_pipeline->setWorldPosition(
 				m_activeTrainerFrame.joints[JointType_SpineBase].position -
 				m_ksensor->skeleton()->m_trainerPelvisOffset -
+				QVector3D(0.f, m_ksensor->skeleton()->m_trainerFeetOffset, 0.f)-
 				m_generalOffset
 			);
 
 			// draw barbell #todo make barbell connect to skinned mesh thumbs
-			QVector3D skinnedMeshLeftHand = m_athlete->boneEndPosition(m_athlete->findBoneId("thumb_01_l"));
-			QVector3D skinnedMeshRightHand = m_athlete->boneEndPosition(m_athlete->findBoneId("thumb_01_r"));
+			QVector3D skinnedMeshLeftHand = m_trainer->boneEndPosition(m_trainer->findBoneId("thumb_01_l"));
+			QVector3D skinnedMeshRightHand = m_trainer->boneEndPosition(m_trainer->findBoneId("thumb_01_r"));
 			QVector3D barbellDirection = skinnedMeshRightHand - skinnedMeshLeftHand;
 			QVector3D skinnedMeshHandsMid = (skinnedMeshLeftHand + skinnedMeshRightHand) / 2.f;
 			QMatrix4x4 barbellScaling(fromScaling(QVector3D(1.f, 0.75f, 0.75f)));
@@ -388,12 +392,17 @@ void MainWidget::paintGL()
 		if (m_athleteEnabled) {
 			m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
 			m_pipeline->setWorldOrientation(QQuaternion());
-			m_pipeline->setWorldPosition(-m_ksensor->skeleton()->m_athletePelvisOffset + m_generalOffset);
+			m_pipeline->setWorldPosition(
+				m_generalOffset - 
+				m_ksensor->skeleton()->m_athletePelvisOffset - 
+			QVector3D(0.f, m_ksensor->skeleton()->m_athleteFeetOffset, 0.f));
 
+			// skeleton bones
 			m_technique->setMVP(m_pipeline->getWVPtrans());
 			m_technique->setSpecific(QMatrix4x4());
 			drawSkeleton(m_activeAthleteFrame.joints);
 
+			// skeleton joints
 			if (m_kinectSkeletonJointsDrawing) {
 				m_technique->setMVP(m_pipeline->getWVPtrans());
 				for (uint i = 0; i < JointType_Count; i++) {
@@ -402,6 +411,7 @@ void MainWidget::paintGL()
 				}
 			}
 
+			// joint axes
 			if (m_axesDrawing) {
 				m_technique->setMVP(m_pipeline->getWVPtrans());
 				QMatrix4x4 T(fromTranslation(m_activeAthleteFrame.joints[m_activeJointId].position));
@@ -416,12 +426,17 @@ void MainWidget::paintGL()
 		if (m_trainerEnabled) {
 			m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
 			m_pipeline->setWorldOrientation(QQuaternion());
-			m_pipeline->setWorldPosition(-m_ksensor->skeleton()->m_trainerPelvisOffset - m_generalOffset);
+			m_pipeline->setWorldPosition(
+				-m_generalOffset -
+				m_ksensor->skeleton()->m_trainerPelvisOffset -
+				QVector3D(0.f, m_ksensor->skeleton()->m_trainerFeetOffset, 0.f));
 
+			// skeleton bones
 			m_technique->setMVP(m_pipeline->getWVPtrans());
 			m_technique->setSpecific(QMatrix4x4());
 			drawSkeleton(m_activeTrainerFrame.joints);
 
+			// skeleton joints
 			if (m_kinectSkeletonJointsDrawing) {
 				m_technique->setMVP(m_pipeline->getWVPtrans());
 				for (uint i = 0; i < JointType_Count; i++) {
@@ -430,6 +445,7 @@ void MainWidget::paintGL()
 				}
 			}
 
+			// joint axes
 			if (m_axesDrawing) {
 				m_technique->setMVP(m_pipeline->getWVPtrans());
 				QMatrix4x4 T(fromTranslation(m_activeTrainerFrame.joints[m_activeJointId].position));
@@ -454,8 +470,9 @@ void MainWidget::paintGL()
 	
 	// draw plane
 	if (m_floorDrawing) {
-		m_pipeline->setWorldPosition(QVector3D());
+		m_pipeline->setWorldScale(QVector3D(2.f, 2.f, 2.f));
 		m_pipeline->setWorldOrientation(QQuaternion());
+		m_pipeline->setWorldPosition(QVector3D());
 		m_shaderProgram->setUniformValue(m_mvpLocation, m_pipeline->getWVPtrans());
 		drawPlane();
 	}
