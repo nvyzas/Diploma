@@ -179,10 +179,10 @@ private:
 
 	// render
 	bool m_axesDrawing = true;
-	bool m_skinnedMeshDrawing = false;
+	bool m_skinnedMeshDrawing = true;
 	bool m_kinectSkeletonDrawing = true;
-	bool m_barbellDrawing = false;
-	bool m_floorDrawing = false;
+	bool m_barbellDrawing = true;
+	bool m_floorDrawing = true;
 	bool m_tipsDrawing = true;
 
 	bool m_drawSkinnedMeshJoints = true;

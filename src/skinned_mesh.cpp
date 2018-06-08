@@ -578,15 +578,6 @@ uint SkinnedMesh::findBoneId(const QString &boneName) const
 	}
 	return it->second;
 }
-uint SkinnedMesh::findJointId(const QString &boneName) const
-{
-	const auto& it = m_kboneMap.find(boneName.toStdString());
-	if (it == m_kboneMap.cend()) {
-		cerr << "findJointId() could not locate joint " << boneName.toStdString() << endl;
-		return JointType_SpineBase;
-	}
-	return it->second;
-}
 bool SkinnedMesh::boneVisibility(uint boneIndex) const
 {
 	return m_boneInfo[boneIndex].visible;

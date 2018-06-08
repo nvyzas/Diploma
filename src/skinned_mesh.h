@@ -120,7 +120,6 @@ public:
 	const BoneInfo& boneInfo(uint boneIndex) const;
 
 	uint findBoneId(const QString &boneName) const;
-	uint findJointId(const QString &boneName) const;
 	bool boneVisibility(uint boneIndex) const;
 	bool boneVisibility(const QString &boneName) const;
 	void setBoneVisibility(uint boneIndex, bool state);

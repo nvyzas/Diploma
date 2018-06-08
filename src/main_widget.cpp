@@ -187,8 +187,8 @@ void MainWidget::initializeGL()
 	cout << m_mvpLocation << " ";
 	cout << m_specificLocation << endl;
 	float skinnedMeshFeet;
-	skinnedMeshFeet = m_skinnedMesh->boneEndPosition(m_skinnedMesh->findBoneId("LeftFoot")).y();
-	skinnedMeshFeet += m_skinnedMesh->boneEndPosition(m_skinnedMesh->findBoneId("RightFoot")).y();
+	skinnedMeshFeet = m_skinnedMesh->boneEndPosition(m_skinnedMesh->findBoneId("foot_l")).y();
+	skinnedMeshFeet += m_skinnedMesh->boneEndPosition(m_skinnedMesh->findBoneId("foot_r")).y();
 	skinnedMeshFeet /= 2;
 	QMatrix4x4 S = fromScaling(QVector3D(2.f, 1.f, 2.f));
 	QMatrix4x4 R = fromRotation(QQuaternion::fromEulerAngles(QVector3D(0.f, 45.f, 0.f)));

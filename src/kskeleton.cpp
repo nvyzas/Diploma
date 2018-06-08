@@ -712,10 +712,6 @@ void KSkeleton::printMotionsToLog()
 {
 	m_sequenceLog.resize(0);
 
-	const uint limit = 20;
-	double time;
-	int serial;
-
 	// headers
 	m_sequenceLogData << qSetFieldWidth(10) << "Motion";
 	m_sequenceLogData << qSetFieldWidth(20) << "Athlete";
@@ -744,6 +740,93 @@ void KSkeleton::printMotionsToLog()
 		m_sequenceLogData << endl;
 	}
 	
+	// motion type
+	m_sequenceLogData << qSetFieldWidth(10) << "Interpolated" << endl;
+	// motion size
+	m_sequenceLogData << qSetFieldWidth(10) << "Size:";
+	m_sequenceLogData << qSetFieldWidth(20) << m_athleteInterpolatedMotion.size();
+	m_sequenceLogData << qSetFieldWidth(20) << m_trainerInterpolatedMotion.size();
+	m_sequenceLogData << endl;
+	// motion duration
+	m_sequenceLogData << qSetFieldWidth(10) << "Duration:";
+	m_sequenceLogData << qSetFieldWidth(20) << (m_athleteInterpolatedMotion.size() > 0 ? m_athleteInterpolatedMotion.back().timestamp : 0);
+	m_sequenceLogData << qSetFieldWidth(20) << (m_trainerInterpolatedMotion.size() > 0 ? m_trainerInterpolatedMotion.back().timestamp : 0);
+	m_sequenceLogData << endl;
+	// motion serials, timestamps
+	for (uint i = 0; i < m_bigMotionSize; i++) {
+		m_sequenceLogData << qSetFieldWidth(10) << i;
+		m_sequenceLogData << qSetFieldWidth(5) << (i < m_athleteInterpolatedMotion.size() ? m_athleteInterpolatedMotion[i].serial : 0);
+		m_sequenceLogData << qSetFieldWidth(15) << (i < m_athleteInterpolatedMotion.size() ? m_athleteInterpolatedMotion[i].timestamp : 0);
+		m_sequenceLogData << qSetFieldWidth(5) << (i < m_trainerInterpolatedMotion.size() ? m_trainerInterpolatedMotion[i].serial : 0);
+		m_sequenceLogData << qSetFieldWidth(15) << (i < m_trainerInterpolatedMotion.size() ? m_trainerInterpolatedMotion[i].timestamp : 0);
+		m_sequenceLogData << endl;
+	}
+
+	// motion type
+	m_sequenceLogData << qSetFieldWidth(10) << "Filtered" << endl;
+	// motion size
+	m_sequenceLogData << qSetFieldWidth(10) << "Size:";
+	m_sequenceLogData << qSetFieldWidth(20) << m_athleteFilteredMotion.size();
+	m_sequenceLogData << qSetFieldWidth(20) << m_trainerFilteredMotion.size();
+	m_sequenceLogData << endl;
+	// motion duration
+	m_sequenceLogData << qSetFieldWidth(10) << "Duration:";
+	m_sequenceLogData << qSetFieldWidth(20) << (m_athleteFilteredMotion.size() > 0 ? m_athleteFilteredMotion.back().timestamp : 0);
+	m_sequenceLogData << qSetFieldWidth(20) << (m_trainerFilteredMotion.size() > 0 ? m_trainerFilteredMotion.back().timestamp : 0);
+	m_sequenceLogData << endl;
+	// motion serials, timestamps
+	for (uint i = 0; i < m_bigMotionSize; i++) {
+		m_sequenceLogData << qSetFieldWidth(10) << i;
+		m_sequenceLogData << qSetFieldWidth(5) << (i < m_athleteFilteredMotion.size() ? m_athleteFilteredMotion[i].serial : 0);
+		m_sequenceLogData << qSetFieldWidth(15) << (i < m_athleteFilteredMotion.size() ? m_athleteFilteredMotion[i].timestamp : 0);
+		m_sequenceLogData << qSetFieldWidth(5) << (i < m_trainerFilteredMotion.size() ? m_trainerFilteredMotion[i].serial : 0);
+		m_sequenceLogData << qSetFieldWidth(15) << (i < m_trainerFilteredMotion.size() ? m_trainerFilteredMotion[i].timestamp : 0);
+		m_sequenceLogData << endl;
+	}
+
+	// motion type
+	m_sequenceLogData << qSetFieldWidth(10) << "Adjusted" << endl;
+	// motion size
+	m_sequenceLogData << qSetFieldWidth(10) << "Size:";
+	m_sequenceLogData << qSetFieldWidth(20) << m_athleteAdjustedMotion.size();
+	m_sequenceLogData << qSetFieldWidth(20) << m_trainerAdjustedMotion.size();
+	m_sequenceLogData << endl;
+	// motion duration
+	m_sequenceLogData << qSetFieldWidth(10) << "Duration:";
+	m_sequenceLogData << qSetFieldWidth(20) << (m_athleteAdjustedMotion.size() > 0 ? m_athleteAdjustedMotion.back().timestamp : 0);
+	m_sequenceLogData << qSetFieldWidth(20) << (m_trainerAdjustedMotion.size() > 0 ? m_trainerAdjustedMotion.back().timestamp : 0);
+	m_sequenceLogData << endl;
+	// motion serials, timestamps
+	for (uint i = 0; i < m_bigMotionSize; i++) {
+		m_sequenceLogData << qSetFieldWidth(10) << i;
+		m_sequenceLogData << qSetFieldWidth(5) << (i < m_athleteAdjustedMotion.size() ? m_athleteAdjustedMotion[i].serial : 0);
+		m_sequenceLogData << qSetFieldWidth(15) << (i < m_athleteAdjustedMotion.size() ? m_athleteAdjustedMotion[i].timestamp : 0);
+		m_sequenceLogData << qSetFieldWidth(5) << (i < m_trainerAdjustedMotion.size() ? m_trainerAdjustedMotion[i].serial : 0);
+		m_sequenceLogData << qSetFieldWidth(15) << (i < m_trainerAdjustedMotion.size() ? m_trainerAdjustedMotion[i].timestamp : 0);
+		m_sequenceLogData << endl;
+	}
+
+	// motion type
+	m_sequenceLogData << qSetFieldWidth(10) << "Resized" << endl;
+	// motion size
+	m_sequenceLogData << qSetFieldWidth(10) << "Size:";
+	m_sequenceLogData << qSetFieldWidth(20) << m_athleteResizedMotion.size();
+	m_sequenceLogData << qSetFieldWidth(20) << m_trainerResizedMotion.size();
+	m_sequenceLogData << endl;
+	// motion duration
+	m_sequenceLogData << qSetFieldWidth(10) << "Duration:";
+	m_sequenceLogData << qSetFieldWidth(20) << (m_athleteResizedMotion.size() > 0 ? m_athleteResizedMotion.back().timestamp : 0);
+	m_sequenceLogData << qSetFieldWidth(20) << (m_trainerResizedMotion.size() > 0 ? m_trainerResizedMotion.back().timestamp : 0);
+	m_sequenceLogData << endl;
+	// motion serials, timestamps
+	for (uint i = 0; i < m_bigMotionSize; i++) {
+		m_sequenceLogData << qSetFieldWidth(10) << i;
+		m_sequenceLogData << qSetFieldWidth(5) << (i < m_athleteResizedMotion.size() ? m_athleteResizedMotion[i].serial : 0);
+		m_sequenceLogData << qSetFieldWidth(15) << (i < m_athleteResizedMotion.size() ? m_athleteResizedMotion[i].timestamp : 0);
+		m_sequenceLogData << qSetFieldWidth(5) << (i < m_trainerResizedMotion.size() ? m_trainerResizedMotion[i].serial : 0);
+		m_sequenceLogData << qSetFieldWidth(15) << (i < m_trainerResizedMotion.size() ? m_trainerResizedMotion[i].timestamp : 0);
+		m_sequenceLogData << endl;
+	}
 }
 const array<KLimb, NUM_LIMBS>& KSkeleton::limbs() const
 {
