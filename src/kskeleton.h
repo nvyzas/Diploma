@@ -24,18 +24,21 @@ struct KNode
 	QString name;
 	uint parentId;
 	vector<uint> childrenId;
+	uint helperId; // used to calculate absolute orientations
 
 	KNode()
 		:
 		name("aJoint"),
-		parentId(INVALID_JOINT_ID)
+		parentId(INVALID_JOINT_ID),
+		helperId(INVALID_JOINT_ID)
 	{
 	}
 
-	KNode(QString _name, uint  _parentId, bool _marked = true)
+	KNode(QString _name, uint _parentId, bool _marked = true)
 		:
 		name(_name),
-		parentId(_parentId)
+		parentId(_parentId),
+		helperId(INVALID_JOINT_ID)
 	{
 	}
 };
@@ -157,9 +160,9 @@ class KSkeleton
 public:
 	KSkeleton();
 	~KSkeleton();
-	KFrame addFrame(const Joint* joints, const JointOrientation* orientations, const double& time);
+	KFrame addFrame(const Joint* joints, const JointOrientation* jointOrientations, double time);
 
-	void processRecording(bool trainerRecording);
+	void processRecording();
 
 	void printJointHierarchy() const;
 	void printLimbLengths() const;
@@ -181,6 +184,8 @@ public:
 	const array<KNode, JointType_Count>& nodes() const;
 	void calculateLimbLengths(const QVector<KFrame>& sequence);
 
+	void calculateJointOrientations(QVector<KFrame>& motion);
+
 	void record(bool trainerRecording);
 
 	// Motions
@@ -196,6 +201,7 @@ public:
 	QVector<KFrame> m_trainerAdjustedMotion;
 	QVector<KFrame> m_trainerResizedMotion;
 
+	bool m_athleteRecording;
 	bool m_trainerRecording;
 	QVector<KFrame> m_recordedMotion;
 	int m_bigMotionSize = 0;
@@ -217,13 +223,14 @@ private:
 	array<KLimb, NUM_LIMBS> m_limbs;
 	void initJoints();
 	void initLimbs();
+
 	QVector<KFrame> interpolateMotion(const QVector<KFrame>& motion);
 	QVector<KFrame> resizeMotion(const QVector<KFrame>& motion);
 	QVector<KFrame> filterMotion(const QVector<KFrame>& motion);
 	void cropMotion(QVector<KFrame>& motion);
 	QVector<KFrame> adjustMotion(const QVector<KFrame>& motion);
 	void adjustLimbLength(KFrame& kframe, uint jointId, const QVector3D& direction, float factor); // recursively adjust joints
-	
+
 	QVector3D m_leftFootOffset;
 	QVector3D m_rightFootOffset;
 	QVector3D m_leftFootPosition;

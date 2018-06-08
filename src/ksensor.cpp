@@ -206,8 +206,8 @@ bool KSensor::getBodyFrame(KFrame& destination)
 		}
 	}
 	else {
-		m_sensorLogData << (m_skeleton.m_isRecording ? "Status=Recorded " : "Status=Captured ") << qSetFieldWidth(4);
 		destination = m_skeleton.addFrame(joints, orientations, timestamp);
+		m_sensorLogData << (m_skeleton.m_isRecording ? "Status=Recorded " : "Status=Captured ") << qSetFieldWidth(4);
 	}
 	
 	m_sensorLogData << " RelativeTime=" << qSetFieldWidth(10) << timestamp;

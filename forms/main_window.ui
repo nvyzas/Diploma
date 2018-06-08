@@ -160,13 +160,6 @@
              <property name="bottomMargin">
               <number>6</number>
              </property>
-             <item row="1" column="0">
-              <widget class="QPushButton" name="pushButton_recordStartStop">
-               <property name="text">
-                <string>Record</string>
-               </property>
-              </widget>
-             </item>
              <item row="1" column="1">
               <widget class="QPushButton" name="pushButton_exportTRC">
                <property name="text">
@@ -174,8 +167,12 @@
                </property>
               </widget>
              </item>
-             <item row="4" column="0" colspan="2">
-              <widget class="QComboBox" name="comboBox_activeJoint"/>
+             <item row="1" column="0">
+              <widget class="QPushButton" name="pushButton_recordStartStop">
+               <property name="text">
+                <string>Record</string>
+               </property>
+              </widget>
              </item>
              <item row="2" column="0">
               <widget class="QPushButton" name="pushButton_save">
@@ -184,10 +181,41 @@
                </property>
               </widget>
              </item>
+             <item row="5" column="0" colspan="2">
+              <widget class="QComboBox" name="comboBox_activeJoint"/>
+             </item>
              <item row="2" column="1">
               <widget class="QPushButton" name="pushButton_load">
                <property name="text">
                 <string>Load</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QLabel" name="label_barSpeed">
+               <property name="text">
+                <string>Bar speed</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="1">
+              <widget class="QLabel" name="label_barAngle">
+               <property name="text">
+                <string>Bar angle</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="0">
+              <widget class="QLabel" name="label_fpsTitle">
+               <property name="text">
+                <string>FPS</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="1">
+              <widget class="QLabel" name="label_kneeAngleTitle">
+               <property name="text">
+                <string>Knee angle</string>
                </property>
               </widget>
              </item>
@@ -348,49 +376,42 @@
            <string>Motion Playback</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_2">
-           <item row="6" column="1">
-            <widget class="QPushButton" name="pushButton_playStartStop">
-             <property name="text">
-              <string>Play_Pause</string>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="2">
-            <widget class="QPushButton" name="pushButton_nextPhase">
-             <property name="text">
-              <string>-&gt;</string>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="0">
+           <item row="4" column="0">
             <widget class="QPushButton" name="pushButton_previousPhase">
              <property name="text">
               <string>&lt;-</string>
              </property>
             </widget>
            </item>
-           <item row="3" column="0">
-            <widget class="QLabel" name="label_serial">
+           <item row="4" column="3">
+            <widget class="QPushButton" name="pushButton_nextPhase">
              <property name="text">
-              <string>Serial:</string>
+              <string>-&gt;</string>
              </property>
             </widget>
            </item>
-           <item row="3" column="2">
-            <widget class="QLabel" name="label_speed">
-             <property name="text">
-              <string>Speed:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="1">
+           <item row="2" column="4">
             <widget class="QLabel" name="label_time">
              <property name="text">
               <string>Time:</string>
              </property>
             </widget>
            </item>
-           <item row="2" column="0" colspan="3">
+           <item row="2" column="6">
+            <widget class="QLabel" name="label_speed">
+             <property name="text">
+              <string>Speed:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="5">
+            <widget class="QLabel" name="label_serial">
+             <property name="text">
+              <string>Serial:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0" colspan="4">
             <widget class="QSlider" name="horizontalSlider_progressPercent">
              <property name="minimum">
               <number>0</number>
@@ -403,68 +424,10 @@
              </property>
             </widget>
            </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="groupBox_info">
-          <property name="title">
-           <string>Info</string>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_5">
-           <item row="1" column="3">
-            <widget class="QLabel" name="label_barAngle">
+           <item row="4" column="1" colspan="2">
+            <widget class="QPushButton" name="pushButton_playStartStop">
              <property name="text">
-              <string>TextLabel</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QLabel" name="label_fps">
-             <property name="text">
-              <string>TextLabel</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="3">
-            <widget class="QLabel" name="label_barSpeed">
-             <property name="text">
-              <string>TextLabel</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="2">
-            <widget class="QLabel" name="label_barAngleTitle">
-             <property name="text">
-              <string>Bar angle: </string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="label_kneeAngleTitle">
-             <property name="text">
-              <string>Knee angle:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QLabel" name="label_kneeAngle">
-             <property name="text">
-              <string>TextLabel</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="2">
-            <widget class="QLabel" name="label_barSpeedTitle">
-             <property name="text">
-              <string>Bar speed:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_fpsTitle">
-             <property name="text">
-              <string>FPS:</string>
+              <string>Play_Pause</string>
              </property>
             </widget>
            </item>

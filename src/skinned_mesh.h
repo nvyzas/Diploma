@@ -77,12 +77,6 @@ struct BoneInfo
 	QMatrix4x4 global;
 	QMatrix4x4 combined;
 
-	// Kinect
-	uint originJointId;
-	uint childJointId;
-	uint helperJointId;
-	QQuaternion globalJointOrientation;
-
 	bool visible;
 	float xRot, yRot, zRot;
 	
@@ -102,10 +96,9 @@ public:
 	SkinnedMesh();
 	~SkinnedMesh();	
 	bool loadFromFile(const string& basename);
-	bool initMotionFromFile(const QString& filename);
 
-	void calculateBoneTransforms(const aiNode* pNode, const QMatrix4x4& P);
-	void initCorrectionMatrices();
+	void calculateBoneTransforms(const aiNode* pNode, const QMatrix4x4& P, const array<KJoint, JointType_Count>& joints);
+	void correctLocalMatrices();
 	void printInfo() const;
 	void printNodeHierarchy(const aiNode* pNode) const;
 	void printParameters() const;
@@ -144,11 +137,6 @@ public:
 	QVector<uint>& indices();
 	QVector<QImage>& images();
 
-	QQuaternion pelvisRotation();
-	QVector3D pelvisPosition();
-	double timestamp(uint index);
-	void setActiveCoordinates(uint frameIndex);
-	uint sequenceSize();
 	QVector3D getPelvisOffset();
 	void setKSkeleton(KSkeleton* ks);
 	bool parameter(uint i) const;
@@ -185,62 +173,9 @@ private:
 	vector<QQuaternion> m_controlQuats; 
 	vector<QMatrix4x4> m_controlMats;
 
-	void initLocalMatrices(const aiNode* node);
+	void initDefaultLocalMatrices(const aiNode* node);
 
 	vector<QString> m_boneTransformInfo;
-
-	enum Coordinates{
-		pelvis_tilt, //z
-		pelvis_list, //x
-		pelvis_rotation, //y
-		pelvis_tx,
-		pelvis_ty,
-		pelvis_tz,
-
-		hip_flexion_r,
-		hip_adduction_r,
-		hip_rotation_r,
-		knee_angle_r,
-		ankle_angle_r,
-		subtalar_angle_r,
-		mtp_angle_r,
-
-		hip_flexion_l,
-		hip_adduction_l,
-		hip_rotation_l,
-		knee_angle_l,
-		ankle_angle_l,
-		subtalar_angle_l,
-		mtp_angle_l,
-
-		lumbar_extension,
-		lumbar_bending,
-		lumbar_rotation,
-
-		arm_flex_r,
-		arm_add_r,
-		arm_rot_r,
-		elbow_flex_r,
-		pro_sup_r,
-		wrist_flex_r,
-		wrist_dev_r,
-
-		arm_flex_l,
-		arm_add_l,
-		arm_rot_l,
-		elbow_flex_l,
-		pro_sup_l,
-		wrist_flex_l,
-		wrist_dev_l
-	};
-	static const uint m_numCoordinates = 37;
-
-	// Skinned Mesh Frame
-	array<float, m_numCoordinates> m_activeCoordinates;
-	QVector<array<float, m_numCoordinates>> m_coordinateSequence;
-	QVector<double> m_timestamps;
-
-	void initCoordinates();
 
 	uint m_numBones = 0; // crash if not 0
 	uint m_numVertices; // total number of vertices
@@ -258,8 +193,6 @@ private:
 		"Front Direction"		, // 6
 		"+ Direction"    		, // 7
 	};	
-
-	uint m_activeFrame = 0;
 };
 
 #endif	/* SKINNED_MESH_H */

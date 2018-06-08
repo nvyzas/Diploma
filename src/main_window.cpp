@@ -243,7 +243,6 @@ void MainWindow::setupConnections()
 void MainWindow::updateInfo()
 {
 	ui->label_barAngle->setNum((double)ui->openGLWidget->m_barAngle);
-	ui->label_fps->setNum((int)ui->openGLWidget->m_fpsCount);
 	QString barSpeedX; 
 	barSpeedX.setNum(ui->openGLWidget->m_barSpeed.x(), 'f', 3);
 	QString barSpeedY;
@@ -253,6 +252,5 @@ void MainWindow::updateInfo()
 
 	ui->label_barSpeed->setText(barSpeedX+" "+barSpeedY+" "+barSpeedZ);
 
-	ui->label_kneeAngle->setNum((double)ui->openGLWidget->m_kneeAngle);
 	ui->label_time->setNum(ui->openGLWidget->m_activeFrameTimestamp);
 }

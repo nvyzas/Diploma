@@ -87,14 +87,9 @@ void MainWidget::setup()
 	// Setup timer
 	connect(&m_timer, SIGNAL(timeout()), this, SLOT(intervalPassed()));
 	m_timer.setTimerType(Qt::PreciseTimer);
-	m_playbackInterval = 0.0333333;
-	cout << "Playback interval: " << m_playbackInterval << endl;
-	m_timer.setInterval(m_playbackInterval);
+	m_timer.setInterval(33);
 	m_timer.start();
 
-	// Setup skinned mesh
-	m_skinnedMesh->calculateBoneTransforms(m_skinnedMesh->m_pScene->mRootNode, QMatrix4x4());
-	
 	// #todo: Setup camera
 	m_camera->printInfo();
 
@@ -241,7 +236,6 @@ void MainWidget::paintGL()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	KFrame* activeFrame = (m_athleteEnabled ? &m_activeAthleteFrame : &m_activeTrainerFrame);
-
 	if (m_activeMode == Mode::CAPTURE) {
 		m_ksensor->getBodyFrame(*activeFrame);
 	}
@@ -255,32 +249,75 @@ void MainWidget::paintGL()
 	}
 	else {
 		cout << "Error: Mode=" << (int)m_activeMode << endl;
+		return;
 	}
 	m_activeFrameTimestamp = activeFrame->timestamp;
 
-	// prepare pipeline for drawing skinned mesh related stuff
-	if (m_defaultPose) {
-		m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
-		m_pipeline->setWorldOrientation(QQuaternion());
-		m_pipeline->setWorldPosition(QVector3D());
-	}
-	else {
-		m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
-		m_pipeline->setWorldOrientation(QQuaternion());
-		m_pipeline->setWorldPosition(QVector3D());
-	}
-
-	// enable skinning technique
-	m_skinningTechnique->enable();
-
-	// draw skinned mesh //todo to optimize invert for and if (put if outside and use two for loops)
-	m_skinnedMesh->calculateBoneTransforms(m_skinnedMesh->m_pScene->mRootNode, QMatrix4x4());
-	for (uint i = 0; i < m_skinnedMesh->numBones(); i++) {
-		m_skinningTechnique->setBoneTransform(i, m_skinnedMesh->boneInfo(i).combined);
-	}
+	// draw persons
 	if (m_skinnedMeshDrawing && m_skinnedMesh->m_successfullyLoaded) {
-		m_skinningTechnique->setWVP(m_pipeline->getWVPtrans());
-		drawSkinnedMesh();
+
+		// athlete
+		if (m_athleteEnabled) {
+			m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
+			m_pipeline->setWorldOrientation(QQuaternion());
+			m_pipeline->setWorldPosition(QVector3D(-1.f, 0.f, 0.f));
+
+			// skinned mesh
+			m_skinningTechnique->enable();
+			m_skinnedMesh->calculateBoneTransforms(m_skinnedMesh->m_pScene->mRootNode, QMatrix4x4(), m_activeAthleteFrame.joints);
+			for (uint i = 0; i < m_skinnedMesh->numBones(); i++) {
+				m_skinningTechnique->setBoneTransform(i, m_skinnedMesh->boneInfo(i).combined);
+			}
+			m_skinningTechnique->setWVP(m_pipeline->getWVPtrans());
+			drawSkinnedMesh();
+
+			// skinned mesh joints
+			m_technique->enable();
+			if (m_drawSkinnedMeshJoints) {
+				m_technique->setSpecific(QMatrix4x4());
+				m_technique->setMVP(m_pipeline->getWVPtrans());
+				drawSkinnedMeshJoints();
+			}
+
+			// skinned mesh bone axes
+			if (m_axesDrawing) {
+				m_technique->setSpecific(m_skinnedMesh->boneGlobal(m_activeBoneId));
+				m_technique->setMVP(m_pipeline->getWVPtrans());
+				drawAxes();
+			}
+		}
+
+		// trainer
+		if (m_trainerEnabled) {
+			m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
+			m_pipeline->setWorldOrientation(QQuaternion());
+			m_pipeline->setWorldPosition(QVector3D(1.f, 0.f, 0.f));
+
+			// skinned mesh
+			m_skinningTechnique->enable();
+			m_skinnedMesh->calculateBoneTransforms(m_skinnedMesh->m_pScene->mRootNode, QMatrix4x4(), m_activeTrainerFrame.joints);
+			for (uint i = 0; i < m_skinnedMesh->numBones(); i++) {
+				m_skinningTechnique->setBoneTransform(i, m_skinnedMesh->boneInfo(i).combined);
+			}
+			m_skinningTechnique->setWVP(m_pipeline->getWVPtrans());
+			drawSkinnedMesh();
+
+			// skinned mesh joints
+			m_technique->enable();
+			if (m_drawSkinnedMeshJoints) {
+				m_technique->setSpecific(QMatrix4x4());
+				m_technique->setMVP(m_pipeline->getWVPtrans());
+				drawSkinnedMeshJoints();
+			}
+
+			// skinned mesh bone axes
+			m_technique->enable();
+			if (m_axesDrawing) {
+				m_technique->setSpecific(m_skinnedMesh->boneGlobal(m_activeBoneId));
+				m_technique->setMVP(m_pipeline->getWVPtrans());
+				drawAxes();
+			}
+		}
 	}
 
 	// bind lighting shaders
@@ -301,57 +338,68 @@ void MainWidget::paintGL()
 		drawBarbell();
 	}
 
-	// enable simple technique
+	// draw kinect skeletons
+	if (m_kinectSkeletonDrawing) {
+		m_technique->enable();
+
+		// athlete
+		if (m_athleteEnabled) {
+			m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
+			m_pipeline->setWorldOrientation(QQuaternion());
+			m_pipeline->setWorldPosition(m_athleteSkeletonOffset);
+			m_technique->setMVP(m_pipeline->getWVPtrans());
+
+			m_technique->setSpecific(QMatrix4x4());
+			drawSkeleton(m_activeAthleteFrame.joints);
+
+			for (uint i = 0; i < JointType_Count; i++) {
+				m_technique->setSpecific(fromTranslation(m_activeAthleteFrame.joints[i].position));
+				drawCube(m_activeAthleteFrame.joints[i]);
+			}
+
+			if (m_axesDrawing) {
+				m_technique->setMVP(m_pipeline->getWVPtrans());
+				QMatrix4x4 T(fromTranslation(m_activeAthleteFrame.joints[m_activeJointId].position));
+				QMatrix4x4 R(fromRotation(m_activeAthleteFrame.joints[m_activeJointId].orientation));
+				QMatrix4x4 S(fromScaling(0.5f, 0.5f, 0.5f));
+				m_technique->setSpecific(T * R * S);
+				drawAxes();
+			}
+		}
+
+		// trainer
+		if (m_trainerEnabled) {
+			m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
+			m_pipeline->setWorldOrientation(QQuaternion());
+			m_pipeline->setWorldPosition(QVector3D(0.f, 0.f, 0.f));
+			m_technique->setMVP(m_pipeline->getWVPtrans());
+
+			m_technique->setSpecific(QMatrix4x4());
+			drawSkeleton(m_activeTrainerFrame.joints);
+
+			for (uint i = 0; i < JointType_Count; i++) {
+				m_technique->setSpecific(fromTranslation(m_activeTrainerFrame.joints[i].position));
+				drawCube(m_activeTrainerFrame.joints[i]);
+			}
+
+			if (m_axesDrawing) {
+				m_technique->setMVP(m_pipeline->getWVPtrans());
+				QMatrix4x4 T(fromTranslation(m_activeTrainerFrame.joints[m_activeJointId].position));
+				QMatrix4x4 R(fromRotation(m_activeTrainerFrame.joints[m_activeJointId].orientation));
+				QMatrix4x4 S(fromScaling(0.5f, 0.5f, 0.5f));
+				m_technique->setSpecific(T * R * S);
+				drawAxes();
+			}
+		}
+	}
+
+	// draw axes at origin VP origin
 	m_technique->enable();
-
-	// draw skinned mesh bone axes
-	if (m_axesDrawing) {
-		m_technique->setSpecific(m_skinnedMesh->boneGlobal(m_activeBoneId));
-		m_technique->setMVP(m_pipeline->getWVPtrans());
-		drawAxes();
-	}
-
-	// draw skinned mesh joints
-	if (m_drawSkinnedMeshJoints) {
-		m_technique->setSpecific(QMatrix4x4());
-		m_technique->setMVP(m_pipeline->getWVPtrans());
-		drawSkinnedMeshJoints();
-	}
-
-	// draw basic axes
 	if (m_axesDrawing) {
 		m_technique->setSpecific(QMatrix4x4());
 		m_technique->setMVP(m_pipeline->getVPtrans()); // only VP transformation! 
 		drawAxes();
 	}
-
-	// prepare pipeline to draw kinect skeleton related stuff
-	m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
-	m_pipeline->setWorldOrientation(QQuaternion());
-	m_pipeline->setWorldPosition(m_athleteSkeletonOffset);
-
-	// draw athlete skeleton
-	if (m_kinectSkeletonDrawing) {
-		m_technique->setMVP(m_pipeline->getWVPtrans());
-		
-		drawSkeleton(m_activeAthleteFrame.joints);
-		for (uint i = 0; i < JointType_Count; i++) {
-			m_technique->setSpecific(fromTranslation(m_activeAthleteFrame.joints[i].position));
-			drawCube(m_activeAthleteFrame.joints[i]);
-		}
-
-		// draw kinect joint axes
-		if (m_axesDrawing) {
-			m_technique->setMVP(m_pipeline->getWVPtrans());
-			QMatrix4x4 T(fromTranslation(m_activeAthleteFrame.joints[m_activeJointId].position));
-			QMatrix4x4 R(fromRotation(m_skinnedMesh->boneInfo(m_activeBoneId).globalJointOrientation));
-			QMatrix4x4 S(fromScaling(0.5f, 0.5f, 0.5f));
-			m_technique->setSpecific(T * R * S);
-			drawAxes();
-		}
-	}
-	
-	
 
 	// enable plane shaders
 	m_shaderProgram->bind();
@@ -394,7 +442,7 @@ void MainWidget::paintGL()
 	QVector3D kneeToAnkle = (ankleRight - kneeRight).normalized();
 	m_kneeAngle = ToDegrees(acos(QVector3D::dotProduct(kneeToHip, kneeToAnkle)));
 	
-	if (!m_isPaused && m_shouldUpdate) {
+	if (!m_isPaused && m_shouldUpdate && m_activeMode == Mode::PLAYBACK) {
 		if (++m_activeFrameIndex > m_ksensor->skeleton()->m_bigMotionSize)  m_activeFrameIndex = 0;
 		emit frameChanged(activeMotionProgress());
 		calculateFPS();
@@ -446,6 +494,14 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_9:
 		m_skinnedMesh->flipParameter(key - Qt::Key_0);
 		break;
+	case Qt::Key_C:
+		m_ksensor->skeleton()->calculateJointOrientations(*m_activeAthleteMotion);
+		m_ksensor->skeleton()->calculateJointOrientations(*m_activeTrainerMotion);
+		break;
+	case Qt::Key_D:
+		m_defaultPose = !m_defaultPose;
+		cout << "Default pause " << (m_defaultPose ? "ON" : "OFF") << endl;
+		break;
 	case Qt::Key_Y:
 		m_playbackInterval *= 1.2f; // decrease playback speed
 		cout << "Playback interval: " << m_playbackInterval << endl;
@@ -456,7 +512,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		cout << "Playback interval: " << m_playbackInterval << endl;
 		m_timer.setInterval(m_playbackInterval);
 		break;
-	case Qt::Key_C:
+	case Qt::Key_L:
 		if (m_athleteEnabled) {
 			cout << "Athlete limbs" << endl;
 			m_ksensor->skeleton()->calculateLimbLengths(*m_activeAthleteMotion);
@@ -467,13 +523,6 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 			m_ksensor->skeleton()->calculateLimbLengths(*m_activeTrainerMotion);
 			m_ksensor->skeleton()->printLimbLengths();
 		}
-		break;
-	case Qt::Key_D:
-		m_defaultPose = !m_defaultPose;
-		cout << "Default pause " << (m_defaultPose ? "ON" : "OFF") << endl;
-		break;
-	case Qt::Key_L:
-		m_ksensor->skeleton()->loadFrameSequences();
 		break;
 	case Qt::Key_P:
 		if (m_isPaused) {
@@ -636,12 +685,10 @@ void MainWidget::setCaptureEnabled(bool state)
 	if (state == true) {
 		m_activeMode = Mode::CAPTURE;
 		cout << "Active mode: Capture" << endl;
-		m_timer.setInterval(m_captureInterval);
 	}
 	else {
 		m_activeMode = Mode::PLAYBACK;
 		cout << "Active mode: Playback" << endl;
-		m_timer.setInterval(m_playbackInterval);
 	}
 }
 bool MainWidget::athleteEnabled() const
@@ -655,12 +702,15 @@ bool MainWidget::trainerEnabled() const
 void MainWidget::setAthleteEnabled(bool state)
 {
 	m_athleteEnabled = state;
+	m_ksensor->skeleton()->m_athleteRecording = state;
 	cout << "Athlete " << ( m_athleteEnabled ? "enabled" : "disabled" ) << endl;
 }
 void MainWidget::setTrainerEnabled(bool state)
 {
 	m_trainerEnabled = state;
+	m_ksensor->skeleton()->m_trainerRecording = state;
 	cout << "Trainer " << (m_trainerEnabled ? "enabled" : "disabled") << endl;
+	update();
 }
 int MainWidget::activeMotionType() const
 {
@@ -691,8 +741,10 @@ void MainWidget::setActiveMotionType(int motionType)
 	}
 	else {
 		cout << "Error: Motion type = " << m_activeMotionType << endl;
+		return;
 	}
 	cout << "Motion type: " << m_motionTypeList[m_activeMotionType].toStdString() << endl;
+	update();
 }
 void MainWidget::setModelName(const QString &modelName)
 {
@@ -766,8 +818,6 @@ void MainWidget::setActiveMotionProgress(int progressPercent)
 void MainWidget::setActiveBone(const QString& boneName)
 {
 	m_activeBoneId = m_skinnedMesh->findBoneId(boneName);
-	m_activeJointId = m_skinnedMesh->boneInfo(m_activeBoneId).originJointId;
-	if (m_activeJointId == INVALID_JOINT_ID) m_activeJointId = JointType_SpineBase;
 	update();
 }
 void MainWidget::loadSkinnedMesh()

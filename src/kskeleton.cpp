@@ -94,6 +94,25 @@ void KSkeleton::initJoints()
 	m_nodes[JointType_ThumbRight] = KNode("ThumbRight", JointType_HandRight);
 	m_nodes[JointType_HandTipRight] = KNode("HandTipRight", JointType_HandRight);
 
+	m_nodes[JointType_SpineMid].helperId = JointType_HipRight;
+	m_nodes[JointType_SpineShoulder].helperId = JointType_Neck;
+	m_nodes[JointType_Neck].helperId = JointType_Head;
+	m_nodes[JointType_Head].helperId = JointType_SpineShoulder;
+	m_nodes[JointType_ShoulderLeft].helperId = JointType_ElbowLeft;
+	m_nodes[JointType_ShoulderRight].helperId = JointType_ElbowRight;
+	m_nodes[JointType_ElbowLeft].helperId = JointType_WristLeft;
+	m_nodes[JointType_ElbowRight].helperId = JointType_WristRight;
+	m_nodes[JointType_WristLeft].helperId = JointType_ThumbLeft;  
+	m_nodes[JointType_WristRight].helperId = JointType_ThumbRight;
+	m_nodes[JointType_HandLeft].helperId = JointType_ThumbLeft;
+	m_nodes[JointType_HandRight].helperId = JointType_ThumbRight;
+	m_nodes[JointType_KneeLeft].helperId = JointType_AnkleLeft;
+	m_nodes[JointType_KneeRight].helperId = JointType_AnkleRight;
+	m_nodes[JointType_AnkleLeft].helperId = JointType_FootLeft;
+	m_nodes[JointType_AnkleRight].helperId = JointType_FootRight;
+	m_nodes[JointType_FootLeft].helperId = JointType_KneeLeft;
+	m_nodes[JointType_FootRight].helperId = JointType_KneeRight;
+
 	// Set children
 	for (uint i = 0; i < JointType_Count; i++) {
 		uint p = m_nodes[i].parentId;
@@ -146,34 +165,43 @@ void KSkeleton::record(bool trainerRecording)
 		cout << "Recording finished." << endl;
 		m_isRecording = false;
 		m_isFinalizing = true;
-		processRecording(trainerRecording);
 	}
 }
-void KSkeleton::processRecording(bool trainerRecording)
+void KSkeleton::processRecording()
 {
-	if (trainerRecording) {
-		cout << "Processing trainer motion" << endl;
-		m_trainerRawMotion = m_recordedMotion;
-		m_trainerInterpolatedMotion = interpolateMotion(m_trainerRawMotion);
-		m_trainerFilteredMotion = filterMotion(m_trainerInterpolatedMotion);
-		m_trainerAdjustedMotion = adjustMotion(m_trainerFilteredMotion);
-		cropMotion(m_trainerRawMotion);
-		cropMotion(m_trainerInterpolatedMotion);
-		if (m_trainerRawMotion.size() > m_bigMotionSize) m_bigMotionSize = m_trainerRawMotion.size();
-	}
-	else {
+	if (m_athleteRecording) {
 		cout << "Processing athlete motion" << endl;
 		m_athleteRawMotion = m_recordedMotion;
 		m_athleteInterpolatedMotion = interpolateMotion(m_athleteRawMotion);
 		m_athleteFilteredMotion = filterMotion(m_athleteInterpolatedMotion);
 		m_athleteAdjustedMotion = adjustMotion(m_athleteFilteredMotion);
+		m_athleteResizedMotion = resizeMotion(m_athleteRawMotion);
+		calculateJointOrientations(m_athleteInterpolatedMotion);
+		calculateJointOrientations(m_athleteFilteredMotion);
+		calculateJointOrientations(m_athleteAdjustedMotion);
+		calculateJointOrientations(m_athleteResizedMotion);
 		cropMotion(m_athleteRawMotion);
 		cropMotion(m_athleteInterpolatedMotion);
 		if (m_athleteRawMotion.size() > m_bigMotionSize) m_bigMotionSize = m_athleteRawMotion.size();
 	}
+	if (m_trainerRecording) {
+		cout << "Processing trainer motion" << endl;
+		m_trainerRawMotion = m_recordedMotion;
+		m_trainerInterpolatedMotion = interpolateMotion(m_trainerRawMotion);
+		m_trainerFilteredMotion = filterMotion(m_trainerInterpolatedMotion);
+		m_trainerAdjustedMotion = adjustMotion(m_trainerFilteredMotion);
+		m_trainerResizedMotion = resizeMotion(m_trainerRawMotion);
+		calculateJointOrientations(m_trainerInterpolatedMotion);
+		calculateJointOrientations(m_trainerFilteredMotion);
+		calculateJointOrientations(m_trainerAdjustedMotion);
+		calculateJointOrientations(m_trainerResizedMotion);
+		cropMotion(m_trainerRawMotion);
+		cropMotion(m_trainerInterpolatedMotion);
+		if (m_trainerRawMotion.size() > m_bigMotionSize) m_bigMotionSize = m_trainerRawMotion.size();
+	}
 	printMotionsToLog();
 }
-KFrame KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientations, const double& time)
+KFrame KSkeleton::addFrame(const Joint* joints, const JointOrientation* jointOrientations, double time)
 {
 	static uint addedFrames = 0;
 	addedFrames++;
@@ -182,7 +210,7 @@ KFrame KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientat
 
 	for (uint i = 0; i < JointType_Count; i++) {
 		const Joint& jt = joints[i];
-		const JointOrientation& or = orientations[i];
+		const JointOrientation& or = jointOrientations[i];
 		kframe.joints[i].position = QVector3D(jt.Position.X, jt.Position.Y, jt.Position.Z);
 		kframe.joints[i].orientation = QQuaternion(or.Orientation.w, or.Orientation.x, or.Orientation.y, or.Orientation.z);
 		kframe.joints[i].trackingState = jt.TrackingState;
@@ -203,16 +231,17 @@ KFrame KSkeleton::addFrame(const Joint* joints, const JointOrientation* orientat
 		}
 		else {
 			cout << "Recording finished." << endl;
-			m_isFinalizing = false;
 			double timeOffset = m_recordedMotion[m_framesDelayed].timestamp;
 			int serialOffset = m_recordedMotion[m_framesDelayed].serial;
 			for (uint i = 0; i < m_recordedMotion.size(); i++) {
 				m_recordedMotion[i].timestamp -= timeOffset;
 				m_recordedMotion[i].serial -= serialOffset;
 			}
+			processRecording();
 			counter = 0;
 			addedFrames = 0;
 			m_firstFrameIndex = 0;
+			m_isFinalizing = false;
 		}
 	}
 	else {
@@ -371,6 +400,88 @@ void KSkeleton::adjustLimbLength(KFrame& kframe, uint jointId, const QVector3D& 
 	for (uint i = 0; i < m_nodes[jointId].childrenId.size(); i++) {
 		uint childId = m_nodes[jointId].childrenId[i];
 		adjustLimbLength(kframe, childId, direction, factor);
+	}
+}
+void KSkeleton::calculateJointOrientations(QVector<KFrame>& motion)
+{
+	for (uint i = 0; i < motion.size(); i++) {
+		for (uint j = 0; j < JointType_Count; j++) {
+			uint child = j;
+			uint parent = m_nodes[j].parentId;
+			uint helper = m_nodes[j].helperId;
+			if (parent == INVALID_JOINT_ID || helper == INVALID_JOINT_ID) {
+				if (i == 0) cout << "Invalid joint id " << parent << " " << helper << endl;
+				continue;
+			}
+			if (i == 0) cout << "Child=" << m_nodes[child].name.toStdString();
+			if (i == 0) cout << " Parent=" << m_nodes[parent].name.toStdString();
+			if (i == 0) cout << " Helper=" << m_nodes[helper].name.toStdString();
+			if (i == 0) cout << endl;
+
+			QVector3D childToOrigin =
+				motion[i].joints[parent].position -
+				motion[i].joints[child].position;
+			QVector3D childToHelper =
+				motion[i].joints[helper].position -
+				motion[i].joints[child].position;
+
+			QVector3D upDirection = -childToOrigin;
+			QVector3D leftDirection = QVector3D::crossProduct(childToOrigin, childToHelper);
+			QVector3D frontDirection = QVector3D::crossProduct(childToOrigin, leftDirection);
+			if (child == JointType_SpineMid) {
+				QVector3D hipsDirection =
+					motion[i].joints[JointType_HipLeft].position -
+					motion[i].joints[JointType_HipRight].position;
+				frontDirection = QVector3D::crossProduct(hipsDirection, upDirection);
+			}
+			else if (child == JointType_SpineShoulder) {
+				QVector3D shouldersDirection =
+					motion[i].joints[JointType_ShoulderLeft].position -
+					motion[i].joints[JointType_ShoulderRight].position;
+				frontDirection = QVector3D::crossProduct(shouldersDirection, upDirection);
+			}
+			else if (child == JointType_Neck) {
+				QVector3D shouldersDirection =
+					motion[i].joints[JointType_ShoulderLeft].position -
+					motion[i].joints[JointType_ShoulderRight].position;
+				frontDirection = QVector3D::crossProduct(shouldersDirection, upDirection);
+			}
+			else if (child == JointType_Head) {
+				QVector3D shouldersDirection =
+					motion[i].joints[JointType_ShoulderLeft].position -
+					motion[i].joints[JointType_ShoulderRight].position;
+				frontDirection = QVector3D::crossProduct(shouldersDirection, upDirection);
+			}
+			else if (child == JointType_ShoulderLeft) frontDirection = leftDirection;
+			else if (child == JointType_ShoulderRight) frontDirection = -leftDirection;
+			else if (child == JointType_ElbowLeft) frontDirection = leftDirection;
+			else if (child == JointType_ElbowRight) frontDirection = -leftDirection;
+			else if (child == JointType_WristLeft) frontDirection = -leftDirection;
+			else if (child == JointType_WristRight) frontDirection = -leftDirection;
+			else if (child == JointType_HandLeft) frontDirection = -frontDirection;
+			else if (child == JointType_HandRight) frontDirection = -frontDirection;
+			else if (child == JointType_KneeLeft) frontDirection = frontDirection;
+			else if (child == JointType_KneeRight) frontDirection = leftDirection;
+			else if (child == JointType_AnkleLeft) frontDirection = leftDirection;
+			else if (child == JointType_AnkleRight) frontDirection = -leftDirection;
+			else if (child == JointType_FootLeft) frontDirection = leftDirection;
+			else if (child == JointType_FootRight) frontDirection = -leftDirection;
+
+			childToOrigin.normalize();
+			childToHelper.normalize();
+			QQuaternion q;
+			float angle = ToDegrees(acos(QVector3D::dotProduct(childToOrigin, childToHelper)));
+			if (angle < 0.001) {
+				if (i == 0) cout << "AngleBetweenDirections=" << angle << endl;
+			}
+			q = QQuaternion::fromDirection(frontDirection, upDirection);
+			if (i == 0) cout << "Hand-made quat: " << toString(q).toStdString() << toStringEulerAngles(q).toStdString() << toStringAxisAngle(q).toStdString() << endl;
+
+			QQuaternion absQ = motion[i].joints[child].orientation;
+			if (i == 0) cout << "Original  quat: " << toString(absQ).toStdString() << toStringEulerAngles(absQ).toStdString() << toStringAxisAngle(absQ).toStdString() << endl;
+			
+			motion[i].joints[child].orientation = q;
+		}
 	}
 }
 void KSkeleton::cropMotion(QVector<KFrame>& motion)
@@ -569,6 +680,17 @@ void KSkeleton::loadFrameSequences()
 		cout << "Loading from sequences.txt binary file." << endl;
 	}
 
+	m_athleteRawMotion.clear();
+	m_athleteInterpolatedMotion.clear();
+	m_athleteFilteredMotion.clear();
+	m_athleteAdjustedMotion.clear();
+	m_athleteResizedMotion.clear();
+	m_trainerRawMotion.clear();
+	m_trainerInterpolatedMotion.clear();
+	m_trainerFilteredMotion.clear();
+	m_trainerAdjustedMotion.clear();
+	m_trainerResizedMotion.clear();
+
 	QDataStream in(&qf);
 	//in.setVersion(QDataStream::Qt_5_9);
 	in >> m_athleteRawMotion;
@@ -576,11 +698,11 @@ void KSkeleton::loadFrameSequences()
 	in >> m_athleteFilteredMotion;
 	in >> m_athleteAdjustedMotion;
 	in >> m_athleteResizedMotion;
-	in << m_trainerRawMotion;
-	in << m_trainerInterpolatedMotion;
-	in << m_trainerFilteredMotion;
-	in << m_trainerAdjustedMotion;
-	in << m_trainerResizedMotion;
+	in >> m_trainerRawMotion;
+	in >> m_trainerInterpolatedMotion;
+	in >> m_trainerFilteredMotion;
+	in >> m_trainerAdjustedMotion;
+	in >> m_trainerResizedMotion;
 	qf.close();
 
 	m_sequenceLogData << "Loaded Data" << endl;
