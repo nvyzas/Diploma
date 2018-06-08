@@ -26,13 +26,14 @@ MainWidget::MainWidget(QWidget *parent)
 	: 
 	QOpenGLWidget(parent),
 	m_ksensor(new KSensor()),
-	m_skinnedMesh(new SkinnedMesh()),
+	m_athlete(new SkinnedMesh()),
+	m_trainer(new SkinnedMesh()),
 	m_camera(new Camera()),
 	m_pipeline(new Pipeline())
 {
 	cout << "MainWidget class constructor start." << endl;
 
-	m_skinnedMesh->setKSkeleton(m_ksensor->skeleton());
+	m_athlete->setKSkeleton(m_ksensor->skeleton());
 	setup();
 
 	cout << "MainWidget class constructor end.\n" << endl;
@@ -42,13 +43,14 @@ MainWidget::~MainWidget()
 	// delete data classes
 	delete m_camera;
 	delete m_pipeline;
-	delete m_skinnedMesh;
+	delete m_athlete;
 
 	// Release OpenGL resources
 	makeCurrent();
 
 	// delete skinned mesh
-	unloadSkinnedMesh();
+	unloadAthlete();
+	unloadTrainer();
 
 	// delete shaders
 	delete m_technique;
@@ -80,7 +82,7 @@ void MainWidget::setup()
 
 	// Setup mode
 	setCaptureEnabled(false);
-	setAthleteEnabled(true);
+	setAthleteEnabled(false);
 	setTrainerEnabled(false);
 	setActiveMotionType(0);
 
@@ -102,16 +104,6 @@ void MainWidget::setup()
 	m_pipeline->setPersProjInfo(perspectiveProjectionInfo);
 	m_pipeline->setCamera(m_camera->GetPos(), m_camera->GetTarget(), m_camera->GetUp());
 
-	// Setup skeleton offsets
-	if (m_activeAthleteMotion->size() > 0) {
-		m_athleteSkeletonOffset = -m_activeAthleteMotion->front().joints[JointType_SpineBase].position;
-	}
-	if (m_activeTrainerMotion->size() > 0) {
-		m_trainerSkeletonOffset = -m_activeTrainerMotion->front().joints[JointType_SpineBase].position;
-	}
-	cout << "Athlete skeleton offset: " << toStringCartesian(m_athleteSkeletonOffset).toStdString() << endl;
-	cout << "Trainer skeleton offset: " << toStringCartesian(m_trainerSkeletonOffset).toStdString() << endl;
-	
 	cout << "MainWidget setup end." << endl;
 }
 // This virtual function is called once before the first call to paintGL() or resizeGL().
@@ -141,6 +133,13 @@ void MainWidget::initializeGL()
 
 	glPointSize(3.f);
 
+	// Init skinned mesh
+	m_athlete->loadFromFile("athlete.dae");
+	m_athlete->initKBoneMap();
+	m_trainer->loadFromFile("trainer.dae");
+	m_trainer->initKBoneMap();
+	m_athlete->printInfo();
+
 	// Init technique
 	m_technique = new Technique();
 	m_technique->initDefault();
@@ -163,8 +162,8 @@ void MainWidget::initializeGL()
 	m_skinningTechnique->setMatSpecularPower(0);
 	m_skinningTechnique->setSkinning(true);
 	m_skinningTechnique->setWVP(m_pipeline->getWVPtrans());
-	for (uint i = 0; i < m_skinnedMesh->numBones(); i++) {
-		m_skinningTechnique->setBoneVisibility(i, m_skinnedMesh->boneVisibility(i));
+	for (uint i = 0; i < m_athlete->numBones(); i++) {
+		m_skinningTechnique->setBoneVisibility(i, m_athlete->boneVisibility(i));
 	}
 	
 	// Init plane shaders
@@ -187,8 +186,8 @@ void MainWidget::initializeGL()
 	cout << m_mvpLocation << " ";
 	cout << m_specificLocation << endl;
 	float skinnedMeshFeet;
-	skinnedMeshFeet = m_skinnedMesh->boneEndPosition(m_skinnedMesh->findBoneId("foot_l")).y();
-	skinnedMeshFeet += m_skinnedMesh->boneEndPosition(m_skinnedMesh->findBoneId("foot_r")).y();
+	skinnedMeshFeet = m_athlete->boneEndPosition(m_athlete->findBoneId("foot_l")).y();
+	skinnedMeshFeet += m_athlete->boneEndPosition(m_athlete->findBoneId("foot_r")).y();
 	skinnedMeshFeet /= 2;
 	QMatrix4x4 S = fromScaling(QVector3D(2.f, 1.f, 2.f));
 	QMatrix4x4 R = fromRotation(QQuaternion::fromEulerAngles(QVector3D(0.f, 45.f, 0.f)));
@@ -219,7 +218,8 @@ void MainWidget::initializeGL()
 	cout << m_modelViewLocation << " ";
 	cout << m_projectionLocation << endl;
 
-	loadSkinnedMesh();
+	loadAthlete(); 
+	loadTrainer();
 	loadAxes();
 	loadArrow();
 	loadSkeleton();
@@ -254,34 +254,39 @@ void MainWidget::paintGL()
 	m_activeFrameTimestamp = activeFrame->timestamp;
 
 	// draw persons
-	if (m_skinnedMeshDrawing && m_skinnedMesh->m_successfullyLoaded) {
+	if (m_skinnedMeshDrawing) {
 
 		// athlete
-		if (m_athleteEnabled) {
+		if (m_athleteEnabled && m_athlete->m_successfullyLoaded) {
 			m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
 			m_pipeline->setWorldOrientation(QQuaternion());
-			m_pipeline->setWorldPosition(QVector3D(-1.f, 0.f, 0.f));
+			m_pipeline->setWorldPosition(
+				m_activeAthleteFrame.joints[JointType_SpineBase].position-
+				m_ksensor->skeleton()->m_athletePelvisOffset+
+				m_generalOffset
+			);
 
 			// skinned mesh
 			m_skinningTechnique->enable();
-			m_skinnedMesh->calculateBoneTransforms(m_skinnedMesh->m_pScene->mRootNode, QMatrix4x4(), m_activeAthleteFrame.joints);
-			for (uint i = 0; i < m_skinnedMesh->numBones(); i++) {
-				m_skinningTechnique->setBoneTransform(i, m_skinnedMesh->boneInfo(i).combined);
-			}
 			m_skinningTechnique->setWVP(m_pipeline->getWVPtrans());
-			drawSkinnedMesh();
+			m_athlete->calculateBoneTransforms(m_athlete->m_pScene->mRootNode, QMatrix4x4(), m_activeAthleteFrame.joints);
+			for (uint i = 0; i < m_athlete->numBones(); i++) {
+				m_skinningTechnique->setBoneTransform(i, m_athlete->boneInfo(i).combined);
+			}
+			drawAthlete();
 
 			// skinned mesh joints
 			m_technique->enable();
-			if (m_drawSkinnedMeshJoints) {
+			if (m_SkinnedMeshJointsDrawing) {
 				m_technique->setSpecific(QMatrix4x4());
 				m_technique->setMVP(m_pipeline->getWVPtrans());
-				drawSkinnedMeshJoints();
+				drawSkinnedMeshJoints(m_athlete);
 			}
 
 			// skinned mesh bone axes
+			m_technique->enable();
 			if (m_axesDrawing) {
-				m_technique->setSpecific(m_skinnedMesh->boneGlobal(m_activeBoneId));
+				m_technique->setSpecific(m_athlete->boneGlobal(m_activeBoneId));
 				m_technique->setMVP(m_pipeline->getWVPtrans());
 				drawAxes();
 			}
@@ -291,29 +296,33 @@ void MainWidget::paintGL()
 		if (m_trainerEnabled) {
 			m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
 			m_pipeline->setWorldOrientation(QQuaternion());
-			m_pipeline->setWorldPosition(QVector3D(1.f, 0.f, 0.f));
+			m_pipeline->setWorldPosition(
+				m_activeTrainerFrame.joints[JointType_SpineBase].position -
+				m_ksensor->skeleton()->m_trainerPelvisOffset -
+				m_generalOffset
+			);
 
 			// skinned mesh
 			m_skinningTechnique->enable();
-			m_skinnedMesh->calculateBoneTransforms(m_skinnedMesh->m_pScene->mRootNode, QMatrix4x4(), m_activeTrainerFrame.joints);
-			for (uint i = 0; i < m_skinnedMesh->numBones(); i++) {
-				m_skinningTechnique->setBoneTransform(i, m_skinnedMesh->boneInfo(i).combined);
+			m_trainer->calculateBoneTransforms(m_trainer->m_pScene->mRootNode, QMatrix4x4(), m_activeTrainerFrame.joints);
+			for (uint i = 0; i < m_trainer->numBones(); i++) {
+				m_skinningTechnique->setBoneTransform(i, m_trainer->boneInfo(i).combined);
 			}
 			m_skinningTechnique->setWVP(m_pipeline->getWVPtrans());
-			drawSkinnedMesh();
+			drawTrainer();
 
 			// skinned mesh joints
 			m_technique->enable();
-			if (m_drawSkinnedMeshJoints) {
+			if (m_SkinnedMeshJointsDrawing) {
 				m_technique->setSpecific(QMatrix4x4());
 				m_technique->setMVP(m_pipeline->getWVPtrans());
-				drawSkinnedMeshJoints();
+				drawSkinnedMeshJoints(m_trainer);
 			}
 
 			// skinned mesh bone axes
 			m_technique->enable();
 			if (m_axesDrawing) {
-				m_technique->setSpecific(m_skinnedMesh->boneGlobal(m_activeBoneId));
+				m_technique->setSpecific(m_trainer->boneGlobal(m_activeBoneId));
 				m_technique->setMVP(m_pipeline->getWVPtrans());
 				drawAxes();
 			}
@@ -324,9 +333,18 @@ void MainWidget::paintGL()
 	m_lighting->bind();
 
 	if (m_barbellDrawing) {
+		if (m_athleteEnabled) {
+		m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
+		m_pipeline->setWorldOrientation(QQuaternion());
+		m_pipeline->setWorldPosition(
+			m_activeAthleteFrame.joints[JointType_SpineBase].position -
+			m_ksensor->skeleton()->m_athletePelvisOffset +
+			m_generalOffset
+		);
+		
 		// draw barbell #todo make barbell connect to skinned mesh thumbs
-		QVector3D skinnedMeshLeftHand = QVector3D(-1, 0, 0); //m_skinnedMesh->boneEndPosition(m_skinnedMesh->findBoneId("LThumb"));
-		QVector3D skinnedMeshRightHand = QVector3D(1, 0, 0); // m_skinnedMesh->boneEndPosition(m_skinnedMesh->findBoneId("RThumb"));
+		QVector3D skinnedMeshLeftHand = m_athlete->boneEndPosition(m_athlete->findBoneId("thumb_01_l"));
+		QVector3D skinnedMeshRightHand = m_athlete->boneEndPosition(m_athlete->findBoneId("thumb_01_r"));
 		QVector3D barbellDirection = skinnedMeshRightHand - skinnedMeshLeftHand;
 		QVector3D skinnedMeshHandsMid = (skinnedMeshLeftHand + skinnedMeshRightHand) / 2.f;
 		QMatrix4x4 barbellScaling(fromScaling(QVector3D(1.f, 0.75f, 0.75f)));
@@ -336,6 +354,30 @@ void MainWidget::paintGL()
 		m_lighting->setUniformValue(m_modelViewLocation, m_pipeline->GetWVTrans() * barbellTransform);
 		m_lighting->setUniformValue(m_projectionLocation, m_pipeline->GetProjTrans());
 		drawBarbell();
+		}
+
+		if (m_trainerEnabled) {
+			m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
+			m_pipeline->setWorldOrientation(QQuaternion());
+			m_pipeline->setWorldPosition(
+				m_activeTrainerFrame.joints[JointType_SpineBase].position -
+				m_ksensor->skeleton()->m_trainerPelvisOffset -
+				m_generalOffset
+			);
+
+			// draw barbell #todo make barbell connect to skinned mesh thumbs
+			QVector3D skinnedMeshLeftHand = m_athlete->boneEndPosition(m_athlete->findBoneId("thumb_01_l"));
+			QVector3D skinnedMeshRightHand = m_athlete->boneEndPosition(m_athlete->findBoneId("thumb_01_r"));
+			QVector3D barbellDirection = skinnedMeshRightHand - skinnedMeshLeftHand;
+			QVector3D skinnedMeshHandsMid = (skinnedMeshLeftHand + skinnedMeshRightHand) / 2.f;
+			QMatrix4x4 barbellScaling(fromScaling(QVector3D(1.f, 0.75f, 0.75f)));
+			QMatrix4x4 barbellRotation(fromRotation(QQuaternion::rotationTo(QVector3D(1.f, 0.f, 0.f), barbellDirection)));
+			QMatrix4x4 barbellTranslation = fromTranslation(skinnedMeshHandsMid);
+			QMatrix4x4 barbellTransform = barbellTranslation * barbellRotation * barbellScaling;
+			m_lighting->setUniformValue(m_modelViewLocation, m_pipeline->GetWVTrans() * barbellTransform);
+			m_lighting->setUniformValue(m_projectionLocation, m_pipeline->GetProjTrans());
+			drawBarbell();
+		}
 	}
 
 	// draw kinect skeletons
@@ -346,15 +388,18 @@ void MainWidget::paintGL()
 		if (m_athleteEnabled) {
 			m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
 			m_pipeline->setWorldOrientation(QQuaternion());
-			m_pipeline->setWorldPosition(m_athleteSkeletonOffset);
-			m_technique->setMVP(m_pipeline->getWVPtrans());
+			m_pipeline->setWorldPosition(-m_ksensor->skeleton()->m_athletePelvisOffset + m_generalOffset);
 
+			m_technique->setMVP(m_pipeline->getWVPtrans());
 			m_technique->setSpecific(QMatrix4x4());
 			drawSkeleton(m_activeAthleteFrame.joints);
 
-			for (uint i = 0; i < JointType_Count; i++) {
-				m_technique->setSpecific(fromTranslation(m_activeAthleteFrame.joints[i].position));
-				drawCube(m_activeAthleteFrame.joints[i]);
+			if (m_kinectSkeletonJointsDrawing) {
+				m_technique->setMVP(m_pipeline->getWVPtrans());
+				for (uint i = 0; i < JointType_Count; i++) {
+					m_technique->setSpecific(fromTranslation(m_activeAthleteFrame.joints[i].position));
+					drawCube(m_activeAthleteFrame.joints[i]);
+				}
 			}
 
 			if (m_axesDrawing) {
@@ -371,15 +416,18 @@ void MainWidget::paintGL()
 		if (m_trainerEnabled) {
 			m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
 			m_pipeline->setWorldOrientation(QQuaternion());
-			m_pipeline->setWorldPosition(QVector3D(0.f, 0.f, 0.f));
-			m_technique->setMVP(m_pipeline->getWVPtrans());
+			m_pipeline->setWorldPosition(-m_ksensor->skeleton()->m_trainerPelvisOffset - m_generalOffset);
 
+			m_technique->setMVP(m_pipeline->getWVPtrans());
 			m_technique->setSpecific(QMatrix4x4());
 			drawSkeleton(m_activeTrainerFrame.joints);
 
-			for (uint i = 0; i < JointType_Count; i++) {
-				m_technique->setSpecific(fromTranslation(m_activeTrainerFrame.joints[i].position));
-				drawCube(m_activeTrainerFrame.joints[i]);
+			if (m_kinectSkeletonJointsDrawing) {
+				m_technique->setMVP(m_pipeline->getWVPtrans());
+				for (uint i = 0; i < JointType_Count; i++) {
+					m_technique->setSpecific(fromTranslation(m_activeTrainerFrame.joints[i].position));
+					drawCube(m_activeTrainerFrame.joints[i]);
+				}
 			}
 
 			if (m_axesDrawing) {
@@ -492,7 +540,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 	case Qt::Key_7:
 	case Qt::Key_8:
 	case Qt::Key_9:
-		m_skinnedMesh->flipParameter(key - Qt::Key_0);
+		m_athlete->flipParameter(key - Qt::Key_0);
 		break;
 	case Qt::Key_C:
 		m_ksensor->skeleton()->calculateJointOrientations(*m_activeAthleteMotion);
@@ -544,7 +592,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		m_ksensor->skeleton()->saveFrameSequences();
 		break;
 	case Qt::Key_Q:
-		m_skinnedMesh->printInfo();
+		m_athlete->printInfo();
 		break;
 	case Qt::Key_T:
 		m_ksensor->skeleton()->exportToTRC();
@@ -668,7 +716,7 @@ bool MainWidget::modelSkinning() const
 QStringList MainWidget::modelBoneList() const
 {
 	QStringList qsl;
-	for (const auto& it : m_skinnedMesh->boneMap()) qsl << QString::fromLocal8Bit(it.first.c_str());
+	for (const auto& it : m_athlete->boneMap()) qsl << QString::fromLocal8Bit(it.first.c_str());
 	return qsl;
 }
 QStringList MainWidget::motionTypeList() const
@@ -746,10 +794,6 @@ void MainWidget::setActiveMotionType(int motionType)
 	cout << "Motion type: " << m_motionTypeList[m_activeMotionType].toStdString() << endl;
 	update();
 }
-void MainWidget::setModelName(const QString &modelName)
-{
-	m_skinnedMeshModelName = modelName;
-}
 void MainWidget::setModelSkinning(bool state)
 {
 	m_skinningTechnique->enable();
@@ -758,7 +802,7 @@ void MainWidget::setModelSkinning(bool state)
 }
 SkinnedMesh* MainWidget::skinnedMesh()
 {
-	return m_skinnedMesh;
+	return m_athlete;
 }
 SkinningTechnique* MainWidget::skinningTechnique()
 {
@@ -767,21 +811,6 @@ SkinningTechnique* MainWidget::skinningTechnique()
 Technique* MainWidget::technique()
 {
 	return m_technique;
-}
-void MainWidget::unloadSkinnedMesh()
-{
-	for (uint i = 0; i < m_skinnedMeshTextures.size(); i++) {
-		SAFE_DELETE(m_skinnedMeshTextures[i]);
-	}
-
-	if (m_skinnedMeshVBOs[0] != 0) {
-		glDeleteBuffers(ARRAY_SIZE_IN_ELEMENTS(m_skinnedMeshVBOs), m_skinnedMeshVBOs);
-	}
-
-	if (m_skinnedMeshVAO != 0) {
-		glDeleteVertexArrays(1, &m_skinnedMeshVAO);
-		m_skinnedMeshVAO = 0;
-	}
 }
 bool MainWidget::isPaused() const
 {
@@ -817,20 +846,35 @@ void MainWidget::setActiveMotionProgress(int progressPercent)
 }
 void MainWidget::setActiveBone(const QString& boneName)
 {
-	m_activeBoneId = m_skinnedMesh->findBoneId(boneName);
+	m_activeBoneId = m_athlete->findBoneId(boneName);
 	update();
 }
-void MainWidget::loadSkinnedMesh()
+void MainWidget::unloadAthlete()
 {
-	unloadSkinnedMesh();
+	for (uint i = 0; i < m_athleteTextures.size(); i++) {
+		SAFE_DELETE(m_athleteTextures[i]);
+	}
 
-	glGenVertexArrays(1, &m_skinnedMeshVAO);
-	cout << "skinnedMeshVAO=" << m_skinnedMeshVAO << endl;
-	glBindVertexArray(m_skinnedMeshVAO);
+	if (m_athleteVBOs[0] != 0) {
+		glDeleteBuffers(ARRAY_SIZE_IN_ELEMENTS(m_athleteVBOs), m_athleteVBOs);
+	}
 
-	glGenBuffers(ARRAY_SIZE_IN_ELEMENTS(m_skinnedMeshVBOs), m_skinnedMeshVBOs);
-	for (uint i = 0; i < ARRAY_SIZE_IN_ELEMENTS(m_skinnedMeshVBOs); i++) {
-		cout << "skinnedMeshVBO=" << m_skinnedMeshVBOs[i] << endl;
+	if (m_athleteVAO != 0) {
+		glDeleteVertexArrays(1, &m_athleteVAO);
+		m_athleteVAO = 0;
+	}
+}
+void MainWidget::loadAthlete()
+{
+	unloadAthlete();
+
+	glGenVertexArrays(1, &m_athleteVAO);
+	cout << "skinnedMeshVAO=" << m_athleteVAO << endl;
+	glBindVertexArray(m_athleteVAO);
+
+	glGenBuffers(ARRAY_SIZE_IN_ELEMENTS(m_athleteVBOs), m_athleteVBOs);
+	for (uint i = 0; i < ARRAY_SIZE_IN_ELEMENTS(m_athleteVBOs); i++) {
+		cout << "skinnedMeshVBO=" << m_athleteVBOs[i] << endl;
 	}
 
 #define POSITION_LOCATION    0
@@ -839,41 +883,41 @@ void MainWidget::loadSkinnedMesh()
 #define BONE_ID_LOCATION     3
 #define BONE_WEIGHT_LOCATION 4
 
-	const auto& positions = m_skinnedMesh->positions();
-	const auto& texCoords = m_skinnedMesh->texCoords();
-	const auto& normals = m_skinnedMesh->normals();
-	const auto& vertexBoneData = m_skinnedMesh->vertexBoneData();
-	const auto& indices = m_skinnedMesh->indices();
+	const auto& positions = m_athlete->positions();
+	const auto& texCoords = m_athlete->texCoords();
+	const auto& normals = m_athlete->normals();
+	const auto& vertexBoneData = m_athlete->vertexBoneData();
+	const auto& indices = m_athlete->indices();
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_skinnedMeshVBOs[POS_VB]);
+	glBindBuffer(GL_ARRAY_BUFFER, m_athleteVBOs[POS_VB]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(positions[0]) * positions.size(), positions.constData(), GL_STATIC_DRAW);
 	glEnableVertexAttribArray(POSITION_LOCATION);
 	glVertexAttribPointer(POSITION_LOCATION, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_skinnedMeshVBOs[TEXCOORD_VB]);
+	glBindBuffer(GL_ARRAY_BUFFER, m_athleteVBOs[TEXCOORD_VB]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(texCoords[0]) * texCoords.size(), texCoords.constData(), GL_STATIC_DRAW);
 	glEnableVertexAttribArray(TEX_COORD_LOCATION);
 	glVertexAttribPointer(TEX_COORD_LOCATION, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_skinnedMeshVBOs[NORMAL_VB]);
+	glBindBuffer(GL_ARRAY_BUFFER, m_athleteVBOs[NORMAL_VB]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(normals[0]) * normals.size(), normals.constData(), GL_STATIC_DRAW);
 	glEnableVertexAttribArray(NORMAL_LOCATION);
 	glVertexAttribPointer(NORMAL_LOCATION, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_skinnedMeshVBOs[BONE_VB]);
+	glBindBuffer(GL_ARRAY_BUFFER, m_athleteVBOs[BONE_VB]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertexBoneData[0]) * vertexBoneData.size(), vertexBoneData.constData(), GL_STATIC_DRAW);
 	glEnableVertexAttribArray(BONE_ID_LOCATION);
 	glVertexAttribIPointer(BONE_ID_LOCATION, 4, GL_INT, sizeof(VertexBoneData), (const GLvoid*)0);
 	glEnableVertexAttribArray(BONE_WEIGHT_LOCATION);
 	glVertexAttribPointer(BONE_WEIGHT_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(VertexBoneData), (const GLvoid*)16);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_skinnedMeshVBOs[INDEX_BUFFER]);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_athleteVBOs[INDEX_BUFFER]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices[0]) * indices.size(), indices.constData(), GL_STATIC_DRAW);
 
 	glBindVertexArray(0);
 
-	for (int i = 0; i < m_skinnedMesh->images().size(); i++) {
-		m_skinnedMeshTextures.push_back(new QOpenGLTexture(m_skinnedMesh->images()[i]));
+	for (int i = 0; i < m_athlete->images().size(); i++) {
+		m_athleteTextures.push_back(new QOpenGLTexture(m_athlete->images()[i]));
 	}
 
 	if (GLNoError()) {
@@ -884,19 +928,118 @@ void MainWidget::loadSkinnedMesh()
 		GLPrintError();
 	}
 }
-void MainWidget::drawSkinnedMesh()
+void MainWidget::drawAthlete()
 {
-	glBindVertexArray(m_skinnedMeshVAO);
+	glBindVertexArray(m_athleteVAO);
 
-	const auto& meshEntries = m_skinnedMesh->meshEntries();
+	const auto& meshEntries = m_athlete->meshEntries();
 	for (uint i = 0; i < meshEntries.size(); i++) {
 		const uint materialIndex = meshEntries[i].materialIndex;
-		assert(materialIndex < m_skinnedMeshTextures.size());
-		m_skinnedMeshTextures[materialIndex]->bind();
+		assert(materialIndex < m_athleteTextures.size());
+		m_athleteTextures[materialIndex]->bind();
 		glDrawElementsBaseVertex(
 			GL_TRIANGLES									,
 			meshEntries[i].numIndices						,
 			GL_UNSIGNED_INT									,
+			(void*)(sizeof(uint) * meshEntries[i].baseIndex),
+			meshEntries[i].baseVertex
+		);
+	}
+
+	glBindVertexArray(0);
+}
+void MainWidget::loadTrainer()
+{
+	unloadTrainer();
+
+	glGenVertexArrays(1, &m_trainerVAO);
+	cout << "skinnedMeshVAO=" << m_trainerVAO << endl;
+	glBindVertexArray(m_trainerVAO);
+
+	glGenBuffers(ARRAY_SIZE_IN_ELEMENTS(m_trainerVBOs), m_trainerVBOs);
+	for (uint i = 0; i < ARRAY_SIZE_IN_ELEMENTS(m_trainerVBOs); i++) {
+		cout << "skinnedMeshVBO=" << m_trainerVBOs[i] << endl;
+	}
+
+#define POSITION_LOCATION    0
+#define TEX_COORD_LOCATION   1
+#define NORMAL_LOCATION      2
+#define BONE_ID_LOCATION     3
+#define BONE_WEIGHT_LOCATION 4
+
+	const auto& positions = m_trainer->positions();
+	const auto& texCoords = m_trainer->texCoords();
+	const auto& normals = m_trainer->normals();
+	const auto& vertexBoneData = m_trainer->vertexBoneData();
+	const auto& indices = m_trainer->indices();
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_trainerVBOs[POS_VB]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(positions[0]) * positions.size(), positions.constData(), GL_STATIC_DRAW);
+	glEnableVertexAttribArray(POSITION_LOCATION);
+	glVertexAttribPointer(POSITION_LOCATION, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_trainerVBOs[TEXCOORD_VB]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(texCoords[0]) * texCoords.size(), texCoords.constData(), GL_STATIC_DRAW);
+	glEnableVertexAttribArray(TEX_COORD_LOCATION);
+	glVertexAttribPointer(TEX_COORD_LOCATION, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_trainerVBOs[NORMAL_VB]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(normals[0]) * normals.size(), normals.constData(), GL_STATIC_DRAW);
+	glEnableVertexAttribArray(NORMAL_LOCATION);
+	glVertexAttribPointer(NORMAL_LOCATION, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_trainerVBOs[BONE_VB]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertexBoneData[0]) * vertexBoneData.size(), vertexBoneData.constData(), GL_STATIC_DRAW);
+	glEnableVertexAttribArray(BONE_ID_LOCATION);
+	glVertexAttribIPointer(BONE_ID_LOCATION, 4, GL_INT, sizeof(VertexBoneData), (const GLvoid*)0);
+	glEnableVertexAttribArray(BONE_WEIGHT_LOCATION);
+	glVertexAttribPointer(BONE_WEIGHT_LOCATION, 4, GL_FLOAT, GL_FALSE, sizeof(VertexBoneData), (const GLvoid*)16);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_trainerVBOs[INDEX_BUFFER]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices[0]) * indices.size(), indices.constData(), GL_STATIC_DRAW);
+
+	glBindVertexArray(0);
+
+	for (int i = 0; i < m_trainer->images().size(); i++) {
+		m_trainerTextures.push_back(new QOpenGLTexture(m_trainer->images()[i]));
+	}
+
+	if (GLNoError()) {
+		cout << "Successfully loaded trainer to GPU" << endl;
+	}
+	else {
+		cout << "Error loading trainer to GPU" << endl;
+		GLPrintError();
+	}
+}
+void MainWidget::unloadTrainer()
+{
+	for (uint i = 0; i < m_trainerTextures.size(); i++) {
+		SAFE_DELETE(m_trainerTextures[i]);
+	}
+
+	if (m_trainerVBOs[0] != 0) {
+		glDeleteBuffers(ARRAY_SIZE_IN_ELEMENTS(m_trainerVBOs), m_trainerVBOs);
+	}
+
+	if (m_trainerVAO != 0) {
+		glDeleteVertexArrays(1, &m_trainerVAO);
+		m_trainerVAO = 0;
+	}
+}
+void MainWidget::drawTrainer()
+{
+	glBindVertexArray(m_trainerVAO);
+
+	const auto& meshEntries = m_trainer->meshEntries();
+	for (uint i = 0; i < meshEntries.size(); i++) {
+		const uint materialIndex = meshEntries[i].materialIndex;
+		assert(materialIndex < m_trainerTextures.size());
+		m_trainerTextures[materialIndex]->bind();
+		glDrawElementsBaseVertex(
+			GL_TRIANGLES,
+			meshEntries[i].numIndices,
+			GL_UNSIGNED_INT,
 			(void*)(sizeof(uint) * meshEntries[i].baseIndex),
 			meshEntries[i].baseVertex
 		);
@@ -1107,12 +1250,12 @@ void MainWidget::loadSkinnedMeshJoints()
 
 	glBindVertexArray(0);
 }
-void MainWidget::drawSkinnedMeshJoints()
+void MainWidget::drawSkinnedMeshJoints(const SkinnedMesh* sm)
 {
 	for (uint i = 0; i < NUM_BONES; i++) {
-		m_skinnedMeshJoints[6 * i    ] = m_skinnedMesh->boneEndPosition(i).x();
-		m_skinnedMeshJoints[6 * i + 1] = m_skinnedMesh->boneEndPosition(i).y();
-		m_skinnedMeshJoints[6 * i + 2] = m_skinnedMesh->boneEndPosition(i).z();
+		m_skinnedMeshJoints[6 * i    ] = sm->boneEndPosition(i).x();
+		m_skinnedMeshJoints[6 * i + 1] = sm->boneEndPosition(i).y();
+		m_skinnedMeshJoints[6 * i + 2] = sm->boneEndPosition(i).z();
 		m_skinnedMeshJoints[6 * i + 3] = 255.f;
 		m_skinnedMeshJoints[6 * i + 4] = 255.f;
 		m_skinnedMeshJoints[6 * i + 5] = 255.f;	 

@@ -62,9 +62,6 @@ SkinnedMesh::SkinnedMesh()
 	m_pScene(NULL)
 {
 	cout << "SkinnedMesh constructor start." << endl;
-	loadFromFile("Ross.dae");
-	initKBoneMap();
-	printInfo();
 	cout << "SkinnedMesh constructor end.\n" << endl;
 }
 SkinnedMesh::~SkinnedMesh()
@@ -446,9 +443,10 @@ void SkinnedMesh::calculateBoneTransforms(const aiNode* pNode, const QMatrix4x4&
 			qts << "Kinect local orientation: " << toString(relQ) << toStringEulerAngles(relQ) << toStringAxisAngle(relQ) << endl;
 
 			// calculate translation from Kinect
-			QVector3D v(L(0, 3), L(1, 3), L(2, 3));
-			QMatrix4x4 kinectTranslation = fromTranslation(v);
-			qts << "Kinect local translation: " << v << endl;
+			QMatrix4x4 kinectTranslation = getTranslationPart(L);
+			if (nodeName == "pelvis") kinectTranslation = fromTranslation(QVector3D(0.f, 0.f, 0.f));
+			QVector3D v = QVector3D(kinectTranslation(0, 3), kinectTranslation(1, 3), kinectTranslation(2, 3));
+			qts << "Kinect local translation: " << toStringCartesian(v) << endl;
 
 			localTransformation = kinectTranslation * kinectRotation * kinectScaling;
 			qts << "Kinect local transformation:\n" << toString(localTransformation);

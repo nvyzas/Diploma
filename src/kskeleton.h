@@ -187,6 +187,12 @@ public:
 	void calculateJointOrientations(QVector<KFrame>& motion);
 
 	void record(bool trainerRecording);
+	bool m_athleteRecording;
+	bool m_trainerRecording;
+
+	int m_bigMotionSize = 0;
+	QVector3D m_athletePelvisOffset = QVector3D(0.f, 0.f, 0.f);
+	QVector3D m_trainerPelvisOffset = QVector3D(0.f, 0.f, 0.f);
 
 	// Motions
 	QVector<KFrame> m_athleteRawMotion;
@@ -201,10 +207,8 @@ public:
 	QVector<KFrame> m_trainerAdjustedMotion;
 	QVector<KFrame> m_trainerResizedMotion;
 
-	bool m_athleteRecording;
-	bool m_trainerRecording;
 	QVector<KFrame> m_recordedMotion;
-	int m_bigMotionSize = 0;
+
 private:
 	array<KNode, JointType_Count> m_nodes; // these define the kinect skeleton hierarchy
 

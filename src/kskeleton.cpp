@@ -52,9 +52,6 @@ KSkeleton::KSkeleton()
 	initLimbs();
 
 	loadFrameSequences();
-	if (m_athleteRawMotion.size() > m_trainerRawMotion.size())  m_bigMotionSize = m_athleteRawMotion.size();
-	else m_bigMotionSize = m_trainerRawMotion.size();
-	cout << "Big motion size: " << m_bigMotionSize << endl;
 	
 	cout << "KSkeleton constructor end.\n" << endl;
 }
@@ -167,40 +164,6 @@ void KSkeleton::record(bool trainerRecording)
 		m_isFinalizing = true;
 	}
 }
-void KSkeleton::processRecording()
-{
-	if (m_athleteRecording) {
-		cout << "Processing athlete motion" << endl;
-		m_athleteRawMotion = m_recordedMotion;
-		m_athleteInterpolatedMotion = interpolateMotion(m_athleteRawMotion);
-		m_athleteFilteredMotion = filterMotion(m_athleteInterpolatedMotion);
-		m_athleteAdjustedMotion = adjustMotion(m_athleteFilteredMotion);
-		m_athleteResizedMotion = resizeMotion(m_athleteRawMotion);
-		calculateJointOrientations(m_athleteInterpolatedMotion);
-		calculateJointOrientations(m_athleteFilteredMotion);
-		calculateJointOrientations(m_athleteAdjustedMotion);
-		calculateJointOrientations(m_athleteResizedMotion);
-		cropMotion(m_athleteRawMotion);
-		cropMotion(m_athleteInterpolatedMotion);
-		if (m_athleteRawMotion.size() > m_bigMotionSize) m_bigMotionSize = m_athleteRawMotion.size();
-	}
-	if (m_trainerRecording) {
-		cout << "Processing trainer motion" << endl;
-		m_trainerRawMotion = m_recordedMotion;
-		m_trainerInterpolatedMotion = interpolateMotion(m_trainerRawMotion);
-		m_trainerFilteredMotion = filterMotion(m_trainerInterpolatedMotion);
-		m_trainerAdjustedMotion = adjustMotion(m_trainerFilteredMotion);
-		m_trainerResizedMotion = resizeMotion(m_trainerRawMotion);
-		calculateJointOrientations(m_trainerInterpolatedMotion);
-		calculateJointOrientations(m_trainerFilteredMotion);
-		calculateJointOrientations(m_trainerAdjustedMotion);
-		calculateJointOrientations(m_trainerResizedMotion);
-		cropMotion(m_trainerRawMotion);
-		cropMotion(m_trainerInterpolatedMotion);
-		if (m_trainerRawMotion.size() > m_bigMotionSize) m_bigMotionSize = m_trainerRawMotion.size();
-	}
-	printMotionsToLog();
-}
 KFrame KSkeleton::addFrame(const Joint* joints, const JointOrientation* jointOrientations, double time)
 {
 	static uint addedFrames = 0;
@@ -237,6 +200,7 @@ KFrame KSkeleton::addFrame(const Joint* joints, const JointOrientation* jointOri
 				m_recordedMotion[i].timestamp -= timeOffset;
 				m_recordedMotion[i].serial -= serialOffset;
 			}
+
 			processRecording();
 			counter = 0;
 			addedFrames = 0;
@@ -255,6 +219,44 @@ KFrame KSkeleton::addFrame(const Joint* joints, const JointOrientation* jointOri
 	}
 
 	return kframe;
+}
+void KSkeleton::processRecording()
+{
+	if (m_athleteRecording) {
+		cout << "Processing athlete motion" << endl;
+		m_athleteRawMotion = m_recordedMotion;
+		m_athleteInterpolatedMotion = interpolateMotion(m_athleteRawMotion);
+		m_athleteFilteredMotion = filterMotion(m_athleteInterpolatedMotion);
+		m_athleteAdjustedMotion = adjustMotion(m_athleteFilteredMotion);
+		m_athleteResizedMotion = resizeMotion(m_athleteRawMotion);
+		calculateJointOrientations(m_athleteInterpolatedMotion);
+		calculateJointOrientations(m_athleteFilteredMotion);
+		calculateJointOrientations(m_athleteAdjustedMotion);
+		calculateJointOrientations(m_athleteResizedMotion);
+		cropMotion(m_athleteRawMotion);
+		cropMotion(m_athleteInterpolatedMotion);
+		if (m_athleteRawMotion.size() > m_bigMotionSize) m_bigMotionSize = m_athleteRawMotion.size();
+		m_athletePelvisOffset = m_athleteRawMotion.front().joints[JointType_SpineBase].position;
+		cout << "Athlete pelvis offset: " << toStringCartesian(m_athletePelvisOffset).toStdString() << endl;
+	}
+	if (m_trainerRecording) {
+		cout << "Processing trainer motion" << endl;
+		m_trainerRawMotion = m_recordedMotion;
+		m_trainerInterpolatedMotion = interpolateMotion(m_trainerRawMotion);
+		m_trainerFilteredMotion = filterMotion(m_trainerInterpolatedMotion);
+		m_trainerAdjustedMotion = adjustMotion(m_trainerFilteredMotion);
+		m_trainerResizedMotion = resizeMotion(m_trainerRawMotion);
+		calculateJointOrientations(m_trainerInterpolatedMotion);
+		calculateJointOrientations(m_trainerFilteredMotion);
+		calculateJointOrientations(m_trainerAdjustedMotion);
+		calculateJointOrientations(m_trainerResizedMotion);
+		cropMotion(m_trainerRawMotion);
+		cropMotion(m_trainerInterpolatedMotion);
+		if (m_trainerRawMotion.size() > m_bigMotionSize) m_bigMotionSize = m_trainerRawMotion.size();
+		m_trainerPelvisOffset = m_trainerRawMotion.front().joints[JointType_SpineBase].position;
+		cout << "Trainer pelvis offset: " << toStringCartesian(m_trainerPelvisOffset).toStdString() << endl;
+	}
+	printMotionsToLog();
 }
 QVector<KFrame> KSkeleton::resizeMotion(const QVector<KFrame>& motion)
 {
@@ -665,9 +667,6 @@ void KSkeleton::saveFrameSequences()
 	out << m_trainerAdjustedMotion;
 	out << m_trainerResizedMotion;
 	qf.close();
-
-	m_sequenceLogData << "Saved Data" << endl;
-	printMotionsToLog();
 }
 void KSkeleton::loadFrameSequences()
 {
@@ -705,7 +704,18 @@ void KSkeleton::loadFrameSequences()
 	in >> m_trainerResizedMotion;
 	qf.close();
 
-	m_sequenceLogData << "Loaded Data" << endl;
+	if (m_athleteRawMotion.size() > 0) {
+		m_athletePelvisOffset = m_athleteRawMotion.front().joints[JointType_SpineBase].position;
+		cout << "Athlete pelvis offset: " << toStringCartesian(m_athletePelvisOffset).toStdString() << endl;
+	}
+	if (m_trainerRawMotion.size() > 0) {
+		m_trainerPelvisOffset = m_trainerRawMotion.front().joints[JointType_SpineBase].position;
+		cout << "Trainer pelvis offset: " << toStringCartesian(m_trainerPelvisOffset).toStdString() << endl;
+	}
+
+	if (m_athleteRawMotion.size() > m_trainerRawMotion.size())  m_bigMotionSize = m_athleteRawMotion.size();
+	else m_bigMotionSize = m_trainerRawMotion.size();
+	cout << "Big motion size: " << m_bigMotionSize << endl;
 	printMotionsToLog();
 }
 void KSkeleton::printMotionsToLog()

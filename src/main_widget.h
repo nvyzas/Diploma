@@ -140,7 +140,6 @@ public slots:
 	void setBarbellDrawing(bool state);
 	void setTipsDrawing(bool state);
 
-	void setModelName(const QString& modelName);
 	void setModelSkinning(bool state);
 
 	void setActiveBone(const QString& modelName);
@@ -161,7 +160,8 @@ protected:
 
 private:
 	KSensor* m_ksensor;
-	SkinnedMesh* m_skinnedMesh;
+	SkinnedMesh* m_athlete;
+	SkinnedMesh* m_trainer;
 	Camera* m_camera;
 	Technique* m_technique;
 	SkinningTechnique* m_skinningTechnique;
@@ -169,7 +169,7 @@ private:
 
 	QStringList m_motionTypeList = { "Raw", "Interpolated", "Filtered", "Adjusted", "Resized" };
 
-
+	QVector3D m_generalOffset = QVector3D(1.f, 0.f, 0.f);
 	Mode m_activeMode;
 
 	bool m_athleteEnabled;
@@ -185,9 +185,8 @@ private:
 	bool m_floorDrawing = true;
 	bool m_tipsDrawing = true;
 
-	bool m_drawSkinnedMeshJoints = true;
-
-
+	bool m_kinectSkeletonJointsDrawing = true;
+	bool m_SkinnedMeshJointsDrawing = true;
 
 	QPoint m_lastMousePosition;
 	bool m_isPaused = true;	
@@ -195,12 +194,7 @@ private:
 	bool m_shouldUpdate = false;
 	void setup();
 
-	// Skinned mesh
-	QString m_skinnedMeshModelName;
-	QVector3D m_skinnedMeshOffset;
-	bool m_skinningEnabled = true;
-	void loadSkinnedMesh();
-	void unloadSkinnedMesh();
+	// skinned mesh
 	enum VB_TYPES {
 		INDEX_BUFFER,
 		POS_VB,
@@ -209,11 +203,22 @@ private:
 		BONE_VB,
 		NUM_VBs
 	};
-	GLuint m_skinnedMeshVBOs[NUM_VBs];
-	GLuint m_skinnedMeshVAO;
-	vector<QOpenGLTexture*> m_skinnedMeshTextures;
-	void drawSkinnedMesh();
+	bool m_skinningEnabled = true;
 	bool m_defaultPose = true;
+	// athlete
+	vector<QOpenGLTexture*> m_athleteTextures;
+	GLuint m_athleteVBOs[NUM_VBs];
+	GLuint m_athleteVAO;
+	void loadAthlete();
+	void unloadAthlete();
+	void drawAthlete();
+	// trainer
+	vector<QOpenGLTexture*> m_trainerTextures;
+	GLuint m_trainerVBOs[NUM_VBs];
+	GLuint m_trainerVAO;
+	void loadTrainer();
+	void unloadTrainer();
+	void drawTrainer();
 
 	// Skinned mesh joint dots
 #define NUM_BONES 53
@@ -221,11 +226,9 @@ private:
 	GLuint m_skinnedMeshJointsVBO;
 	float m_skinnedMeshJoints[2 * 3 * NUM_BONES];
 	void loadSkinnedMeshJoints();
-	void drawSkinnedMeshJoints();
+	void drawSkinnedMeshJoints(const SkinnedMesh* sm);
 
 	// kinect skeleton
-	QVector3D m_athleteSkeletonOffset = QVector3D(0, 0, 0);
-	QVector3D m_trainerSkeletonOffset = QVector3D(0, 0, 0);
 	GLuint m_skeletonVAO;
 	GLuint m_skeletonVBO;
 	float m_skeleton[2 * 3 * JointType_Count]; // 2 attributes x 3 components x JointType_Count joints

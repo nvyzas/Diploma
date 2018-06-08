@@ -140,6 +140,7 @@ public:
 	void setKSkeleton(KSkeleton* ks);
 	bool parameter(uint i) const;
 	const aiScene* m_pScene;
+	void initKBoneMap();
 
 private:
 	void clear();
@@ -164,7 +165,6 @@ private:
 
 	map<string, uint> m_boneMap; // maps a mesh's bone name to its index (key = bone name, value = index)
 	map<string, uint> m_kboneMap; // maps a mesh's bone name to its kinect JointType index
-	void initKBoneMap();
 	const KJoint *m_pKBones = NULL;
 	KSkeleton* m_kskelie;
 
