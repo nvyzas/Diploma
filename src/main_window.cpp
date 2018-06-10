@@ -169,11 +169,16 @@ void MainWindow::setupObjects()
 	ui->checkBox_trainer->setChecked(ui->openGLWidget->trainerEnabled());
 	ui->comboBox_motionType->addItems(ui->openGLWidget->motionTypeList());
 	ui->comboBox_motionType->setCurrentIndex(ui->openGLWidget->activeMotionType());
+	
+	// Skeleton
+	ui->comboBox_activeJoint->addItems(ui->openGLWidget->skeletonJointList());
 
+	// Model
 	ui->checkBox_modelSkinning->setChecked(ui->openGLWidget->modelSkinning());
 	ui->comboBox_activeBone->addItems(ui->openGLWidget->modelBoneList());
 	loadActiveBoneInfo();
 
+	// Render
 	ui->checkBox_axes->setChecked(ui->openGLWidget->axesDrawing());
 	ui->checkBox_model->setChecked(ui->openGLWidget->skinnedMeshDrawing());
 	ui->checkBox_skeleton->setChecked(ui->openGLWidget->kinectSkeletonDrawing());
@@ -186,7 +191,7 @@ void MainWindow::setupObjects()
 
 	m_guiTimer = new QTimer(this);
 	m_guiTimer->setTimerType(Qt::CoarseTimer);
-	m_guiTimer->setInterval(100);
+	m_guiTimer->setInterval(1000);
 }
 void MainWindow::setupConnections()
 {
@@ -199,21 +204,16 @@ void MainWindow::setupConnections()
 	connect(ui->checkBox_trainer, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setTrainerEnabled(bool)));
 	connect(ui->comboBox_motionType, SIGNAL(currentIndexChanged(int)), ui->openGLWidget, SLOT(setActiveMotionType(int)));
 
-	// Skinned mesh related
-	// toggle skinning
+	// Skeleton
+	connect(ui->comboBox_activeJoint, SIGNAL(currentIndexChanged(int)), ui->openGLWidget, SLOT(setActiveJointId(int)));
+
+	// Model
 	connect(ui->checkBox_modelSkinning          , SIGNAL(toggled(bool))               , ui->openGLWidget, SLOT(setModelSkinning(bool)));
-	
-	// Active bone related
-	// bone selection
 	connect(ui->comboBox_activeBone             , SIGNAL(currentIndexChanged(QString)), SLOT(loadActiveBoneInfo()));
 	connect(ui->comboBox_activeBone             , SIGNAL(currentIndexChanged(QString)), ui->openGLWidget, SLOT(setActiveBone(QString)));
-	// toggle visible
 	connect(ui->checkBox_boneVisible            , SIGNAL(clicked(bool))               , SLOT(setActiveBoneVisible(bool)));
-	// toggle focused
 	connect(ui->checkBox_boneFocused            , SIGNAL(clicked(bool))               , SLOT(setActiveBoneFocused(bool)));
-	// print transform info
 	connect(ui->pushButton_info                 , SIGNAL(clicked())                   , SLOT(printActiveBoneTransforms()));
-	// rotation control
 	connect(ui->horizontalSlider_xRot           , SIGNAL(valueChanged(int))           , SLOT(setActiveBoneRotationX(int)));
 	connect(ui->horizontalSlider_yRot           , SIGNAL(valueChanged(int))           , SLOT(setActiveBoneRotationY(int)));
 	connect(ui->horizontalSlider_zRot           , SIGNAL(valueChanged(int))           , SLOT(setActiveBoneRotationZ(int)));
@@ -221,7 +221,7 @@ void MainWindow::setupConnections()
 	connect(ui->spinBox_yRot                    , SIGNAL(valueChanged(int))           , SLOT(setActiveBoneRotationY(int)));
 	connect(ui->spinBox_zRot                    , SIGNAL(valueChanged(int))           , SLOT(setActiveBoneRotationZ(int)));
 	
-	// render
+	// Render
 	connect(ui->checkBox_axes, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setAxesDrawing(bool)));
 	connect(ui->checkBox_model, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setSkinnedMeshDrawing(bool)));
 	connect(ui->checkBox_skeleton, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setKinectSkeletonDrawing(bool)));
@@ -229,28 +229,40 @@ void MainWindow::setupConnections()
 	connect(ui->checkBox_barbell, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setBarbellDrawing(bool)));
 	connect(ui->checkBox_tips, SIGNAL(toggled(bool)), ui->openGLWidget, SLOT(setTipsDrawing(bool)));
 
-	// Play controls
-	connect(ui->horizontalSlider_progressPercent, SIGNAL(valueChanged(int))           , ui->openGLWidget, SLOT(setActiveMotionProgress(int)));
-	connect(ui->openGLWidget, SIGNAL(frameChanged(int)), ui->horizontalSlider_progressPercent, SLOT(setValue(int)));
+	// Motion Playback
 	connect(ui->pushButton_playStartStop, SIGNAL(clicked()), this, SLOT(togglePlayback()));
+	connect(ui->horizontalSlider_progressPercent, SIGNAL(sliderMoved(int)), ui->openGLWidget, SLOT(setActiveMotionProgress(int)));
+	connect(ui->horizontalSlider_progressPercent, SIGNAL(sliderMoved(int)), this, SLOT(updateActiveFrameInfo()));
+	connect(ui->openGLWidget, SIGNAL(frameChanged(int)), ui->horizontalSlider_progressPercent, SLOT(setValue(int)));
+	connect(ui->openGLWidget, SIGNAL(frameChanged(int)), this, SLOT(updateActiveFrameInfo()));
 
 	// gui timer
-	connect(m_guiTimer, SIGNAL(timeout()), this, SLOT(updateInfo()));
 	connect(m_guiTimer, SIGNAL(timeout()), this, SLOT(updateInfo()));
 
 	m_guiTimer->start();
 }
 void MainWindow::updateInfo()
 {
-	ui->label_barAngle->setNum((double)ui->openGLWidget->m_barAngle);
-	QString barSpeedX; 
-	barSpeedX.setNum(ui->openGLWidget->m_barSpeed.x(), 'f', 3);
-	QString barSpeedY;
-	barSpeedY.setNum(ui->openGLWidget->m_barSpeed.y(), 'f', 3);
-	QString barSpeedZ;
-	barSpeedZ.setNum(ui->openGLWidget->m_barSpeed.z(), 'f', 3);
+	QString jointVelocity;
+	QTextStream qts(&jointVelocity);
+	//qts.setFieldWidth(5);
+	qts.setRealNumberPrecision(2);
+	qts.setRealNumberNotation(QTextStream::FixedNotation);
+	qts.setNumberFlags(QTextStream::ForceSign);
+	QVector3D jv = ui->openGLWidget->activeJointVelocity();
+	qts << "Velocity: " << jv.x() << " " << jv.y() << " " << jv.z() << flush;
+	ui->label_jointVelocity->setText(jointVelocity);
 
-	ui->label_barSpeed->setText(barSpeedX+" "+barSpeedY+" "+barSpeedZ);
+	QString jointAngle("Angle: " + QString::number(ui->openGLWidget->activeJointAngle(), 'f', 1));
+	ui->label_jointAngle->setText(jointAngle);
 
-	ui->label_time->setNum(ui->openGLWidget->m_activeFrameTimestamp);
+}
+void MainWindow::updateActiveFrameInfo()
+{
+	QString index("Index: " + QString::number((int)ui->openGLWidget->m_activeFrameIndex));;
+	ui->label_index->setText(index);
+
+	QString time("Time: " + QString::number(ui->openGLWidget->m_activeFrameTimestamp, 'f', 3));;
+	ui->label_time->setText(time);
+
 }

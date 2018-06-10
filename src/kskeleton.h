@@ -17,6 +17,7 @@
 
 #define INVALID_JOINT_ID -1
 #define NUM_LIMBS 23
+#define NUM_PHASES 5
 
 // Represents a node of the skeletal hierarchy
 struct KNode
@@ -202,15 +203,24 @@ public:
 	QVector<KFrame> m_athleteFilteredMotion;
 	QVector<KFrame> m_athleteAdjustedMotion;
 	QVector<KFrame> m_athleteResizedMotion;
+	array<uint, NUM_PHASES> m_athletePhases;
 
 	QVector<KFrame> m_trainerRawMotion;
 	QVector<KFrame> m_trainerInterpolatedMotion;
 	QVector<KFrame> m_trainerFilteredMotion;
 	QVector<KFrame> m_trainerAdjustedMotion;
 	QVector<KFrame> m_trainerResizedMotion;
+	array<uint, NUM_PHASES> m_trainerPhases;
 
 	QVector<KFrame> m_recordedMotion;
-
+	enum class MotionPhase {
+		BAR_GROUND = 0,
+		BAR_KNEE = 1, 
+		POWER_POSITION = 2,
+		TRIPLE_EXTENSION = 3,
+		CATCH = 4
+	};
+	array<uint, NUM_PHASES> identifyPhases(const QVector<KFrame>& motion);
 private:
 	array<KNode, JointType_Count> m_nodes; // these define the kinect skeleton hierarchy
 
@@ -231,11 +241,17 @@ private:
 	void initLimbs();
 
 	QVector<KFrame> interpolateMotion(const QVector<KFrame>& motion);
-	QVector<KFrame> resizeMotion(const QVector<KFrame>& motion);
+	QVector<KFrame> resizeMotion(const QVector<KFrame>& motion, const QVector<KFrame>& prototype);
 	QVector<KFrame> filterMotion(const QVector<KFrame>& motion);
 	void cropMotion(QVector<KFrame>& motion);
 	QVector<KFrame> adjustMotion(const QVector<KFrame>& motion);
 	void adjustLimbLength(KFrame& kframe, uint jointId, const QVector3D& direction, float factor); // recursively adjust joints
+	QVector<KFrame> rescaleMotion(
+		const QVector<KFrame>& original, 
+		const QVector<KFrame>& prototype,
+		const array<uint, NUM_PHASES>& originalPhases,
+		const array<uint, NUM_PHASES>& prototypePhases
+		);
 
 	QVector3D m_leftFootOffset;
 	QVector3D m_rightFootOffset;

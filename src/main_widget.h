@@ -52,10 +52,8 @@ public:
 	MainWidget(QWidget *parent = Q_NULLPTR);
 	~MainWidget();
 	
-	// #todo make get/set functions
-	const uint m_captureInterval = 10; // in milliseconds
-	uint m_playbackInterval; // in milliseconds
-	uint m_fpsCount = 0; // for counting fps
+	float m_playbackInterval = 0.033333; 
+	uint m_fpsCount = 0;
 	
 	float m_kneeAngle;
 	float m_barAngle;
@@ -80,6 +78,7 @@ public:
 	Technique* technique();
 	KSensor* ksensor();
 	bool modelSkinning() const;
+	QStringList skeletonJointList() const;
 	QStringList modelBoneList() const;
 	QStringList motionTypeList() const;
 
@@ -121,7 +120,8 @@ public:
 	bool floorDrawing() const;
 	bool barbellDrawing() const;
 	bool tipsDrawing() const;
-
+	QVector3D activeJointVelocity() const;
+	float activeJointAngle() const;
 public slots:
 	void setCaptureEnabled(bool state);
 
@@ -142,7 +142,8 @@ public slots:
 
 	void setModelSkinning(bool state);
 
-	void setActiveBone(const QString& modelName);
+	void setActiveBone(const QString& boneName);
+	void setActiveJointId(int jointId);
 
 	void intervalPassed();
 
@@ -169,7 +170,7 @@ private:
 
 	QStringList m_motionTypeList = { "Raw", "Interpolated", "Filtered", "Adjusted", "Resized" };
 
-	QVector3D m_generalOffset = QVector3D(1.f, 0.f, 0.f);
+	QVector3D m_generalOffset;
 	Mode m_activeMode;
 
 	bool m_athleteEnabled;

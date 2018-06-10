@@ -34,6 +34,11 @@ MainWidget::MainWidget(QWidget *parent)
 	cout << "MainWidget class constructor start." << endl;
 
 	m_athlete->setKSkeleton(m_ksensor->skeleton());
+	// Init skinned mesh
+	m_athlete->loadFromFile("athlete.dae");
+	m_athlete->initKBoneMap();
+	m_trainer->loadFromFile("trainer.dae");
+	m_trainer->initKBoneMap();
 	setup();
 
 	cout << "MainWidget class constructor end.\n" << endl;
@@ -83,13 +88,13 @@ void MainWidget::setup()
 	// Setup mode
 	setCaptureEnabled(false);
 	setAthleteEnabled(true);
-	setTrainerEnabled(true);
-	setActiveMotionType(0);
+	setTrainerEnabled(false);
+	setActiveMotionType(3);
 
 	// Setup timer
 	connect(&m_timer, SIGNAL(timeout()), this, SLOT(intervalPassed()));
 	m_timer.setTimerType(Qt::PreciseTimer);
-	m_timer.setInterval(33);
+	m_timer.setInterval(m_playbackInterval * 1000.f);
 	m_timer.start();
 
 	// #todo: Setup camera
@@ -133,11 +138,6 @@ void MainWidget::initializeGL()
 
 	glPointSize(3.f);
 
-	// Init skinned mesh
-	m_athlete->loadFromFile("athlete.dae");
-	m_athlete->initKBoneMap();
-	m_trainer->loadFromFile("trainer.dae");
-	m_trainer->initKBoneMap();
 	m_athlete->printInfo();
 
 	// Init technique
@@ -493,12 +493,6 @@ void MainWidget::paintGL()
 	// calculate bar horizontal angle
 	m_barAngle = ToDegrees(atan2(barDirection.y(), sqrt(pow(barDirection.x(), 2) + pow(barDirection.z(), 2))));
 	
-	// calculate bar speed
-	static QVector3D previousBarPosition, currentBarPosition;
-	currentBarPosition = (leftHand + rightHand) * 0.5;
-	m_barSpeed = (currentBarPosition - previousBarPosition) / m_playbackInterval * 1000;
-	previousBarPosition = currentBarPosition;
-
 	// calculate knee angle
 	QVector3D hipRight   = (m_activeAthleteFrame).joints[JointType_HipRight].position;
 	QVector3D kneeRight  = (m_activeAthleteFrame).joints[JointType_KneeRight].position;
@@ -567,15 +561,15 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		m_defaultPose = !m_defaultPose;
 		cout << "Default pause " << (m_defaultPose ? "ON" : "OFF") << endl;
 		break;
-	case Qt::Key_Y:
-		m_playbackInterval *= 1.2f; // decrease playback speed
-		cout << "Playback interval: " << m_playbackInterval << endl;
-		m_timer.setInterval(m_playbackInterval);
-		break;
-	case Qt::Key_U: 
-		m_playbackInterval /= 1.2f; // increase playback speed
-		cout << "Playback interval: " << m_playbackInterval << endl;
-		m_timer.setInterval(m_playbackInterval);
+	case Qt::Key_I:
+		if (m_athleteEnabled) {
+			m_ksensor->skeleton()->m_athletePhases = m_ksensor->skeleton()->identifyPhases(
+				m_ksensor->skeleton()->m_athleteAdjustedMotion);
+		}
+		if (m_trainerEnabled) {
+			m_ksensor->skeleton()->m_trainerPhases = m_ksensor->skeleton()->identifyPhases(
+				m_ksensor->skeleton()->m_trainerAdjustedMotion);
+		}
 		break;
 	case Qt::Key_L:
 		if (m_athleteEnabled) {
@@ -588,6 +582,16 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 			m_ksensor->skeleton()->calculateLimbLengths(*m_activeTrainerMotion);
 			m_ksensor->skeleton()->printLimbLengths();
 		}
+		break;
+	case Qt::Key_M:
+		m_playbackInterval /= 1.2f; 
+		cout << "Playback interval: " << m_playbackInterval << endl;
+		m_timer.setInterval(m_playbackInterval);
+		break;
+	case Qt::Key_N:
+		m_playbackInterval *= 1.2f; 
+		cout << "Playback interval: " << m_playbackInterval << endl;
+		m_timer.setInterval(m_playbackInterval);
 		break;
 	case Qt::Key_P:
 		if (m_isPaused) {
@@ -613,6 +617,52 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		break;
 	case Qt::Key_T:
 		m_ksensor->skeleton()->exportToTRC();
+		break;
+	case Qt::Key_X:
+		if (m_athleteEnabled) {
+			for (uint i = 0; i < NUM_PHASES; i++) {
+				if (m_ksensor->skeleton()->m_athletePhases[i] > m_activeFrameIndex) {
+					m_activeFrameIndex = m_ksensor->skeleton()->m_athletePhases[i];
+					emit frameChanged(activeMotionProgress());
+					return;
+				}
+			}
+			m_activeFrameIndex = m_activeAthleteMotion->size() - 1;
+		}
+		else {
+			for (uint i = 0; i < NUM_PHASES; i++) {
+				if (m_ksensor->skeleton()->m_trainerPhases[i] > m_activeFrameIndex) {
+					m_activeFrameIndex = m_ksensor->skeleton()->m_trainerPhases[i];
+					emit frameChanged(activeMotionProgress());
+					return;
+				}
+			}
+			m_activeFrameIndex = m_activeTrainerMotion->size() - 1;
+		}
+		emit frameChanged(activeMotionProgress());
+		break;
+	case Qt::Key_Z:
+		if (m_athleteEnabled) {
+			for (uint i = 0; i < NUM_PHASES; i++) {
+				if (m_ksensor->skeleton()->m_athletePhases[NUM_PHASES - i -1] < m_activeFrameIndex) {
+					m_activeFrameIndex = m_ksensor->skeleton()->m_athletePhases[NUM_PHASES - i - 1];
+					emit frameChanged(activeMotionProgress());
+					return;
+				}
+			}
+			m_activeFrameIndex = 0;
+		}
+		else {
+			for (uint i = 0; i < NUM_PHASES; i++) {
+				if (m_ksensor->skeleton()->m_trainerPhases[NUM_PHASES - i - 1] < m_activeFrameIndex) {
+					m_activeFrameIndex = m_ksensor->skeleton()->m_trainerPhases[NUM_PHASES - i - 1];
+					emit frameChanged(activeMotionProgress());
+					return;
+				}
+			}
+			m_activeFrameIndex = 0;
+		}
+		emit frameChanged(activeMotionProgress());
 		break;
 	case Qt::Key_Escape:
 		event->ignore();	// event passed to MainWidget's parent (MainWindow)
@@ -726,14 +776,81 @@ bool MainWidget::tipsDrawing() const
 {
 	return m_tipsDrawing;
 }
+QVector3D MainWidget::activeJointVelocity() const
+{
+	QVector3D currentPosition, nextPosition;
+	double currentTime, nextTime;
+	if (m_athleteEnabled) {
+		currentPosition = 
+			m_activeAthleteMotion->operator[](m_activeFrameIndex).joints[m_activeJointId].position;
+		nextPosition =
+			(m_activeFrameIndex == m_activeAthleteMotion->size() - 1) ?
+			QVector3D(0.f, 0.f, 0.f) :
+			m_activeAthleteMotion->operator[](m_activeFrameIndex + 1).joints[m_activeJointId].position;
+		currentTime =
+			m_activeAthleteMotion->operator[](m_activeFrameIndex).timestamp;
+		nextTime =
+			(m_activeFrameIndex == m_activeAthleteMotion->size() - 1) ?
+			0 :
+			m_activeAthleteMotion->operator[](m_activeFrameIndex + 1).timestamp;
+	}
+	else {
+		currentPosition =
+			m_activeTrainerMotion->operator[](m_activeFrameIndex).joints[m_activeJointId].position;
+		nextPosition =
+			(m_activeFrameIndex == m_activeTrainerMotion->size() - 1) ?
+			QVector3D(0.f, 0.f, 0.f) :
+			m_activeTrainerMotion->operator[](m_activeFrameIndex + 1).joints[m_activeJointId].position;
+		currentTime =
+			m_activeTrainerMotion->operator[](m_activeFrameIndex).timestamp;
+		nextTime =
+			(m_activeFrameIndex == m_activeTrainerMotion->size() - 1) ?
+			0 :
+			m_activeTrainerMotion->operator[](m_activeFrameIndex + 1).timestamp;
+	}
+	return (nextPosition - currentPosition) / (nextTime - currentTime);
+}
+float MainWidget::activeJointAngle() const
+{
+	if (m_activeJointId == JointType_SpineBase || m_ksensor->skeleton()->nodes()[m_activeJointId].childrenId.size() == 0) return 0.f;
+	
+	uint parentId = m_ksensor->skeleton()->nodes()[m_activeJointId].parentId;
+	uint childId = m_ksensor->skeleton()->nodes()[m_activeJointId].childrenId[0];
+	QVector3D thisToParent;
+	QVector3D thisToChild;
+	if (m_athleteEnabled) {
+		thisToParent =
+			m_activeAthleteFrame.joints[parentId].position-
+			m_activeAthleteFrame.joints[m_activeJointId].position;
+		thisToChild =
+			m_activeAthleteFrame.joints[childId].position -
+			m_activeAthleteFrame.joints[m_activeJointId].position;
+	}
+	else {
+		thisToParent =
+			m_activeTrainerFrame.joints[parentId].position -
+			m_activeTrainerFrame.joints[m_activeJointId].position;
+		thisToChild =
+			m_activeTrainerFrame.joints[childId].position -
+			m_activeTrainerFrame.joints[m_activeJointId].position;
+	}
+	double angle = ToDegrees(acos(QVector3D::dotProduct(thisToParent.normalized(), thisToChild.normalized())));
+	return angle;
+}
 bool MainWidget::modelSkinning() const
 {
 	return m_skinningEnabled;
 }
+QStringList MainWidget::skeletonJointList() const
+{
+	QStringList qsl;
+	for (int i = 0; i < JointType_Count; i++) qsl << m_ksensor->skeleton()->nodes()[i].name;
+	return qsl;
+}
 QStringList MainWidget::modelBoneList() const
 {
 	QStringList qsl;
-	for (const auto& it : m_athlete->boneMap()) qsl << QString::fromLocal8Bit(it.first.c_str());
+	for (const auto& it : m_athlete->boneMap()) qsl << QString(it.first.c_str());
 	return qsl;
 }
 QStringList MainWidget::motionTypeList() const
@@ -748,12 +865,14 @@ bool MainWidget::captureEnabled() const
 void MainWidget::setCaptureEnabled(bool state)
 {
 	if (state == true) {
-		m_activeMode = Mode::CAPTURE;
 		cout << "Active mode: Capture" << endl;
+		m_activeMode = Mode::CAPTURE;
+		m_timer.setInterval(0);
 	}
 	else {
-		m_activeMode = Mode::PLAYBACK;
 		cout << "Active mode: Playback" << endl;
+		m_activeMode = Mode::PLAYBACK;
+		m_timer.setInterval(m_playbackInterval * 1000);
 	}
 }
 bool MainWidget::athleteEnabled() const
@@ -767,12 +886,17 @@ bool MainWidget::trainerEnabled() const
 void MainWidget::setAthleteEnabled(bool state)
 {
 	m_athleteEnabled = state;
+	if (m_trainerEnabled) m_generalOffset = QVector3D(1.f, 0.f, 0.f);
+	else m_generalOffset = QVector3D(0.f, 0.f, 0.f);
 	m_ksensor->skeleton()->m_athleteRecording = state;
 	cout << "Athlete " << ( m_athleteEnabled ? "enabled" : "disabled" ) << endl;
+	update();
 }
 void MainWidget::setTrainerEnabled(bool state)
 {
 	m_trainerEnabled = state;
+	if (m_athleteEnabled) m_generalOffset = QVector3D(1.f, 0.f, 0.f);
+	else m_generalOffset = QVector3D(0.f, 0.f, 0.f);
 	m_ksensor->skeleton()->m_trainerRecording = state;
 	cout << "Trainer " << (m_trainerEnabled ? "enabled" : "disabled") << endl;
 	update();
@@ -865,6 +989,10 @@ void MainWidget::setActiveBone(const QString& boneName)
 {
 	m_activeBoneId = m_athlete->findBoneId(boneName);
 	update();
+}
+void MainWidget::setActiveJointId(int jointId)
+{
+	m_activeJointId = jointId;
 }
 void MainWidget::unloadAthlete()
 {

@@ -32,7 +32,7 @@ private slots:
 	void togglePlayback();
 	
 	void updateInfo();
-
+	void updateActiveFrameInfo();
 protected:
 	void keyPressEvent(QKeyEvent *event) override;
 

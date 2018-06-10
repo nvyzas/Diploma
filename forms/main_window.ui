@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Weightlifting Assistant</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -27,10 +27,16 @@
        <layout class="QHBoxLayout" name="horizontalLayout_top" stretch="1,0">
         <item>
          <widget class="MainWidget" name="openGLWidget">
-          <property name="baseSize">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
            <size>
-            <width>400</width>
-            <height>300</height>
+            <width>300</width>
+            <height>400</height>
            </size>
           </property>
           <property name="focusPolicy">
@@ -86,13 +92,6 @@
              <string>Render</string>
             </property>
             <layout class="QGridLayout" name="gridLayout_3">
-             <item row="8" column="0">
-              <widget class="QCheckBox" name="checkBox_velocity">
-               <property name="text">
-                <string>Velocity</string>
-               </property>
-              </widget>
-             </item>
              <item row="4" column="0">
               <widget class="QCheckBox" name="checkBox_skeleton">
                <property name="text">
@@ -114,13 +113,6 @@
                </property>
               </widget>
              </item>
-             <item row="6" column="0">
-              <widget class="QCheckBox" name="checkBox_barbell">
-               <property name="text">
-                <string>Barbell</string>
-               </property>
-              </widget>
-             </item>
              <item row="5" column="1">
               <widget class="QCheckBox" name="checkBox_axes">
                <property name="text">
@@ -128,14 +120,14 @@
                </property>
               </widget>
              </item>
-             <item row="6" column="1">
-              <widget class="QCheckBox" name="checkBox_trajectory">
+             <item row="6" column="0">
+              <widget class="QCheckBox" name="checkBox_barbell">
                <property name="text">
-                <string>Path</string>
+                <string>Barbell</string>
                </property>
               </widget>
              </item>
-             <item row="8" column="1">
+             <item row="6" column="1">
               <widget class="QCheckBox" name="checkBox_tips">
                <property name="text">
                 <string>Tips</string>
@@ -160,62 +152,39 @@
              <property name="bottomMargin">
               <number>6</number>
              </property>
-             <item row="1" column="1">
-              <widget class="QPushButton" name="pushButton_exportTRC">
-               <property name="text">
-                <string>Export .trc</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="0">
-              <widget class="QPushButton" name="pushButton_recordStartStop">
-               <property name="text">
-                <string>Record</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="0">
-              <widget class="QPushButton" name="pushButton_save">
-               <property name="text">
-                <string>Save</string>
-               </property>
-              </widget>
-             </item>
-             <item row="5" column="0" colspan="2">
-              <widget class="QComboBox" name="comboBox_activeJoint"/>
-             </item>
-             <item row="2" column="1">
-              <widget class="QPushButton" name="pushButton_load">
-               <property name="text">
-                <string>Load</string>
+             <item row="1" column="0" colspan="2">
+              <widget class="QComboBox" name="comboBox_activeJoint">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
                </property>
               </widget>
              </item>
              <item row="3" column="0">
-              <widget class="QLabel" name="label_barSpeed">
+              <widget class="QLabel" name="label_jointVelocity">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
                <property name="text">
-                <string>Bar speed</string>
+                <string>Joint velocity</string>
                </property>
               </widget>
              </item>
-             <item row="3" column="1">
-              <widget class="QLabel" name="label_barAngle">
-               <property name="text">
-                <string>Bar angle</string>
+             <item row="6" column="0">
+              <widget class="QLabel" name="label_jointAngle">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
                </property>
-              </widget>
-             </item>
-             <item row="4" column="0">
-              <widget class="QLabel" name="label_fpsTitle">
                <property name="text">
-                <string>FPS</string>
-               </property>
-              </widget>
-             </item>
-             <item row="4" column="1">
-              <widget class="QLabel" name="label_kneeAngleTitle">
-               <property name="text">
-                <string>Knee angle</string>
+                <string>Joint angle</string>
                </property>
               </widget>
              </item>
@@ -268,19 +237,6 @@
                </property>
               </widget>
              </item>
-             <item row="14" column="0">
-              <widget class="QCheckBox" name="checkBox_boneVisible">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="text">
-                <string>Visible</string>
-               </property>
-              </widget>
-             </item>
              <item row="22" column="1">
               <widget class="QSpinBox" name="spinBox_yRot">
                <property name="minimum">
@@ -307,13 +263,6 @@
                </property>
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
-               </property>
-              </widget>
-             </item>
-             <item row="14" column="1">
-              <widget class="QCheckBox" name="checkBox_boneFocused">
-               <property name="text">
-                <string>Focused</string>
                </property>
               </widget>
              </item>
@@ -361,6 +310,26 @@
                </property>
               </widget>
              </item>
+             <item row="6" column="0">
+              <widget class="QCheckBox" name="checkBox_boneFocused">
+               <property name="text">
+                <string>Focused</string>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="1">
+              <widget class="QCheckBox" name="checkBox_boneVisible">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="text">
+                <string>Visible</string>
+               </property>
+              </widget>
+             </item>
             </layout>
            </widget>
           </item>
@@ -376,42 +345,7 @@
            <string>Motion Playback</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_2">
-           <item row="4" column="0">
-            <widget class="QPushButton" name="pushButton_previousPhase">
-             <property name="text">
-              <string>&lt;-</string>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="3">
-            <widget class="QPushButton" name="pushButton_nextPhase">
-             <property name="text">
-              <string>-&gt;</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="4">
-            <widget class="QLabel" name="label_time">
-             <property name="text">
-              <string>Time:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="6">
-            <widget class="QLabel" name="label_speed">
-             <property name="text">
-              <string>Speed:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="5">
-            <widget class="QLabel" name="label_serial">
-             <property name="text">
-              <string>Serial:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0" colspan="4">
+           <item row="2" column="0">
             <widget class="QSlider" name="horizontalSlider_progressPercent">
              <property name="minimum">
               <number>0</number>
@@ -424,10 +358,38 @@
              </property>
             </widget>
            </item>
-           <item row="4" column="1" colspan="2">
+           <item row="2" column="10">
+            <widget class="QSlider" name="horizontalSlider_offset">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
             <widget class="QPushButton" name="pushButton_playStartStop">
              <property name="text">
               <string>Play_Pause</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="3">
+            <widget class="QLabel" name="label_time">
+             <property name="text">
+              <string>Time</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="9">
+            <widget class="QLabel" name="label_speed">
+             <property name="text">
+              <string>Speed</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="2">
+            <widget class="QLabel" name="label_index">
+             <property name="text">
+              <string>Index</string>
              </property>
             </widget>
            </item>
