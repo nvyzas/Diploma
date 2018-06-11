@@ -224,41 +224,41 @@ void KSkeleton::processRecording()
 	if (m_athleteRecording) {
 		cout << "Processing athlete motion" << endl;
 		m_athleteRawMotion = m_recordedMotion;
-		m_athleteInterpolatedMotion = interpolateMotion(m_athleteRawMotion);
+		m_athleteInterpolatedMotion = interpolateMotion(m_athleteRawMotion, -m_framesDelayed, m_athleteRawMotion.size());
 		m_athleteFilteredMotion = filterMotion(m_athleteInterpolatedMotion);
 		m_athleteAdjustedMotion = adjustMotion(m_athleteFilteredMotion);
-		calculateJointOrientations(m_athleteInterpolatedMotion);
-		calculateJointOrientations(m_athleteFilteredMotion);
-		calculateJointOrientations(m_athleteAdjustedMotion);
-		calculateJointOrientations(m_athleteResizedMotion);
 		cropMotion(m_athleteRawMotion);
 		cropMotion(m_athleteInterpolatedMotion);
 		m_athletePhases = identifyPhases(m_athleteAdjustedMotion);
-		m_athleteResizedMotion = rescaleMotion(
+		m_athleteRescaledMotion = rescaleMotion(
 			m_athleteAdjustedMotion, 
 			m_trainerAdjustedMotion, 
 			m_athletePhases,
 			m_trainerPhases);
+		calculateJointOrientations(m_athleteInterpolatedMotion);
+		calculateJointOrientations(m_athleteFilteredMotion);
+		calculateJointOrientations(m_athleteAdjustedMotion);
+		calculateJointOrientations(m_athleteRescaledMotion);
 	}
 	if (m_trainerRecording) {
 		cout << "Processing trainer motion" << endl;
 		m_trainerRawMotion = m_recordedMotion;
-		m_trainerInterpolatedMotion = interpolateMotion(m_trainerRawMotion);
+		m_trainerInterpolatedMotion = interpolateMotion(m_trainerRawMotion, -m_framesDelayed, m_trainerRawMotion.size());
 		m_trainerFilteredMotion = filterMotion(m_trainerInterpolatedMotion);
 		m_trainerAdjustedMotion = adjustMotion(m_trainerFilteredMotion);
-		calculateJointOrientations(m_trainerInterpolatedMotion);
-		calculateJointOrientations(m_trainerFilteredMotion);
-		calculateJointOrientations(m_trainerAdjustedMotion);
-		calculateJointOrientations(m_trainerResizedMotion);
 		cropMotion(m_trainerRawMotion);
 		cropMotion(m_trainerInterpolatedMotion);
 		if (m_trainerRawMotion.size() > m_bigMotionSize) m_bigMotionSize = m_trainerRawMotion.size();
 		m_trainerPhases = identifyPhases(m_trainerAdjustedMotion);
-		m_trainerResizedMotion = rescaleMotion(
+		m_trainerRescaledMotion = rescaleMotion(
 			m_trainerAdjustedMotion,
 			m_athleteAdjustedMotion,
 			m_trainerPhases,
 			m_athletePhases);
+		calculateJointOrientations(m_trainerInterpolatedMotion);
+		calculateJointOrientations(m_trainerFilteredMotion);
+		calculateJointOrientations(m_trainerAdjustedMotion);
+		calculateJointOrientations(m_trainerRescaledMotion);
 	}
 	calculateOffsets();
 	printMotionsToLog();
@@ -266,7 +266,7 @@ void KSkeleton::processRecording()
 array<uint, NUM_PHASES> KSkeleton::identifyPhases(const QVector<KFrame>& motion) {
 	cout << "Identifying motion phases" << endl;
 
-	array<uint, 5> ret;
+	array<uint, NUM_PHASES> ret;
 
 	uint i = 0;
 	QVector3D barbellPosition;
@@ -290,7 +290,7 @@ array<uint, NUM_PHASES> KSkeleton::identifyPhases(const QVector<KFrame>& motion)
 		 nextTimestamp = motion[i+1].timestamp;
 		 barbellVelocity = (nextBarbellPosition - barbellPosition) / (nextTimestamp - timestamp);
 	 } while (barbellVelocity.y() < 0.5);
-	cout << "Position 0: Barbell at ground: " << i << endl;
+	cout << "Position 0: Barbell at ground: " << i << " @ " << motion[i].timestamp << endl;
 	ret[(int)MotionPhase::BAR_GROUND] = i;
 
 	QVector3D kneesPosition;
@@ -307,7 +307,7 @@ array<uint, NUM_PHASES> KSkeleton::identifyPhases(const QVector<KFrame>& motion)
 			motion[i].joints[JointType_KneeLeft].position * 0.5 + 
 			motion[i].joints[JointType_KneeRight].position * 0.5;
 	} while (barbellPosition.y() < kneesPosition.y());
-	cout << "Position 1: Barbell at knee height: " << i - 1 << endl;
+	cout << "Position 1: Barbell at knee height: " << i - 1 << " @ " << motion[i - 1].timestamp << endl;
 	ret[(int)MotionPhase::BAR_KNEE] = i - 1;
 	
 	QVector3D pelvisPosition;
@@ -322,7 +322,7 @@ array<uint, NUM_PHASES> KSkeleton::identifyPhases(const QVector<KFrame>& motion)
 			motion[i].joints[JointType_HandRight].position * 0.5;
 		pelvisPosition = motion[i].joints[JointType_SpineBase].position;
 	} while (barbellPosition.y() < pelvisPosition.y());
-	cout << "Position 2: Power position: " << i - 1 << endl;
+	cout << "Position 2: Power position: " << i - 1 << " @ " << motion[i - 1].timestamp << endl;
 	ret[(int)MotionPhase::POWER_POSITION] = i -1;
 
 	QVector3D headPosition;
@@ -340,7 +340,7 @@ array<uint, NUM_PHASES> KSkeleton::identifyPhases(const QVector<KFrame>& motion)
 		nextTimestamp = motion[i + 1].timestamp;
 		headVelocity = (nextHeadPosition - headPosition) / (nextTimestamp - timestamp);
 	} while (headVelocity.y() > -0.01);
-	cout << "Position 3: Triple extension: " << i << endl;
+	cout << "Position 3: Triple extension: " << i << " @ " << motion[i].timestamp << endl;
 	ret[(int)MotionPhase::TRIPLE_EXTENSION] = i;
 
 	do {
@@ -355,30 +355,13 @@ array<uint, NUM_PHASES> KSkeleton::identifyPhases(const QVector<KFrame>& motion)
 		nextTimestamp = motion[i + 1].timestamp;
 		headVelocity = (nextHeadPosition - headPosition) / (nextTimestamp - timestamp);
 	} while (headVelocity.y() < 0.01);
-	cout << "Position 3: Catch: " << i << endl;
+	cout << "Position 4: Catch: " << i << " @ " << motion[i].timestamp << endl;
 	ret[(int)MotionPhase::CATCH] = i;
 
+	cout << "Position 5: End: " << motion.size() - 1 << " @ " << motion[motion.size() - 1].timestamp << endl;
+	ret[(int)MotionPhase::END] = motion.size() - 1;
+
 	return ret;
-}
-QVector<KFrame> KSkeleton::resizeMotion(const QVector<KFrame>& motion, const QVector<KFrame>& prototype)
-{
-	cout << "Resizing motion" << endl;
-
-	QVector<KFrame> resizedMotion;
-
-	if (motion.size() == 0){
-		cout << "motion size = 0. Returning." << endl;
-		return resizedMotion;
-	}
-	if (prototype.size() == 0) {
-		cout << "prototype size = 0. Returning." << endl;
-		return resizedMotion;
-	}
-	
-	for (int i = 0; i < motion.size(); i++) {
-	}
-
-	return resizedMotion;
 }
 QVector<KFrame> KSkeleton::rescaleMotion(
 	const QVector<KFrame>& original,
@@ -390,37 +373,58 @@ QVector<KFrame> KSkeleton::rescaleMotion(
 
 	QVector<KFrame> rescaledMotion;
 
+	if (original.size() == 0) {
+		cout << "motion size = 0. Returning." << endl;
+		return rescaledMotion;
+	}
+	if (prototype.size() == 0) {
+		cout << "prototype size = 0. Returning." << endl;
+		return rescaledMotion;
+	}
+
+	rescaledMotion.push_back(original[0]);
 	uint previousOriginalPhase = 0;
 	uint previousPrototypePhase = 0;
+	double previousTimeDifference = 0;
 	for (uint i = 0; i < NUM_PHASES; i++) {
 		cout << "i: " << i << endl;
-		double previousTimeDifference = 0;
 		double originalPhaseDuration =
 			original[originalPhases[i]].timestamp -
 			original[previousOriginalPhase].timestamp;
 		double prototypePhaseDuration =
 			prototype[prototypePhases[i]].timestamp -
 			prototype[previousPrototypePhase].timestamp;
-		double timeFactor = originalPhaseDuration / prototypePhaseDuration;
+		double timeFactor = prototypePhaseDuration / originalPhaseDuration;
+		cout << "Original phase duration: " << originalPhaseDuration << endl;
+		cout << "Prototype phase duration: " << prototypePhaseDuration << endl;
 		cout << "Time Factor: " << timeFactor << endl;
-		for (uint j = previousOriginalPhase; j < originalPhases[i]; j++) {
-			KFrame frame = original[j];
-			if (j == previousOriginalPhase || j == originalPhases[i] - 1) {
-				cout << "j=" << j << "timestamp=" << frame.timestamp << endl;
-			}
-			frame.timestamp += previousTimeDifference;
-			if (j != previousOriginalPhase) frame.timestamp *= timeFactor;
-			rescaledMotion.push_back(frame);
-			if (j) cout << "j=" << j << "timestamp=" << frame.timestamp << endl;
-		}
-		previousTimeDifference = prototypePhaseDuration - originalPhaseDuration;
 		cout << "Previous time difference: " << previousTimeDifference << endl;
+		for (uint j = previousOriginalPhase+1; j <= originalPhases[i]; j++) {
+			KFrame frame = original[j];
+			frame.timestamp -= original[previousOriginalPhase].timestamp;
+			frame.timestamp *= timeFactor;
+			frame.timestamp += original[previousOriginalPhase].timestamp + previousTimeDifference;
+			rescaledMotion.push_back(frame);
+			if (j == originalPhases[i]) {
+				cout << "j=" << j;
+				cout << " OriginalTimestamp=" << original[j].timestamp;
+				cout << " RescaledTimestamp=" << frame.timestamp << endl;
+			}
+		}
+		previousTimeDifference += prototypePhaseDuration - originalPhaseDuration;
 		previousOriginalPhase = originalPhases[i];
+		previousPrototypePhase = prototypePhases[i];
 	}
+
+	rescaledMotion = interpolateMotion(rescaledMotion, 0, prototype.size());
+	rescaledMotion = adjustMotion(rescaledMotion);
 
 	return rescaledMotion;
 }
-QVector<KFrame> KSkeleton::interpolateMotion(const QVector<KFrame>& motion)
+QVector<KFrame> KSkeleton::interpolateMotion(
+	const QVector<KFrame>& motion,
+	uint counterStart,
+	uint desiredSize)
 {
 	QVector<KFrame> interpolatedMotion;
 
@@ -432,24 +436,23 @@ QVector<KFrame> KSkeleton::interpolateMotion(const QVector<KFrame>& motion)
 	cout << "Interpolating recorded frames." << endl;
 	cout << "Interpolation interval: " << m_interpolationInterval << endl;
 	cout << "First frame index: " << m_firstFrameIndex << endl;
-	static int index = 1;
-	static int counter = 0;
+	int index = 1;
+	int counter = counterStart;
 	double interpolationTime = 0;
-	while (counter < motion.size()) {
+
+	while (counter < desiredSize) {
 		KFrame interpolatedFrame;
-		interpolationTime = m_interpolationInterval * (counter - m_framesDelayed);
+		interpolationTime = m_interpolationInterval * counter;
 		while (motion[index].timestamp <= interpolationTime && index < motion.size()) {
 			index++;
 		}
 		if (index > motion.size() - 2) index = motion.size() - 2;
-		interpolatedFrame.serial = counter - m_framesDelayed;
+		interpolatedFrame.serial = counter;
 		interpolatedFrame.timestamp = interpolationTime;
 		interpolatedFrame.interpolateJoints(motion[--index], motion[index + 1], interpolationTime);
 		interpolatedMotion.push_back(interpolatedFrame);
 		counter++;
 	}
-	index = 1; // was index = 0
-	counter = 0;
 
 	return interpolatedMotion;
 }
@@ -838,12 +841,12 @@ void KSkeleton::saveFrameSequences()
 	out << m_athleteInterpolatedMotion;
 	out << m_athleteFilteredMotion;
 	out << m_athleteAdjustedMotion;
-	out << m_athleteResizedMotion;
+	out << m_athleteRescaledMotion;
 	out << m_trainerRawMotion;
 	out << m_trainerInterpolatedMotion;
 	out << m_trainerFilteredMotion;
 	out << m_trainerAdjustedMotion;
-	out << m_trainerResizedMotion;
+	out << m_trainerRescaledMotion;
 	qf.close();
 }
 void KSkeleton::loadMotion()
@@ -861,12 +864,12 @@ void KSkeleton::loadMotion()
 	m_athleteInterpolatedMotion.clear();
 	m_athleteFilteredMotion.clear();
 	m_athleteAdjustedMotion.clear();
-	m_athleteResizedMotion.clear();
+	m_athleteRescaledMotion.clear();
 	m_trainerRawMotion.clear();
 	m_trainerInterpolatedMotion.clear();
 	m_trainerFilteredMotion.clear();
 	m_trainerAdjustedMotion.clear();
-	m_trainerResizedMotion.clear();
+	m_trainerRescaledMotion.clear();
 
 	QDataStream in(&qf);
 	//in.setVersion(QDataStream::Qt_5_9);
@@ -874,12 +877,12 @@ void KSkeleton::loadMotion()
 	in >> m_athleteInterpolatedMotion;
 	in >> m_athleteFilteredMotion;
 	in >> m_athleteAdjustedMotion;
-	in >> m_athleteResizedMotion;
+	in >> m_athleteRescaledMotion;
 	in >> m_trainerRawMotion;
 	in >> m_trainerInterpolatedMotion;
 	in >> m_trainerFilteredMotion;
 	in >> m_trainerAdjustedMotion;
-	in >> m_trainerResizedMotion;
+	in >> m_trainerRescaledMotion;
 	qf.close();
 
 	if (m_athleteRawMotion.size() > m_trainerRawMotion.size()) m_bigMotionSize = m_athleteRawMotion.size();
@@ -890,7 +893,6 @@ void KSkeleton::loadMotion()
 	m_trainerPhases = identifyPhases(m_trainerAdjustedMotion);
 
 	calculateOffsets();
-
 
 	printMotionsToLog();
 }
@@ -993,24 +995,24 @@ void KSkeleton::printMotionsToLog()
 	}
 
 	// motion type
-	m_sequenceLogData << qSetFieldWidth(10) << "Resized" << endl;
+	m_sequenceLogData << qSetFieldWidth(10) << "Rescaled" << endl;
 	// motion size
 	m_sequenceLogData << qSetFieldWidth(10) << "Size:";
-	m_sequenceLogData << qSetFieldWidth(20) << m_athleteResizedMotion.size();
-	m_sequenceLogData << qSetFieldWidth(20) << m_trainerResizedMotion.size();
+	m_sequenceLogData << qSetFieldWidth(20) << m_athleteRescaledMotion.size();
+	m_sequenceLogData << qSetFieldWidth(20) << m_trainerRescaledMotion.size();
 	m_sequenceLogData << endl;
 	// motion duration
 	m_sequenceLogData << qSetFieldWidth(10) << "Duration:";
-	m_sequenceLogData << qSetFieldWidth(20) << (m_athleteResizedMotion.size() > 0 ? m_athleteResizedMotion.back().timestamp : 0);
-	m_sequenceLogData << qSetFieldWidth(20) << (m_trainerResizedMotion.size() > 0 ? m_trainerResizedMotion.back().timestamp : 0);
+	m_sequenceLogData << qSetFieldWidth(20) << (m_athleteRescaledMotion.size() > 0 ? m_athleteRescaledMotion.back().timestamp : 0);
+	m_sequenceLogData << qSetFieldWidth(20) << (m_trainerRescaledMotion.size() > 0 ? m_trainerRescaledMotion.back().timestamp : 0);
 	m_sequenceLogData << endl;
 	// motion serials, timestamps
 	for (uint i = 0; i < m_bigMotionSize; i++) {
 		m_sequenceLogData << qSetFieldWidth(10) << i;
-		m_sequenceLogData << qSetFieldWidth(5) << (i < m_athleteResizedMotion.size() ? m_athleteResizedMotion[i].serial : 0);
-		m_sequenceLogData << qSetFieldWidth(15) << (i < m_athleteResizedMotion.size() ? m_athleteResizedMotion[i].timestamp : 0);
-		m_sequenceLogData << qSetFieldWidth(5) << (i < m_trainerResizedMotion.size() ? m_trainerResizedMotion[i].serial : 0);
-		m_sequenceLogData << qSetFieldWidth(15) << (i < m_trainerResizedMotion.size() ? m_trainerResizedMotion[i].timestamp : 0);
+		m_sequenceLogData << qSetFieldWidth(5) << (i < m_athleteRescaledMotion.size() ? m_athleteRescaledMotion[i].serial : 0);
+		m_sequenceLogData << qSetFieldWidth(15) << (i < m_athleteRescaledMotion.size() ? m_athleteRescaledMotion[i].timestamp : 0);
+		m_sequenceLogData << qSetFieldWidth(5) << (i < m_trainerRescaledMotion.size() ? m_trainerRescaledMotion[i].serial : 0);
+		m_sequenceLogData << qSetFieldWidth(15) << (i < m_trainerRescaledMotion.size() ? m_trainerRescaledMotion[i].timestamp : 0);
 		m_sequenceLogData << endl;
 	}
 }

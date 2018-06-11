@@ -235,6 +235,7 @@ void MainWindow::setupConnections()
 	connect(ui->horizontalSlider_progressPercent, SIGNAL(sliderMoved(int)), this, SLOT(updateActiveFrameInfo()));
 	connect(ui->openGLWidget, SIGNAL(frameChanged(int)), ui->horizontalSlider_progressPercent, SLOT(setValue(int)));
 	connect(ui->openGLWidget, SIGNAL(frameChanged(int)), this, SLOT(updateActiveFrameInfo()));
+	connect(ui->horizontalSlider_offset, SIGNAL(valueChanged(int)), ui->openGLWidget, SLOT(setGeneralOffset(int)));
 
 	// gui timer
 	connect(m_guiTimer, SIGNAL(timeout()), this, SLOT(updateInfo()));

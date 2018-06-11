@@ -99,7 +99,7 @@ public:
 		INTERPOLATED,
 		FILTERED,
 		ADJUSTED,
-		RESIZED
+		RESCALED
 	};
 
 	bool captureEnabled() const;
@@ -147,6 +147,8 @@ public slots:
 
 	void intervalPassed();
 
+	void setGeneralOffset(int percent);
+
 signals:
 	void frameChanged(int progressPercent);
 
@@ -179,7 +181,7 @@ private:
 	int m_activeMotionType;
 
 	// render
-	bool m_axesDrawing = true;
+	bool m_axesDrawing = false;
 	bool m_skinnedMeshDrawing = true;
 	bool m_kinectSkeletonDrawing = true;
 	bool m_barbellDrawing = true;
@@ -222,7 +224,7 @@ private:
 	void drawTrainer();
 
 	// Skinned mesh joint dots
-#define NUM_BONES 53
+#define NUM_BONES 52
 	GLuint m_skinnedMeshJointsVAO;
 	GLuint m_skinnedMeshJointsVBO;
 	float m_skinnedMeshJoints[2 * 3 * NUM_BONES];
@@ -268,13 +270,24 @@ private:
 	// barbell
 	QVector<QOpenGLTexture*> m_barbellTextures;
 	QVector<MeshEntry> m_barbellMeshEntries;
-	GLuint m_barbellVAO;
 	QVector<Material> m_barbellMaterials;
+	GLuint m_barbellVAO;
 	void loadBarbell();
 	void drawBarbell();
 	const aiScene* m_barbellScene;
-	QVector<QMatrix4x4> globals;
 	void traverseBarbellSceneNodes(aiNode* node);
+
+	// pointer
+	QVector<QOpenGLTexture*> m_pointerTextures;
+	QVector<MeshEntry> m_pointerMeshEntries;
+	QVector<Material> m_pointerMaterials;
+	GLuint m_pointerVAO;
+	void loadPointer();
+	void drawPointer();
+	const aiScene* m_pointerScene;
+	void traversePointerSceneNodes(aiNode* node);
+
+
 
 	// shaders for material lighting
 	QOpenGLShaderProgram* m_lighting;

@@ -88,8 +88,8 @@ void MainWidget::setup()
 	// Setup mode
 	setCaptureEnabled(false);
 	setAthleteEnabled(true);
-	setTrainerEnabled(false);
-	setActiveMotionType(3);
+	setTrainerEnabled(true);
+	setActiveMotionType(4);
 
 	// Setup timer
 	connect(&m_timer, SIGNAL(timeout()), this, SLOT(intervalPassed()));
@@ -227,6 +227,7 @@ void MainWidget::initializeGL()
 	loadCube(0.02);
 	loadPlane();
 	loadBarbell();
+	loadPointer();
 
 	cout << "MainWidget initializeGL end." << endl;
 }
@@ -253,6 +254,15 @@ void MainWidget::paintGL()
 	}
 	m_activeFrameTimestamp = activeFrame->timestamp;
 
+	// calculate skinned mesh bone transforms (used by barbell as well)
+	m_athlete->calculateBoneTransforms(
+		m_athlete->m_pScene->mRootNode,
+		QMatrix4x4(),
+		m_activeAthleteFrame.joints);
+	m_trainer->calculateBoneTransforms(
+		m_trainer->m_pScene->mRootNode,
+		QMatrix4x4(),
+		m_activeTrainerFrame.joints);
 	// draw persons
 	if (m_skinnedMeshDrawing) {
 
@@ -270,7 +280,6 @@ void MainWidget::paintGL()
 			// skinned mesh
 			m_skinningTechnique->enable();
 			m_skinningTechnique->setWVP(m_pipeline->getWVPtrans());
-			m_athlete->calculateBoneTransforms(m_athlete->m_pScene->mRootNode, QMatrix4x4(), m_activeAthleteFrame.joints);
 			for (uint i = 0; i < m_athlete->numBones(); i++) {
 				m_skinningTechnique->setBoneTransform(i, m_athlete->boneInfo(i).combined);
 			}
@@ -306,7 +315,6 @@ void MainWidget::paintGL()
 
 			// skinned mesh
 			m_skinningTechnique->enable();
-			m_trainer->calculateBoneTransforms(m_trainer->m_pScene->mRootNode, QMatrix4x4(), m_activeTrainerFrame.joints);
 			for (uint i = 0; i < m_trainer->numBones(); i++) {
 				m_skinningTechnique->setBoneTransform(i, m_trainer->boneInfo(i).combined);
 			}
@@ -384,6 +392,31 @@ void MainWidget::paintGL()
 		}
 	}
 
+	if (m_tipsDrawing) {
+		m_lighting->bind();
+		const QVector3D& athleteJoint =
+			m_activeAthleteFrame.joints[m_activeJointId].position
+			- m_ksensor->skeleton()->m_athletePelvisOffset
+			- QVector3D(0.f, m_ksensor->skeleton()->m_athleteFeetOffset, 0.f);
+		const QVector3D& trainerJoint =
+			m_activeTrainerFrame.joints[m_activeJointId].position
+			- m_ksensor->skeleton()->m_trainerPelvisOffset
+			- QVector3D(0.f, m_ksensor->skeleton()->m_trainerFeetOffset, 0.f);
+		float scaleFactor = athleteJoint.distanceToPoint(trainerJoint);
+		QMatrix4x4 pointerScaling(fromScaling(scaleFactor/3, scaleFactor, scaleFactor/3));
+		QMatrix4x4 pointerRotation(fromRotation(QQuaternion::rotationTo(QVector3D(0.f, 1.f, 0.f), trainerJoint-athleteJoint)));
+		QMatrix4x4 pointerTranslation(fromTranslation(athleteJoint));
+		QMatrix4x4 pointerTransform = pointerTranslation * pointerRotation * pointerScaling;
+		m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
+		m_pipeline->setWorldOrientation(QQuaternion());
+		m_pipeline->setWorldPosition(
+			m_generalOffset);
+
+		m_lighting->setUniformValue(m_modelViewLocation, m_pipeline->GetWVTrans() * pointerTransform);
+		m_lighting->setUniformValue(m_projectionLocation, m_pipeline->GetProjTrans());
+		drawPointer();
+	}
+
 	// draw kinect skeletons
 	if (m_kinectSkeletonDrawing) {
 		m_technique->enable();
@@ -393,9 +426,9 @@ void MainWidget::paintGL()
 			m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
 			m_pipeline->setWorldOrientation(QQuaternion());
 			m_pipeline->setWorldPosition(
-				m_generalOffset - 
-				m_ksensor->skeleton()->m_athletePelvisOffset - 
-			QVector3D(0.f, m_ksensor->skeleton()->m_athleteFeetOffset, 0.f));
+				m_generalOffset
+				-m_ksensor->skeleton()->m_athletePelvisOffset
+				-QVector3D(0.f, m_ksensor->skeleton()->m_athleteFeetOffset, 0.f));
 
 			// skeleton bones
 			m_technique->setMVP(m_pipeline->getWVPtrans());
@@ -427,9 +460,9 @@ void MainWidget::paintGL()
 			m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
 			m_pipeline->setWorldOrientation(QQuaternion());
 			m_pipeline->setWorldPosition(
-				-m_generalOffset -
-				m_ksensor->skeleton()->m_trainerPelvisOffset -
-				QVector3D(0.f, m_ksensor->skeleton()->m_trainerFeetOffset, 0.f));
+				-m_generalOffset
+				-m_ksensor->skeleton()->m_trainerPelvisOffset
+				-QVector3D(0.f, m_ksensor->skeleton()->m_trainerFeetOffset, 0.f));
 
 			// skeleton bones
 			m_technique->setMVP(m_pipeline->getWVPtrans());
@@ -448,9 +481,9 @@ void MainWidget::paintGL()
 			// joint axes
 			if (m_axesDrawing) {
 				m_technique->setMVP(m_pipeline->getWVPtrans());
-				QMatrix4x4 T(fromTranslation(m_activeTrainerFrame.joints[m_activeJointId].position));
-				QMatrix4x4 R(fromRotation(m_activeTrainerFrame.joints[m_activeJointId].orientation));
 				QMatrix4x4 S(fromScaling(0.5f, 0.5f, 0.5f));
+				QMatrix4x4 R(fromRotation(m_activeTrainerFrame.joints[m_activeJointId].orientation));
+				QMatrix4x4 T(fromTranslation(m_activeTrainerFrame.joints[m_activeJointId].position));
 				m_technique->setSpecific(T * R * S);
 				drawAxes();
 			}
@@ -619,7 +652,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		m_ksensor->skeleton()->exportToTRC();
 		break;
 	case Qt::Key_X:
-		if (m_athleteEnabled) {
+		if (!m_trainerEnabled) {
 			for (uint i = 0; i < NUM_PHASES; i++) {
 				if (m_ksensor->skeleton()->m_athletePhases[i] > m_activeFrameIndex) {
 					m_activeFrameIndex = m_ksensor->skeleton()->m_athletePhases[i];
@@ -642,7 +675,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		emit frameChanged(activeMotionProgress());
 		break;
 	case Qt::Key_Z:
-		if (m_athleteEnabled) {
+		if (!m_trainerEnabled) {
 			for (uint i = 0; i < NUM_PHASES; i++) {
 				if (m_ksensor->skeleton()->m_athletePhases[NUM_PHASES - i -1] < m_activeFrameIndex) {
 					m_activeFrameIndex = m_ksensor->skeleton()->m_athletePhases[NUM_PHASES - i - 1];
@@ -886,7 +919,7 @@ bool MainWidget::trainerEnabled() const
 void MainWidget::setAthleteEnabled(bool state)
 {
 	m_athleteEnabled = state;
-	if (m_trainerEnabled) m_generalOffset = QVector3D(1.f, 0.f, 0.f);
+	if (m_trainerEnabled) m_generalOffset = QVector3D(1.5f, 0.f, 0.f);
 	else m_generalOffset = QVector3D(0.f, 0.f, 0.f);
 	m_ksensor->skeleton()->m_athleteRecording = state;
 	cout << "Athlete " << ( m_athleteEnabled ? "enabled" : "disabled" ) << endl;
@@ -895,7 +928,7 @@ void MainWidget::setAthleteEnabled(bool state)
 void MainWidget::setTrainerEnabled(bool state)
 {
 	m_trainerEnabled = state;
-	if (m_athleteEnabled) m_generalOffset = QVector3D(1.f, 0.f, 0.f);
+	if (m_athleteEnabled) m_generalOffset = QVector3D(1.5f, 0.f, 0.f);
 	else m_generalOffset = QVector3D(0.f, 0.f, 0.f);
 	m_ksensor->skeleton()->m_trainerRecording = state;
 	cout << "Trainer " << (m_trainerEnabled ? "enabled" : "disabled") << endl;
@@ -925,8 +958,8 @@ void MainWidget::setActiveMotionType(int motionType)
 		m_activeTrainerMotion = &m_ksensor->skeleton()->m_trainerAdjustedMotion;
 	}
 	else if (motionType == 4) {
-		m_activeAthleteMotion = &m_ksensor->skeleton()->m_athleteResizedMotion;
-		m_activeTrainerMotion = &m_ksensor->skeleton()->m_trainerResizedMotion;
+		m_activeAthleteMotion = &m_ksensor->skeleton()->m_athleteRescaledMotion;
+		m_activeTrainerMotion = &m_ksensor->skeleton()->m_trainerAdjustedMotion;
 	}
 	else {
 		cout << "Error: Motion type = " << m_activeMotionType << endl;
@@ -965,6 +998,10 @@ void MainWidget::intervalPassed()
 {
 	m_shouldUpdate = true;
 	update();
+}
+void MainWidget::setGeneralOffset(int percent)
+{
+	m_generalOffset = QVector3D(percent / 50.f, 0.f, 0.f);
 }
 int MainWidget::activeMotionProgress() const
 {
@@ -1546,6 +1583,8 @@ void MainWidget::drawPlane()
 }
 void MainWidget::loadBarbell()
 {
+	cout << "Loading barbell model" << endl;
+
 	Assimp::Importer importer;
 	const aiScene* scene = importer.ReadFile(
 		"models/barbell blendered.obj",
@@ -1731,7 +1770,10 @@ void MainWidget::loadBarbell()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, barbellIBO);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices[0])*indices.size(), indices.constData(), GL_STATIC_DRAW);
 
-	GLsizeiptr sizeInBytes = sizeof(positions[0])*positions.size() + sizeof(texCoords[0])*texCoords.size() + sizeof(normals[0])*normals.size();
+	GLsizeiptr sizeInBytes = 
+		sizeof(positions[0])*positions.size() + 
+		sizeof(texCoords[0])*texCoords.size() + 
+		sizeof(normals[0])*normals.size();
 	cout << "Total size in bytes:" << sizeInBytes << endl;
 	GLuint barbellVBO;
 	glGenBuffers(1, &barbellVBO);
@@ -1775,7 +1817,7 @@ void MainWidget::drawBarbell()
 		const uint materialIndex = m_barbellMeshEntries[i].materialIndex;
 		m_lighting->setUniformValue(m_diffuseLocation, 4*m_barbellMaterials[materialIndex].diffuseColor);
 		m_lighting->setUniformValue(m_specularLocation, 1*m_barbellMaterials[materialIndex].specularColor);
-		//m_lighting->setUniformValue(m_ambientLocation,  m_barbellMaterials[materialIndex].ambientColor);
+		m_lighting->setUniformValue(m_ambientLocation, 0.1*m_barbellMaterials[materialIndex].ambientColor);
 		glDrawElementsBaseVertex(
 			GL_TRIANGLES,
 			m_barbellMeshEntries[i].numIndices,
@@ -1787,7 +1829,269 @@ void MainWidget::drawBarbell()
 
 	glBindVertexArray(0);
 }
+void MainWidget::loadPointer()
+{
+	cout << "Loading pointer model" << endl;
 
+	Assimp::Importer importer;
+	const aiScene* scene = importer.ReadFile(
+		"models/arrow blendered.obj",
+		aiProcess_Triangulate
+	);
+
+	if (!scene) {
+		cout << "Could not import the pointer model." << endl;
+		return;
+	}
+	m_pointerScene = scene;
+
+	// Count vertices and indices and update mesh entries
+	uint numVertices = 0;
+	uint numIndices = 0;
+	m_pointerMeshEntries.resize(scene->mNumMeshes);
+	m_pointerMeshEntries.resize(scene->mNumMaterials);
+	for (uint i = 0; i < scene->mNumMeshes; i++) {
+		m_pointerMeshEntries[i].materialIndex = scene->mMeshes[i]->mMaterialIndex;
+		m_pointerMeshEntries[i].numIndices = scene->mMeshes[i]->mNumFaces * 3;
+		m_pointerMeshEntries[i].baseVertex = numVertices;
+		m_pointerMeshEntries[i].baseIndex = numIndices;
+		numVertices += scene->mMeshes[i]->mNumVertices;
+		numIndices += scene->mMeshes[i]->mNumFaces * 3;
+		m_pointerMeshEntries[i].print();
+	}
+	cout << "Totals: NumVertices:" << numVertices << " NumIndices:" << numIndices << endl;
+
+	// Reserve appropriate container space and push back vertex attributes
+	QVector<QVector3D> positions;
+	QVector<QVector2D> texCoords;
+	QVector<QVector3D> normals;
+	QVector<uint> indices;
+	positions.reserve(numVertices);
+	texCoords.reserve(numVertices);
+	normals.reserve(numVertices);
+	indices.reserve(numIndices);
+	for (uint i = 0; i < scene->mNumMeshes; i++) {
+		// Push back vertices
+		bool hasPositions = true;
+		bool hasTexCoords = true;
+		bool hasNormals = true;
+		if (!scene->mMeshes[i]->HasPositions()) {
+			cout << "Mesh " << i << " has no positions!" << endl;
+			hasPositions = false;
+		}
+		if (!scene->mMeshes[i]->HasTextureCoords(0)) {
+			cout << "Mesh " << i << " has no tex coords!" << endl;
+			hasTexCoords = false;
+		}
+		if (!scene->mMeshes[i]->HasNormals()) {
+			cout << "Mesh " << i << " has no normals!" << endl;
+			hasNormals = false;
+		}
+		for (uint j = 0; j < scene->mMeshes[i]->mNumVertices; j++) {
+			const aiVector3D* position = &(scene->mMeshes[i]->mVertices[j]);
+			const aiVector3D* texCoord = &(scene->mMeshes[i]->mTextureCoords[0][j]);
+			const aiVector3D* normal = &(scene->mMeshes[i]->mNormals[j]);
+			if (hasPositions) positions.push_back(QVector3D(position->x, position->y, position->z));
+			else positions.push_back(QVector3D(0.f, 0.f, 0.f));
+			if (hasTexCoords) texCoords.push_back(QVector2D(texCoord->x, texCoord->y));
+			else texCoords.push_back(QVector2D(0.f, 0.f));
+			if (hasNormals) normals.push_back(QVector3D(normal->x, normal->y, normal->z));
+			else normals.push_back(QVector3D(0.f, 1.f, 0.f));
+		}
+
+		// Push back indices
+		for (uint j = 0; j < scene->mMeshes[i]->mNumFaces; j++) {
+			const aiFace& face = scene->mMeshes[i]->mFaces[j];
+			assert(face.mNumIndices == 3);
+			indices.push_back(face.mIndices[0]);
+			indices.push_back(face.mIndices[1]);
+			indices.push_back(face.mIndices[2]);
+		}
+	}
+	cout << endl;
+
+	traversePointerSceneNodes(scene->mRootNode);
+
+	cout << "Vector lengths:";
+	cout << positions.length() << " ";
+	cout << texCoords.length() << " ";
+	cout << normals.length() << " ";
+	cout << indices.length() << endl;
+
+	cout << "Scene info:";
+	cout << " Meshes:" << setw(3) << scene->mNumMeshes;
+	cout << " Materials:" << setw(3) << scene->mNumMaterials;
+	cout << " Textures:" << setw(3) << scene->mNumTextures;
+	cout << " Lights:" << setw(3) << scene->mNumLights;
+	cout << " Animations:" << setw(3) << scene->mNumAnimations;
+	cout << endl;
+
+	cout << "Meshes:" << endl;
+	for (uint i = 0; i < scene->mNumMeshes; i++) {
+		cout << "Id:" << i;
+		cout << " Name:" << setw(20) << scene->mMeshes[i]->mName.C_Str();
+		cout << " Vertices:" << setw(6) << scene->mMeshes[i]->mNumVertices;
+		cout << " Faces:" << setw(6) << scene->mMeshes[i]->mNumFaces;
+		cout << " Bones:" << setw(6) << scene->mMeshes[i]->mNumBones;
+		cout << " MaterialId:" << setw(6) << scene->mMeshes[i]->mMaterialIndex;
+		cout << endl;
+	}
+	cout << endl;
+
+	// Materials
+	for (uint i = 0; i < scene->mNumMeshes; i++) {
+		// General properties
+		const uint materialIndex = scene->mMeshes[i]->mMaterialIndex;
+		const aiMaterial* material = scene->mMaterials[materialIndex];
+		aiString name;
+		int shadingMethod;
+		int blendFunction;
+		int twoSided;
+		float opacity;
+		float shininess;
+		float shininessStrength;
+		material->Get(AI_MATKEY_NAME, name);
+		material->Get(AI_MATKEY_SHADING_MODEL, shadingMethod);
+		material->Get(AI_MATKEY_BLEND_FUNC, blendFunction);
+		material->Get(AI_MATKEY_TWOSIDED, twoSided);
+		material->Get(AI_MATKEY_OPACITY, opacity);
+		material->Get(AI_MATKEY_SHININESS, shininess);
+		material->Get(AI_MATKEY_SHININESS_STRENGTH, shininessStrength);
+		cout << "Material:" << i;
+		cout << " Name:" << string(name.data);
+		cout << " ShadingMethod:" << hex << shadingMethod << dec;
+		cout << " BlendFunction:" << hex << blendFunction << dec;
+		cout << " TwoSided:" << twoSided;
+		cout << " Opacity:" << opacity;
+		cout << " Shininess:" << shininess;
+		cout << " ShininessStrength:" << shininessStrength;
+		cout << endl;
+
+		// Colors
+		aiColor3D diffuseColor;
+		aiColor3D specularColor;
+		aiColor3D ambientColor;
+		aiColor3D reflectiveColor;
+		aiColor3D emissiveColor;
+		aiColor3D transparentColor;
+		material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor);
+		material->Get(AI_MATKEY_COLOR_SPECULAR, specularColor);
+		material->Get(AI_MATKEY_COLOR_AMBIENT, ambientColor);
+		material->Get(AI_MATKEY_COLOR_REFLECTIVE, reflectiveColor);
+		material->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor);
+		material->Get(AI_MATKEY_COLOR_TRANSPARENT, transparentColor);
+		cout << "Colors:";
+		cout << " Diffuse:" << diffuseColor.r << " " << diffuseColor.g << " " << diffuseColor.b;
+		cout << " Specular:" << specularColor.r << " " << specularColor.g << " " << specularColor.b;
+		cout << " Ambient:" << ambientColor.r << " " << ambientColor.g << " " << ambientColor.b;
+		cout << " Reflective:" << reflectiveColor.r << " " << reflectiveColor.g << " " << reflectiveColor.b;
+		cout << " Emissive:" << emissiveColor.r << " " << emissiveColor.g << " " << emissiveColor.b;
+		cout << " Transparent:" << transparentColor.r << " " << transparentColor.g << " " << transparentColor.b;
+		cout << endl;
+		// Texture types
+		cout << "Texture type-count:";
+		cout << " Diffuse" << "-" << material->GetTextureCount(aiTextureType_DIFFUSE);
+		cout << " Specular" << "-" << material->GetTextureCount(aiTextureType_SPECULAR);
+		cout << " Ambient" << "-" << material->GetTextureCount(aiTextureType_AMBIENT);
+		cout << " Reflective" << "-" << material->GetTextureCount(aiTextureType_REFLECTION);
+		cout << " Emissive" << "-" << material->GetTextureCount(aiTextureType_EMISSIVE);
+		cout << " Opacity" << "-" << material->GetTextureCount(aiTextureType_OPACITY);
+		cout << " Shininess" << "-" << material->GetTextureCount(aiTextureType_SHININESS);
+		cout << " Normals" << "-" << material->GetTextureCount(aiTextureType_NORMALS);
+		cout << " Reflective" << "-" << material->GetTextureCount(aiTextureType_REFLECTION);
+		cout << endl;
+
+		m_barbellMaterials[materialIndex] = Material(
+			QVector3D(diffuseColor.r, diffuseColor.g, diffuseColor.b),
+			QVector3D(specularColor.r, specularColor.g, specularColor.b),
+			QVector3D(ambientColor.r, ambientColor.g, ambientColor.b)
+		);
+	}
+
+	glGenVertexArrays(1, &m_pointerVAO);
+	glBindVertexArray(m_pointerVAO);
+	cout << "pointerVAO=" << m_pointerVAO << endl;
+
+	GLuint pointerIBO;
+	glGenBuffers(1, &pointerIBO);
+	cout << "pointerIBO=" << pointerIBO << endl;
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pointerIBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices[0])*indices.size(), indices.constData(), GL_STATIC_DRAW);
+
+	GLsizeiptr sizeInBytes = 
+		sizeof(positions[0])*positions.size() + 
+		sizeof(texCoords[0])*texCoords.size() + 
+		sizeof(normals[0])*normals.size();
+	cout << "Total size in bytes:" << sizeInBytes << endl;
+	GLuint pointerVBO;
+	glGenBuffers(1, &pointerVBO);
+	cout << "pointerVBO=" << pointerVBO << endl;
+	glBindBuffer(GL_ARRAY_BUFFER, pointerVBO);
+	glBufferData(
+		GL_ARRAY_BUFFER,
+		sizeInBytes,
+		NULL,
+		GL_STATIC_DRAW
+	);
+
+	GLsizeiptr offset = 0;
+	cout << "Offset size in bytes:" << offset << endl;
+
+	glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(positions[0]) * positions.size(), positions.constData());
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(offset));
+	glEnableVertexAttribArray(0);
+
+	offset += sizeof(positions[0]) * positions.size();
+	cout << "Offset size in bytes:" << offset << endl;
+
+	glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(texCoords[0]) * texCoords.size(), texCoords.constData());
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(offset));
+	glEnableVertexAttribArray(1);
+
+	offset += sizeof(texCoords[0]) * texCoords.size();
+	cout << "Offset size in bytes:" << offset << endl;
+
+	glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(normals[0]) * normals.size(), normals.constData());
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(offset));
+	glEnableVertexAttribArray(2);
+
+	glBindVertexArray(0);
+}
+void MainWidget::drawPointer()
+{
+	glBindVertexArray(m_pointerVAO);
+
+	for (uint i = 0; i < m_pointerMeshEntries.size(); i++) {
+		const uint materialIndex = m_pointerMeshEntries[i].materialIndex;
+		m_lighting->setUniformValue(m_diffuseLocation, 4 * m_pointerMaterials[materialIndex].diffuseColor);
+		m_lighting->setUniformValue(m_specularLocation, 1 * m_pointerMaterials[materialIndex].specularColor);
+		m_lighting->setUniformValue(m_ambientLocation,  m_pointerMaterials[materialIndex].ambientColor);
+		glDrawElementsBaseVertex(
+			GL_TRIANGLES,
+			m_pointerMeshEntries[i].numIndices,
+			GL_UNSIGNED_INT,
+			(void*)(sizeof(uint) * m_pointerMeshEntries[i].baseIndex),
+			m_pointerMeshEntries[i].baseVertex
+		);
+	}
+
+	glBindVertexArray(0);
+}
+void MainWidget::traversePointerSceneNodes(aiNode * node)
+{
+	cout << "NodeName=" << node->mName.data;
+	cout << " NumMeshes=" << node->mNumMeshes << endl;
+	cout << "Children=";
+	for (uint i = 0; i < node->mNumChildren; i++) {
+		cout << node->mChildren[i]->mName.data << " ";
+	}
+	cout << endl;
+	const QMatrix4x4& local = toQMatrix(node->mTransformation);
+	cout << toString(local).toStdString() << endl;
+	for (uint i = 0; i < node->mNumChildren; i++) {
+		traversePointerSceneNodes(node->mChildren[i]);
+	}
+}
 void MainWidget::traverseBarbellSceneNodes(aiNode * node)
 {
 	cout << "NodeName=" << node->mName.data;

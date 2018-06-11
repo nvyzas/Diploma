@@ -17,7 +17,7 @@
 
 #define INVALID_JOINT_ID -1
 #define NUM_LIMBS 23
-#define NUM_PHASES 5
+#define NUM_PHASES 6
 
 // Represents a node of the skeletal hierarchy
 struct KNode
@@ -202,14 +202,14 @@ public:
 	QVector<KFrame> m_athleteInterpolatedMotion;
 	QVector<KFrame> m_athleteFilteredMotion;
 	QVector<KFrame> m_athleteAdjustedMotion;
-	QVector<KFrame> m_athleteResizedMotion;
+	QVector<KFrame> m_athleteRescaledMotion;
 	array<uint, NUM_PHASES> m_athletePhases;
 
 	QVector<KFrame> m_trainerRawMotion;
 	QVector<KFrame> m_trainerInterpolatedMotion;
 	QVector<KFrame> m_trainerFilteredMotion;
 	QVector<KFrame> m_trainerAdjustedMotion;
-	QVector<KFrame> m_trainerResizedMotion;
+	QVector<KFrame> m_trainerRescaledMotion;
 	array<uint, NUM_PHASES> m_trainerPhases;
 
 	QVector<KFrame> m_recordedMotion;
@@ -218,7 +218,8 @@ public:
 		BAR_KNEE = 1, 
 		POWER_POSITION = 2,
 		TRIPLE_EXTENSION = 3,
-		CATCH = 4
+		CATCH = 4,
+		END = 5
 	};
 	array<uint, NUM_PHASES> identifyPhases(const QVector<KFrame>& motion);
 private:
@@ -240,8 +241,10 @@ private:
 	void initJoints();
 	void initLimbs();
 
-	QVector<KFrame> interpolateMotion(const QVector<KFrame>& motion);
-	QVector<KFrame> resizeMotion(const QVector<KFrame>& motion, const QVector<KFrame>& prototype);
+	QVector<KFrame> interpolateMotion(
+		const QVector<KFrame>& motion,
+		uint counterStart,
+		uint desiredSize);
 	QVector<KFrame> filterMotion(const QVector<KFrame>& motion);
 	void cropMotion(QVector<KFrame>& motion);
 	QVector<KFrame> adjustMotion(const QVector<KFrame>& motion);
