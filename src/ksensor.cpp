@@ -86,11 +86,10 @@ bool KSensor::prepare()
 
 	return true;
 }
-bool KSensor::getBodyFrame(KFrame& destination)
+bool KSensor::isPrepared()
 {
 	HRESULT hr;
 
-	// Perform safety checks
 	if (!m_sensor) {
 		cout << "m_sensor = NULL" << endl;
 		return false;
@@ -118,18 +117,6 @@ bool KSensor::getBodyFrame(KFrame& destination)
 		return false;
 	}
 
-	BOOLEAN isActive = false;
-	hr = m_source->get_IsActive(&isActive);
-	if (SUCCEEDED(hr)) {
-		if (!isActive) {
-			cout << "Source is not active." << endl;
-			return false;
-		}
-	}
-	else {
-		cout << "Could not specify if source is active. hr = " << hr << endl;
-	}
-
 	BOOLEAN isPaused = false;
 	hr = m_reader->get_IsPaused(&isPaused);
 	if (SUCCEEDED(hr)) {
@@ -142,7 +129,13 @@ bool KSensor::getBodyFrame(KFrame& destination)
 		cout << "Could not specify if reader is paused hr = " << hr << endl;
 	}
 
-	// Get frame
+	return true;
+}
+bool KSensor::getBodyFrame(KFrame& destination)
+{
+	HRESULT hr;
+
+	// get frame
 	static uint consecutiveFails = 0;
 	IBodyFrame* frame = NULL;
 	hr = m_reader->AcquireLatestFrame(&frame);

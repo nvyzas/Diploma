@@ -267,7 +267,19 @@ private:
 	void loadPlane();
 	void drawPlane();
 
-	// barbell
+	// Meshes
+	void traverseSceneNodes(aiNode* node);
+
+	// bar (athlete's barbell)
+	QVector<QOpenGLTexture*> m_barTextures;
+	QVector<MeshEntry> m_barMeshEntries;
+	QVector<Material> m_barMaterials;
+	GLuint m_barVAO;
+	void loadBar();
+	void drawBar();
+	const aiScene* m_barScene;
+
+	// barbell (trainer's barbell)
 	QVector<QOpenGLTexture*> m_barbellTextures;
 	QVector<MeshEntry> m_barbellMeshEntries;
 	QVector<Material> m_barbellMaterials;
@@ -275,7 +287,6 @@ private:
 	void loadBarbell();
 	void drawBarbell();
 	const aiScene* m_barbellScene;
-	void traverseBarbellSceneNodes(aiNode* node);
 
 	// pointer
 	QVector<QOpenGLTexture*> m_pointerTextures;
@@ -285,7 +296,6 @@ private:
 	void loadPointer();
 	void drawPointer();
 	const aiScene* m_pointerScene;
-	void traversePointerSceneNodes(aiNode* node);
 
 
 

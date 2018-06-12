@@ -22,6 +22,7 @@ public:
 	~KSensor();
 	bool init();
 	bool prepare();
+	bool isPrepared();
 	bool getBodyFrame(KFrame& destination);
 
 	double calculateFPS();

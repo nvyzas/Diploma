@@ -1,0 +1,14 @@
+# Blender MTL File: 'barbell blendered.blend'
+# Material Count: 1
+
+newmtl 02_-_Default
+Ns 17.647059
+Ka 1.000000 1.000000 1.000000
+Kd 0.470400 0.470400 0.470400
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd C:\Users\Desktop\Textures\olybar2.tga
+map_Bump C:\\Users\\Desktop\\Textures\\olybarbump.png
