@@ -166,7 +166,6 @@ private:
 	map<string, uint> m_boneMap; // maps a mesh's bone name to its index (key = bone name, value = index)
 	map<string, uint> m_kboneMap; // maps a mesh's bone name to its kinect JointType index
 	const KJoint *m_pKBones = NULL;
-	KSkeleton* m_kskelie;
 
 	// Control pose
 	vector<QQuaternion> m_controlQuats; 

@@ -122,6 +122,13 @@ struct KFrame
 			joints[i].position.setX(previous.joints[i].position.x() + percentDistance * (next.joints[i].position.x() - previous.joints[i].position.x()));
 			joints[i].position.setY(previous.joints[i].position.y() + percentDistance * (next.joints[i].position.y() - previous.joints[i].position.y()));
 			joints[i].position.setZ(previous.joints[i].position.z() + percentDistance * (next.joints[i].position.z() - previous.joints[i].position.z()));
+			if (previous.joints[i].trackingState == TrackingState_Inferred || next.joints[i].trackingState == TrackingState_Inferred) {
+				joints[i].trackingState = TrackingState_Inferred;
+			}
+			else {
+				joints[i].trackingState = TrackingState_Tracked;
+			}
+			joints[i].orientation = QQuaternion::nlerp(previous.joints[i].orientation, next.joints[i].orientation, percentDistance);
 		}
 	}
 
@@ -163,7 +170,7 @@ public:
 	~KSkeleton();
 	KFrame addFrame(const Joint* joints, const JointOrientation* jointOrientations, double time);
 
-	void processRecording();
+	void processMotions(int interpolationStart);
 
 	void printJointHierarchy() const;
 	void printLimbLengths() const;
@@ -243,10 +250,10 @@ private:
 
 	QVector<KFrame> interpolateMotion(
 		const QVector<KFrame>& motion,
-		uint counterStart,
-		uint desiredSize);
+		int counterStart,
+		int desiredSize);
 	QVector<KFrame> filterMotion(const QVector<KFrame>& motion);
-	void cropMotion(QVector<KFrame>& motion);
+	void cropMotions();
 	QVector<KFrame> adjustMotion(const QVector<KFrame>& motion);
 	void adjustLimbLength(KFrame& kframe, uint jointId, const QVector3D& direction, float factor); // recursively adjust joints
 	QVector<KFrame> rescaleMotion(

@@ -33,22 +33,45 @@ MainWidget::MainWidget(QWidget *parent)
 {
 	cout << "MainWidget class constructor start." << endl;
 
-	m_athlete->setKSkeleton(m_ksensor->skeleton());
 	// Init skinned mesh
 	m_athlete->loadFromFile("athlete.dae");
 	m_athlete->initKBoneMap();
 	m_trainer->loadFromFile("trainer.dae");
 	m_trainer->initKBoneMap();
-	setup();
+	
+	// Setup timer
+	connect(&m_timer, SIGNAL(timeout()), this, SLOT(intervalPassed()));
+	m_timer.setTimerType(Qt::PreciseTimer);
+	m_timer.start();
+
+	// Setup mode
+	setCaptureEnabled(false);
+	setAthleteEnabled(true);
+	setTrainerEnabled(true);
+	setActiveMotionType(4);
+
+	// #todo: Setup camera
+	m_camera->printInfo();
+
+	// Setup pipeline
+	PerspectiveProjectionInfo perspectiveProjectionInfo;
+	perspectiveProjectionInfo.fieldOfView = 60.f;
+	perspectiveProjectionInfo.aspectRatio = m_camera->windowWidth() / m_camera->windowHeight();
+	perspectiveProjectionInfo.nearPlane = 0.1f;
+	perspectiveProjectionInfo.farPlane = 1000.f;
+	m_pipeline->setPersProjInfo(perspectiveProjectionInfo);
+	m_pipeline->setCamera(m_camera->GetPos(), m_camera->GetTarget(), m_camera->GetUp());
 
 	cout << "MainWidget class constructor end.\n" << endl;
 }
 MainWidget::~MainWidget()
 {
-	// delete data classes
+	// delete class members
+	delete m_ksensor;
+	delete m_athlete;
+	delete m_trainer;
 	delete m_camera;
 	delete m_pipeline;
-	delete m_athlete;
 
 	// Release OpenGL resources
 	makeCurrent();
@@ -63,21 +86,23 @@ MainWidget::~MainWidget()
 	delete m_shaderProgram;
 	delete m_lighting;
 
-	// delete textures
-	delete m_planeTexture;
-
 	// delete VAOs
 	glDeleteVertexArrays(1, &m_axesVAO);
 	glDeleteVertexArrays(1, &m_arrowVAO);
+	glDeleteVertexArrays(1, &m_cubeVAO);
 	glDeleteVertexArrays(1, &m_skeletonVAO);
 	glDeleteVertexArrays(1, &m_skinnedMeshJointsVAO);
-	glDeleteVertexArrays(1, &m_cubeVAO);
 	glDeleteVertexArrays(1, &m_planeVAO);
+	glDeleteVertexArrays(1, &m_barVAO);
+	glDeleteVertexArrays(1, &m_barbellVAO);
 
 	// delete VBOs
+	glDeleteBuffers(1, &m_cubeVBO);
 	glDeleteBuffers(1, &m_skeletonVBO);
 	glDeleteBuffers(1, &m_skinnedMeshJointsVBO);
-	glDeleteBuffers(1, &m_cubeVBO);
+
+	// delete textures
+	delete m_planeTexture;
 
 	doneCurrent();
 }
@@ -85,29 +110,6 @@ void MainWidget::setup()
 {
 	cout << "MainWidget setup start." << endl;
 
-	// Setup mode
-	setCaptureEnabled(false);
-	setAthleteEnabled(true);
-	setTrainerEnabled(true);
-	setActiveMotionType(4);
-
-	// Setup timer
-	connect(&m_timer, SIGNAL(timeout()), this, SLOT(intervalPassed()));
-	m_timer.setTimerType(Qt::PreciseTimer);
-	m_timer.setInterval(m_playbackInterval * 1000.f);
-	m_timer.start();
-
-	// #todo: Setup camera
-	m_camera->printInfo();
-
-	// Setup pipeline
-	PerspectiveProjectionInfo perspectiveProjectionInfo;
-	perspectiveProjectionInfo.fieldOfView = 60.f;
-	perspectiveProjectionInfo.aspectRatio = m_camera->windowWidth() / m_camera->windowHeight();
-	perspectiveProjectionInfo.nearPlane = 0.1f;
-	perspectiveProjectionInfo.farPlane = 1000.f;
-	m_pipeline->setPersProjInfo(perspectiveProjectionInfo);
-	m_pipeline->setCamera(m_camera->GetPos(), m_camera->GetTarget(), m_camera->GetUp());
 
 	cout << "MainWidget setup end." << endl;
 }
@@ -402,15 +404,11 @@ void MainWidget::paintGL()
 			- m_ksensor->skeleton()->m_trainerPelvisOffset
 			- QVector3D(0.f, m_ksensor->skeleton()->m_trainerFeetOffset, 0.f);
 		float scaleFactor = athleteJoint.distanceToPoint(trainerJoint);
-		QMatrix4x4 pointerScaling(fromScaling(scaleFactor/3, scaleFactor, scaleFactor/3));
-		QMatrix4x4 pointerRotation(fromRotation(QQuaternion::rotationTo(QVector3D(0.f, 1.f, 0.f), trainerJoint-athleteJoint)));
-		QMatrix4x4 pointerTranslation(fromTranslation(athleteJoint));
-		QMatrix4x4 pointerTransform = pointerTranslation * pointerRotation * pointerScaling;
-		m_pipeline->setWorldScale(QVector3D(1.f, 1.f, 1.f));
-		m_pipeline->setWorldOrientation(QQuaternion());
-		m_pipeline->setWorldPosition(m_generalOffset);
+		m_pipeline->setWorldScale(scaleFactor / 3, scaleFactor, scaleFactor / 3);
+		m_pipeline->setWorldOrientation(QQuaternion::rotationTo(QVector3D(0.f, 1.f, 0.f), trainerJoint - athleteJoint));
+		m_pipeline->setWorldPosition(athleteJoint + m_generalOffset);
 
-		m_lighting->setUniformValue(m_modelViewLocation, m_pipeline->GetWVTrans() * pointerTransform);
+		m_lighting->setUniformValue(m_modelViewLocation, m_pipeline->GetWVTrans());
 		m_lighting->setUniformValue(m_projectionLocation, m_pipeline->GetProjTrans());
 		drawPointer();
 	}
@@ -431,14 +429,14 @@ void MainWidget::paintGL()
 			// skeleton bones
 			m_technique->setMVP(m_pipeline->getWVPtrans());
 			m_technique->setSpecific(QMatrix4x4());
-			drawSkeleton(m_activeAthleteFrame.joints);
+			drawSkeleton(m_activeAthleteFrame.joints, true);
 
 			// skeleton joints
 			if (m_kinectSkeletonJointsDrawing) {
 				m_technique->setMVP(m_pipeline->getWVPtrans());
 				for (uint i = 0; i < JointType_Count; i++) {
 					m_technique->setSpecific(fromTranslation(m_activeAthleteFrame.joints[i].position));
-					drawCube(m_activeAthleteFrame.joints[i]);
+					drawCube(m_activeAthleteFrame.joints[i], true);
 				}
 			}
 
@@ -465,14 +463,14 @@ void MainWidget::paintGL()
 			// skeleton bones
 			m_technique->setMVP(m_pipeline->getWVPtrans());
 			m_technique->setSpecific(QMatrix4x4());
-			drawSkeleton(m_activeTrainerFrame.joints);
+			drawSkeleton(m_activeTrainerFrame.joints, false);
 
 			// skeleton joints
 			if (m_kinectSkeletonJointsDrawing) {
 				m_technique->setMVP(m_pipeline->getWVPtrans());
 				for (uint i = 0; i < JointType_Count; i++) {
 					m_technique->setSpecific(fromTranslation(m_activeTrainerFrame.joints[i].position));
-					drawCube(m_activeTrainerFrame.joints[i]);
+					drawCube(m_activeTrainerFrame.joints[i], false);
 				}
 			}
 
@@ -644,7 +642,7 @@ void MainWidget::keyPressEvent(QKeyEvent *event)
 		m_ksensor->skeleton()->saveFrameSequences();
 		break;
 	case Qt::Key_Q:
-		m_athlete->printInfo();
+		m_ksensor->skeleton()->processMotions(0);
 		break;
 	case Qt::Key_T:
 		m_ksensor->skeleton()->exportToTRC();
@@ -920,7 +918,7 @@ bool MainWidget::trainerEnabled() const
 void MainWidget::setAthleteEnabled(bool state)
 {
 	m_athleteEnabled = state;
-	if (m_trainerEnabled) m_generalOffset = QVector3D(1.5f, 0.f, 0.f);
+	if (m_athleteEnabled && m_trainerEnabled) m_generalOffset = QVector3D(1.5f, 0.f, 0.f);
 	else m_generalOffset = QVector3D(0.f, 0.f, 0.f);
 	m_ksensor->skeleton()->m_athleteRecording = state;
 	cout << "Athlete " << ( m_athleteEnabled ? "enabled" : "disabled" ) << endl;
@@ -929,7 +927,7 @@ void MainWidget::setAthleteEnabled(bool state)
 void MainWidget::setTrainerEnabled(bool state)
 {
 	m_trainerEnabled = state;
-	if (m_athleteEnabled) m_generalOffset = QVector3D(1.5f, 0.f, 0.f);
+	if (m_athleteEnabled && m_trainerEnabled) m_generalOffset = QVector3D(1.5f, 0.f, 0.f);
 	else m_generalOffset = QVector3D(0.f, 0.f, 0.f);
 	m_ksensor->skeleton()->m_trainerRecording = state;
 	cout << "Trainer " << (m_trainerEnabled ? "enabled" : "disabled") << endl;
@@ -1003,6 +1001,7 @@ void MainWidget::intervalPassed()
 void MainWidget::setGeneralOffset(int percent)
 {
 	m_generalOffset = QVector3D(percent / 50.f, 0.f, 0.f);
+	update();
 }
 int MainWidget::activeMotionProgress() const
 {
@@ -1396,15 +1395,15 @@ void MainWidget::loadSkeleton()
 
 	glBindVertexArray(0);
 }
-void MainWidget::drawSkeleton(const array<KJoint, JointType_Count>& joints)
+void MainWidget::drawSkeleton(const array<KJoint, JointType_Count>& joints, bool athlete)
 {
 	for (uint i = 0; i < JointType_Count; i++) {
 		m_skeleton[6 * i    ] = joints[i].position.x();
 		m_skeleton[6 * i + 1] = joints[i].position.y();
 		m_skeleton[6 * i + 2] = joints[i].position.z();
-		m_skeleton[6 * i + 3] = joints[i].trackingState == TrackingState_NotTracked ? 255.f : 0.f;
-		m_skeleton[6 * i + 4] = joints[i].trackingState == TrackingState_Tracked ? 255.f : 0.f;
-		m_skeleton[6 * i + 5] = joints[i].trackingState == TrackingState_Inferred ? 255.f : 0.f;
+		m_skeleton[6 * i + 3] = (athlete ? 255.f : 0.f);
+		m_skeleton[6 * i + 4] = (!athlete ? 255.f : 0.f);
+		m_skeleton[6 * i + 5] = 0.f;
 	}
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_skeletonVBO);
@@ -1458,22 +1457,22 @@ void MainWidget::loadCube(float r)
 {
 	GLfloat vertices[] =
 	{
-		   +r,    -r,    +r, // 0
-		   +r,    +r,    +r, // 1
-		   -r,    +r,    +r, // 2
-		   -r,    -r,    +r, // 3
-		   +r,    -r,    -r, // 4
-		   +r,    +r,    -r, // 5
-		   -r,    +r,    -r, // 6
-		   -r,    -r,    -r, // 7
-		255.f, 255.f, 255.f,
-		255.f, 255.f, 255.f,
-		255.f, 255.f, 255.f,
-		255.f, 255.f, 255.f,
-		255.f, 255.f, 255.f,
-		255.f, 255.f, 255.f,
-		255.f, 255.f, 255.f,
-		255.f, 255.f, 255.f
+		   +r,  -r,  +r, // 0
+		   +r,  +r,  +r, // 1
+		   -r,  +r,  +r, // 2
+		   -r,  -r,  +r, // 3
+		   +r,  -r,  -r, // 4
+		   +r,  +r,  -r, // 5
+		   -r,  +r,  -r, // 6
+		   -r,  -r,  -r, // 7
+		  0.f, 0.f, 0.f,
+		  0.f, 0.f, 0.f,
+		  0.f, 0.f, 0.f,
+		  0.f, 0.f, 0.f,
+		  0.f, 0.f, 0.f,
+		  0.f, 0.f, 0.f,
+		  0.f, 0.f, 0.f,
+		  0.f, 0.f, 0.f
 	};
 
 	GLushort indices[] =
@@ -1507,13 +1506,12 @@ void MainWidget::loadCube(float r)
 
 	glBindVertexArray(0);
 }
-void MainWidget::drawCube(const KJoint& joint)
+void MainWidget::drawCube(const KJoint& joint, bool athlete)
 {
 	QVector3D color(0.f, 0.f, 0.f);
-	if (joint.trackingState == TrackingState_Tracked) color.setY(255.f);
-
-	if (m_athleteEnabled) color.setX(255.f);
-	else color.setZ(255.f);
+	if (joint.trackingState == TrackingState_Inferred) color.setZ(255.f);
+	if (athlete) color.setX(255.f);
+	else color.setY(255.f);
 
 	for (uint j = 0; j < 8; j++) {
 		m_cubeColors[3 * j + 0] = color.x();
@@ -1598,7 +1596,6 @@ void MainWidget::loadBarbell()
 		cout << "Could not import the barbell model." << endl;
 		return;
 	}
-	m_barbellScene = scene;
 
 	// Count vertices and indices and update mesh entries
 	uint numVertices = 0;
@@ -1846,7 +1843,6 @@ void MainWidget::loadBar()
 		cout << "Could not import the bar model." << endl;
 		return;
 	}
-	m_barScene = scene;
 
 	// Count vertices and indices and update mesh entries
 	uint numVertices = 0;
@@ -2094,7 +2090,6 @@ void MainWidget::loadPointer()
 		cout << "Could not import the pointer model." << endl;
 		return;
 	}
-	m_pointerScene = scene;
 
 	// Count vertices and indices and update mesh entries
 	uint numVertices = 0;

@@ -223,6 +223,30 @@ private:
 	void unloadTrainer();
 	void drawTrainer();
 
+	// axes
+	GLuint m_axesVAO;
+	void loadAxes();
+	void drawAxes();
+
+	// arrow
+	GLuint m_arrowVAO;
+	void loadArrow();
+	void drawArrow();
+
+	// cube
+	GLuint m_cubeVAO;
+	GLuint m_cubeVBO;
+	float m_cubeColors[3 * 8];
+	void loadCube(float r);
+	void drawCube(const KJoint& joint, bool athlete);
+
+	// kinect skeleton
+	GLuint m_skeletonVAO;
+	GLuint m_skeletonVBO;
+	float m_skeleton[2 * 3 * JointType_Count]; // 2 attributes x 3 components x JointType_Count joints
+	void loadSkeleton();
+	void drawSkeleton(const array<KJoint, JointType_Count>& joints, bool athlete);
+
 	// Skinned mesh joint dots
 #define NUM_BONES 52
 	GLuint m_skinnedMeshJointsVAO;
@@ -230,35 +254,6 @@ private:
 	float m_skinnedMeshJoints[2 * 3 * NUM_BONES];
 	void loadSkinnedMeshJoints();
 	void drawSkinnedMeshJoints(const SkinnedMesh* sm);
-
-	// kinect skeleton
-	GLuint m_skeletonVAO;
-	GLuint m_skeletonVBO;
-	float m_skeleton[2 * 3 * JointType_Count]; // 2 attributes x 3 components x JointType_Count joints
-	void loadSkeleton();
-	void drawSkeleton(const array<KJoint, JointType_Count>& joints);
-
-	// arrow
-	GLuint m_arrowVAO;
-	void loadArrow();
-	void drawArrow();
-
-	// axes
-	GLuint m_axesVAO;
-	void loadAxes();
-	void drawAxes();
-
-	// cube
-	GLuint m_cubeVAO;
-	GLuint m_cubeVBO;
-	float m_cubeColors[3 * 8];
-	void loadCube(float r);
-	void drawCube(const KJoint& joint);
-
-	// shaders for plane drawing
-	QOpenGLShaderProgram* m_shaderProgram;
-	int m_mvpLocation;
-	int m_specificLocation;
 
 	// plane
 #define PLANE_VERTICES 4
@@ -271,33 +266,30 @@ private:
 	void traverseSceneNodes(aiNode* node);
 
 	// bar (athlete's barbell)
-	QVector<QOpenGLTexture*> m_barTextures;
 	QVector<MeshEntry> m_barMeshEntries;
 	QVector<Material> m_barMaterials;
 	GLuint m_barVAO;
 	void loadBar();
 	void drawBar();
-	const aiScene* m_barScene;
 
 	// barbell (trainer's barbell)
-	QVector<QOpenGLTexture*> m_barbellTextures;
 	QVector<MeshEntry> m_barbellMeshEntries;
 	QVector<Material> m_barbellMaterials;
 	GLuint m_barbellVAO;
 	void loadBarbell();
 	void drawBarbell();
-	const aiScene* m_barbellScene;
 
 	// pointer
-	QVector<QOpenGLTexture*> m_pointerTextures;
 	QVector<MeshEntry> m_pointerMeshEntries;
 	QVector<Material> m_pointerMaterials;
 	GLuint m_pointerVAO;
 	void loadPointer();
 	void drawPointer();
-	const aiScene* m_pointerScene;
 
-
+	// shaders for plane drawing
+	QOpenGLShaderProgram* m_shaderProgram;
+	int m_mvpLocation;
+	int m_specificLocation;
 
 	// shaders for material lighting
 	QOpenGLShaderProgram* m_lighting;

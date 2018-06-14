@@ -164,12 +164,12 @@ bool KSensor::getBodyFrame(KFrame& destination)
 	// get data from bodies
 	bool discardFrame = false;
 	uint personsTracked = 0;
-	BOOLEAN isTracked;
+	BOOLEAN bodyTracked;
 	Joint joints[JointType_Count];
 	JointOrientation orientations[JointType_Count];
 	for (int i = 0; i < BODY_COUNT; i++) {
-		bodies[i]->get_IsTracked(&isTracked);
-		if (isTracked) {
+		bodies[i]->get_IsTracked(&bodyTracked);
+		if (bodyTracked) {
 			personsTracked++;
 			bodies[i]->GetJoints(JointType_Count, joints);
 			bodies[i]->GetJointOrientations(JointType_Count, orientations);
@@ -178,7 +178,6 @@ bool KSensor::getBodyFrame(KFrame& destination)
 
 	// discard if persons tracked != 1
 	if (personsTracked != 1) {
-		cout << timestamp << ":Discarded -> PersonsTracked = " << personsTracked << endl;
 		discardFrame = true;
 	}
 
@@ -187,20 +186,19 @@ bool KSensor::getBodyFrame(KFrame& destination)
 	double interval = timestamp - lastTimestamp;
 	lastTimestamp = timestamp;
 	if (interval > 0.1) {
-		cout << timestamp << ":Discarded -> Interval = " << interval << endl;
 		discardFrame = true;
 	}
 		
 	if (discardFrame) {
 		m_sensorLogData << "Status=Discarded ";
 		if (m_skeleton.m_isRecording) {
-			cout << "Stopping recording." << endl;
+			cout << "Discarded frame during recording. Recording stopped." << endl;
 			m_skeleton.m_isRecording = false; // stop recording
 		}
 	}
 	else {
 		destination = m_skeleton.addFrame(joints, orientations, timestamp);
-		m_sensorLogData << (m_skeleton.m_isRecording ? "Status=Recorded " : "Status=Captured ") << qSetFieldWidth(4);
+		m_sensorLogData << (m_skeleton.m_isRecording ? "Status=Recorded  " : "Status=Captured  ") << qSetFieldWidth(4);
 	}
 	
 	m_sensorLogData << " RelativeTime=" << qSetFieldWidth(10) << timestamp;

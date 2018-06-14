@@ -306,10 +306,6 @@ QVector3D SkinnedMesh::getPelvisOffset()
 	float z = m_boneInfo[findBoneId("pelvis")].defaultLocal(2, 3);
 	return QVector3D(x, y, z);
 }
-void SkinnedMesh::setKSkeleton(KSkeleton* ks)
-{
-	m_kskelie = ks;
-}
 bool SkinnedMesh::parameter(uint i) const
 {
 	return m_parameters[i];
