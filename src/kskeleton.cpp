@@ -38,7 +38,7 @@ KSkeleton::KSkeleton()
 {
 	cout << "KSkeleton constructor start." << endl;
 	
-	m_sequenceLog.setFileName("sequences_log.txt");
+	m_sequenceLog.setFileName("motions.log");
 	if (!m_sequenceLog.open(QIODevice::WriteOnly | QIODevice::Text)) {
 		cout << "Could not open sequences log file." << endl;
 		return;
@@ -132,7 +132,7 @@ void KSkeleton::initLimbs()
 	m_limbs[7] = KLimb(JointType_AnkleLeft, JointType_FootLeft, 8);
 	m_limbs[8] = KLimb(JointType_AnkleRight, JointType_FootRight, 7);
 	// Arms																 			  
-	m_limbs[9] = KLimb(JointType_SpineBase, JointType_ShoulderLeft); // helper limb, must be before limb 11
+	m_limbs[9 ] = KLimb(JointType_SpineBase, JointType_ShoulderLeft); // helper limb, must be before limb 11
 	m_limbs[10] = KLimb(JointType_SpineBase, JointType_ShoulderRight); // helper limb, must be before limb 12
 	m_limbs[11] = KLimb(JointType_SpineShoulder, JointType_ShoulderLeft, 12);
 	m_limbs[12] = KLimb(JointType_SpineShoulder, JointType_ShoulderRight, 11);
@@ -142,13 +142,14 @@ void KSkeleton::initLimbs()
 	m_limbs[16] = KLimb(JointType_ElbowRight, JointType_WristRight, 15);
 	m_limbs[17] = KLimb(JointType_WristLeft, JointType_HandLeft, 18);
 	m_limbs[18] = KLimb(JointType_WristRight, JointType_HandRight, 17);
-	m_limbs[19] = KLimb(JointType_WristLeft, JointType_HandTipLeft, 20);
-	m_limbs[20] = KLimb(JointType_WristRight, JointType_HandTipRight, 19);
+	m_limbs[19] = KLimb(JointType_HandLeft, JointType_HandTipLeft, 20);
+	m_limbs[20] = KLimb(JointType_HandRight, JointType_HandTipRight, 19);
 	m_limbs[21] = KLimb(JointType_HandLeft, JointType_ThumbLeft, 22);
 	m_limbs[22] = KLimb(JointType_HandRight, JointType_ThumbRight, 21);
 
 	for (uint l = 0; l < m_limbs.size(); l++) {
-		m_limbs[l].name = m_nodes[m_limbs[l].start].name + "->" + m_nodes[m_limbs[l].end].name;
+		if (m_limbs[l].end !=INVALID_JOINT_ID)
+			m_limbs[l].name = m_nodes[m_limbs[l].start].name + "->" + m_nodes[m_limbs[l].end].name;
 	}
 }
 void KSkeleton::record(bool trainerRecording)
@@ -234,35 +235,31 @@ void KSkeleton::processMotions(int interpolationStart)
 		m_athleteInterpolatedMotion = interpolateMotion(m_athleteRawMotion, interpolationStart, m_athleteRawMotion.size());
 		m_athleteFilteredMotion = filterMotion(m_athleteInterpolatedMotion);
 		m_athleteAdjustedMotion = adjustMotion(m_athleteFilteredMotion);
-		m_athletePhases = identifyPhases(m_athleteAdjustedMotion);
-		m_athleteRescaledMotion = rescaleMotion(
-			m_athleteAdjustedMotion, 
-			m_trainerAdjustedMotion, 
-			m_athletePhases,
-			m_trainerPhases);
-		//calculateJointOrientations(m_athleteInterpolatedMotion);
-		//calculateJointOrientations(m_athleteFilteredMotion);
-		//calculateJointOrientations(m_athleteAdjustedMotion);
-		//calculateJointOrientations(m_athleteRescaledMotion);
+		
 	}
 	if (m_trainerRecording) {
 		cout << "Processing trainer motion" << endl;
 		m_trainerInterpolatedMotion = interpolateMotion(m_trainerRawMotion, interpolationStart, m_trainerRawMotion.size());
 		m_trainerFilteredMotion = filterMotion(m_trainerInterpolatedMotion);
 		m_trainerAdjustedMotion = adjustMotion(m_trainerFilteredMotion);
-		if (m_trainerRawMotion.size() > m_bigMotionSize) m_bigMotionSize = m_trainerRawMotion.size();
-		m_trainerPhases = identifyPhases(m_trainerAdjustedMotion);
-		m_trainerRescaledMotion = rescaleMotion(
-			m_trainerAdjustedMotion,
-			m_athleteAdjustedMotion,
-			m_trainerPhases,
-			m_athletePhases);
-		calculateJointOrientations(m_trainerInterpolatedMotion);
-		calculateJointOrientations(m_trainerFilteredMotion);
-		calculateJointOrientations(m_trainerAdjustedMotion);
-		calculateJointOrientations(m_trainerRescaledMotion);
 	}
+
+	m_athletePhases = identifyPhases(m_athleteAdjustedMotion);
+	m_trainerPhases = identifyPhases(m_trainerAdjustedMotion);
+	m_athleteRescaledMotion = rescaleMotion(
+		m_athleteAdjustedMotion,
+		m_trainerAdjustedMotion,
+		m_athletePhases,
+		m_trainerPhases);
+	m_trainerRescaledMotion = rescaleMotion(
+		m_trainerAdjustedMotion,
+		m_athleteAdjustedMotion,
+		m_trainerPhases,
+		m_athletePhases);
+
 	cropMotions();
+	if (m_trainerRawMotion.size() > m_bigMotionSize) m_bigMotionSize = m_trainerRawMotion.size();
+	else m_bigMotionSize = m_athleteRawMotion.size();
 	calculateOffsets();
 	printMotionsToLog();
 }
@@ -314,21 +311,23 @@ QVector<KFrame> KSkeleton::filterMotion(const QVector<KFrame>& motion)
 		KFrame filteredFrame;
 		for (uint j = 0; j < JointType_Count; j++) {
 			filteredFrame.joints[j].position = QVector3D(0.f, 0.f, 0.f);
-			QVector3D newEulerOrientations;
+			QMatrix3x3 newOrientation;
+			newOrientation.fill(0);
 			for (uint k = 0; k < 2 * m_framesDelayed + 1; k++) {
-				filteredFrame.joints[j].position += 
-					motion[i + k - np / 2].joints[j].position *	
-					m_sgCoefficients[k] * 
+				filteredFrame.joints[j].position +=
+					motion[i + k - np / 2].joints[j].position *
+					m_sgCoefficients[k] *
 					m_sgCoefficients.back();
 
 				float x, y, z;
-				motion[i + k - np / 2].joints[j].orientation.getEulerAngles(&x, &y, &z);
+				QMatrix3x3 rot = motion[i + k - np / 2].joints[j].orientation.toRotationMatrix();
 				QVector3D eulerOrientations(x, y, z);
-				newEulerOrientations +=
-					eulerOrientations *
+				newOrientation +=
+					rot *
 					m_sgCoefficients[k] *
 					m_sgCoefficients.back();
 			}
+			filteredFrame.joints[j].orientation = QQuaternion::fromRotationMatrix(newOrientation);
 		}
 		filteredFrame.serial = motion[i].serial;
 		filteredFrame.timestamp = motion[i].timestamp;
@@ -337,6 +336,51 @@ QVector<KFrame> KSkeleton::filterMotion(const QVector<KFrame>& motion)
 
 	cout << "Filtered motion size: " << filteredMotion.size() << endl;
 	return filteredMotion;
+}
+float KLimb::gapAverage = 0.f;
+void KSkeleton::calculateLimbLengths(const QVector<KFrame>& sequence)
+{
+	if (m_limbs.empty()) {
+		cout << "Limbs array is empty! Returning." << endl;
+		return;
+	}
+	if (sequence.empty()) {
+		cout << "Frame sequence is empty! Returning." << endl;
+		return;
+	}
+
+	KLimb::gapAverage = 0.f;
+	for (uint l = 0; l < m_limbs.size(); l++) {
+		if (m_limbs[l].end == INVALID_JOINT_ID) continue;
+		m_limbs[l].maxLength = FLT_MIN;
+		m_limbs[l].minLength = FLT_MAX;
+		m_limbs[l].averageLength = 0;
+		for (uint i = 0; i < sequence.size(); i++) {
+			const QVector3D& startPosition = sequence[i].joints[m_limbs[l].start].position;
+			const QVector3D& endPosition = sequence[i].joints[m_limbs[l].end].position;
+			float length = startPosition.distanceToPoint(endPosition);
+			if (length > m_limbs[l].maxLength) {
+				m_limbs[l].maxLength = length;
+				m_limbs[l].serialMax = sequence[i].serial;
+			}
+			if (length < m_limbs[l].minLength) {
+				m_limbs[l].minLength = length;
+				m_limbs[l].serialMin = sequence[i].serial;
+			}
+			m_limbs[l].averageLength += length;
+		}
+		m_limbs[l].averageLength /= sequence.size();
+		KLimb::gapAverage += m_limbs[l].maxLength - m_limbs[l].minLength;
+	}
+	KLimb::gapAverage /= (m_limbs.size() - 1);
+
+	for (uint l = 0; l < m_limbs.size(); l++) {
+		m_limbs[l].desiredLength = (
+			m_limbs[l].sibling == INVALID_JOINT_ID ?
+			m_limbs[l].averageLength :
+			(m_limbs[l].averageLength + m_limbs[m_limbs[l].sibling].averageLength) / 2.f
+			);
+	}
 }
 QVector<KFrame> KSkeleton::adjustMotion(const QVector<KFrame>& motion)
 {
@@ -518,7 +562,23 @@ array<uint, NUM_PHASES> KSkeleton::identifyPhases(const QVector<KFrame>& motion)
 	cout << "Position 4: Catch: " << i << " @ " << motion[i].timestamp << endl;
 	ret[(int)MotionPhase::CATCH] = i;
 
-	cout << "Position 5: End: " << motion.size() - 1 << " @ " << motion[motion.size() - 1].timestamp << endl;
+	do {
+		i++;
+		if (i > motion.size() - 2) {
+			cout << "Could not identify position" << endl;
+			ret[i] = INVALID_JOINT_ID;
+			return ret;
+		}
+		headPosition = motion[i].joints[JointType_Head].position;
+		nextHeadPosition = motion[i + 1].joints[JointType_Head].position;
+		timestamp = motion[i].timestamp;
+		nextTimestamp = motion[i + 1].timestamp;
+		headVelocity = (nextHeadPosition - headPosition) / (nextTimestamp - timestamp);
+	} while (headVelocity.y() > -0.1);
+	cout << "Position 5: Stand up: " << i << " @ " << motion[i].timestamp << endl;
+	ret[(int)MotionPhase::STAND_UP] = i;
+
+	cout << "Position 6: End: " << motion.size() - 1 << " @ " << motion[motion.size() - 1].timestamp << endl;
 	ret[(int)MotionPhase::END] = motion.size() - 1;
 
 	return ret;
@@ -542,9 +602,10 @@ QVector<KFrame> KSkeleton::rescaleMotion(
 		return rescaledMotion;
 	}
 	for (int i = 0; i < NUM_PHASES; i++) {
-		if (originalPhases[i] == INVALID_JOINT_ID || prototypePhases[i] == INVALID_JOINT_ID)
+		if (originalPhases[i] == INVALID_JOINT_ID || prototypePhases[i] == INVALID_JOINT_ID) {
 			cout << "Phases were not identified properly. Returning." << endl;
-		return rescaledMotion;
+			return rescaledMotion;
+		}
 	}
 
 	rescaledMotion.push_back(original[0]);
@@ -585,27 +646,6 @@ QVector<KFrame> KSkeleton::rescaleMotion(
 	rescaledMotion = adjustMotion(rescaledMotion);
 
 	return rescaledMotion;
-}
-void KSkeleton::calculateOffsets()
-{
-	if (m_athleteAdjustedMotion.size() > 0) {
-		m_athletePelvisOffset = m_athleteAdjustedMotion.front().joints[JointType_SpineBase].position;
-		cout << "Athlete pelvis offset: " << toStringCartesian(m_athletePelvisOffset).toStdString() << endl;
-		m_athleteFeetOffset =
-			m_athleteAdjustedMotion.front().joints[JointType_AnkleLeft].position.y() / 2.f +
-			m_athleteAdjustedMotion.front().joints[JointType_AnkleRight].position.y() / 2.f -
-			m_athletePelvisOffset.y();
-		cout << "Athlete feet offset: " << m_athleteFeetOffset << endl;
-	}
-	if (m_trainerAdjustedMotion.size() > 0) {
-		m_trainerPelvisOffset = m_trainerAdjustedMotion.front().joints[JointType_SpineBase].position;
-		cout << "Trainer pelvis offset: " << toStringCartesian(m_trainerPelvisOffset).toStdString() << endl;
-		m_trainerFeetOffset =
-			m_trainerAdjustedMotion.front().joints[JointType_AnkleLeft].position.y() / 2.f +
-			m_trainerAdjustedMotion.front().joints[JointType_AnkleRight].position.y() / 2.f -
-			m_trainerPelvisOffset.y();
-		cout << "Trainer feet offset: " << m_trainerFeetOffset << endl;
-	}
 }
 void KSkeleton::calculateJointOrientations(QVector<KFrame>& motion)
 {
@@ -726,49 +766,48 @@ void KSkeleton::cropMotions()
 		cout << "Trainer Interpolated motion size after crop:" << m_trainerInterpolatedMotion.size() << endl;
 	}
 }
-float KLimb::gapAverage = 0.f;
-void KSkeleton::calculateLimbLengths(const QVector<KFrame>& sequence)
+void KSkeleton::calculateOffsets()
 {
-	if (m_limbs.empty()) {
-		cout << "Limbs array is empty! Returning." << endl;
-		return;
-	}
-	if (sequence.empty()) {
-		cout << "Frame sequence is empty! Returning." << endl;
-		return;
+	cout << "Calculating athlete offsets" << endl;
+	if (m_athleteAdjustedMotion.size() > 0) {
+		m_athletePelvisOffset = m_athleteAdjustedMotion.front().joints[JointType_SpineBase].position;
+		cout << "Pelvis: " << toStringCartesian(m_athletePelvisOffset).toStdString() << endl;
+		
+		m_athleteFeetOffset =
+			m_athleteAdjustedMotion.front().joints[JointType_AnkleLeft].position / 2.f +
+			m_athleteAdjustedMotion.front().joints[JointType_AnkleRight].position / 2.f;
+		cout << "Feet: " << m_athleteFeetOffset << endl;
+		
+		m_athleteInitialBarbellDirection =
+			m_athleteAdjustedMotion.front().joints[JointType_HandLeft].position -
+			m_athleteAdjustedMotion.front().joints[JointType_HandRight].position;
+		cout << "Initial barbell direction: " << toStringCartesian(m_athleteInitialBarbellDirection).toStdString() << endl;
+
+		m_athleteInitialFeetDirection =
+			m_athleteAdjustedMotion.front().joints[JointType_FootLeft].position -
+			m_athleteAdjustedMotion.front().joints[JointType_FootRight].position;
+		cout << "Initial feet direction: " << toStringCartesian(m_athleteInitialFeetDirection).toStdString() << endl;
 	}
 
-	KLimb::gapAverage = 0.f;
-	for (uint l = 0; l < m_limbs.size(); l++) {
-		if (m_limbs[l].end == INVALID_JOINT_ID) continue;
-		m_limbs[l].maxLength = FLT_MIN;
-		m_limbs[l].minLength = FLT_MAX;
-		m_limbs[l].averageLength = 0;
-		for (uint i = 0; i < sequence.size(); i++) {
-			const QVector3D& startPosition = sequence[i].joints[m_limbs[l].start].position;
-			const QVector3D& endPosition = sequence[i].joints[m_limbs[l].end].position;
-			float length = startPosition.distanceToPoint(endPosition);
-			if (length > m_limbs[l].maxLength) {
-				m_limbs[l].maxLength = length;
-				m_limbs[l].serialMax = sequence[i].serial;
-			}
-			if (length < m_limbs[l].minLength) {
-				m_limbs[l].minLength = length;
-				m_limbs[l].serialMin = sequence[i].serial;
-			}
-			m_limbs[l].averageLength += length;
-		}
-		m_limbs[l].averageLength /= sequence.size();
-		KLimb::gapAverage += m_limbs[l].maxLength - m_limbs[l].minLength;
-	}
-	KLimb::gapAverage /= (m_limbs.size() - 1);
+	cout << "Calculating trainer offsets" << endl;
+	if (m_trainerAdjustedMotion.size() > 0) {
+		m_trainerPelvisOffset = m_trainerAdjustedMotion.front().joints[JointType_SpineBase].position;
+		cout << "Pelvis: " << toStringCartesian(m_trainerPelvisOffset).toStdString() << endl;
+		
+		m_trainerFeetOffset =
+			m_trainerAdjustedMotion.front().joints[JointType_AnkleLeft].position / 2.f +
+			m_trainerAdjustedMotion.front().joints[JointType_AnkleRight].position / 2.f;
+		cout << "Feet: " << m_trainerFeetOffset << endl;
+		
+		m_trainerInitialBarbellDirection =
+			m_trainerAdjustedMotion.front().joints[JointType_HandLeft].position -
+			m_trainerAdjustedMotion.front().joints[JointType_HandRight].position;
+		cout << "Initial barbell direction: " << toStringCartesian(m_trainerInitialBarbellDirection).toStdString() << endl;
 
-	for (uint l = 0; l < m_limbs.size(); l++) {
-		m_limbs[l].desiredLength = (
-			m_limbs[l].sibling == INVALID_JOINT_ID ?
-			m_limbs[l].averageLength :
-			(m_limbs[l].averageLength + m_limbs[m_limbs[l].sibling].averageLength) / 2.f
-			);
+		m_trainerInitialFeetDirection =
+			m_trainerAdjustedMotion.front().joints[JointType_FootLeft].position -
+			m_trainerAdjustedMotion.front().joints[JointType_FootRight].position;
+		cout << "Initial feet direction: " << toStringCartesian(m_trainerInitialFeetDirection).toStdString() << endl;
 	}
 }
 const array<KNode, JointType_Count>& KSkeleton::nodes() const
@@ -780,7 +819,7 @@ void KSkeleton::printLimbLengths() const
 	cout << "Limb lengths: " << endl;
 	for (uint l = 0; l < m_limbs.size(); l++) {
 		if (m_limbs[l].end == INVALID_JOINT_ID) continue;
-		cout << setw(40) << left << m_limbs[l].name.toStdString() << " ";
+		cout << setw(30) << left << m_limbs[l].name.toStdString() << " ";
 		cout << "Min=" << setw(10) << m_limbs[l].minLength << " (" << setw(5) << m_limbs[l].serialMin;
 		cout << ") Max=" << setw(10) << m_limbs[l].maxLength << " (" << setw(5) << m_limbs[l].serialMax;
 		cout << ") Avg=" << setw(10) << m_limbs[l].averageLength << " ";
@@ -873,6 +912,34 @@ bool KSkeleton::exportToTRC()
 
 	cout << "Successfully created " << fileName.toStdString() << endl;
 	return true;
+}
+void KSkeleton::processSpecific()
+{
+
+	/*m_athleteInterpolatedMotion = interpolateMotion(m_athleteRawMotion, 0, m_athleteRawMotion.size());
+	m_athleteFilteredMotion = filterMotion(m_athleteInterpolatedMotion);
+	m_athletePhases = identifyPhases(m_athleteFilteredMotion);
+	m_athleteAdjustedMotion = adjustMotion(m_athleteFilteredMotion);
+	m_athletePhases = identifyPhases(m_athleteAdjustedMotion);
+
+	m_trainerInterpolatedMotion = interpolateMotion(m_trainerRawMotion, 0, m_trainerRawMotion.size());
+	m_trainerFilteredMotion = filterMotion(m_trainerInterpolatedMotion);
+	m_trainerPhases = identifyPhases(m_trainerFilteredMotion);
+	m_trainerAdjustedMotion = adjustMotion(m_trainerFilteredMotion);
+	m_trainerPhases = identifyPhases(m_trainerAdjustedMotion);*/
+
+	m_athletePhases = identifyPhases(m_athleteAdjustedMotion);
+	m_trainerPhases = identifyPhases(m_trainerAdjustedMotion);
+	m_athleteRescaledMotion = rescaleMotion(
+		m_athleteAdjustedMotion,
+		m_trainerAdjustedMotion,
+		m_athletePhases,
+		m_trainerPhases);
+	m_trainerRescaledMotion = rescaleMotion(
+		m_trainerAdjustedMotion,
+		m_athleteAdjustedMotion,
+		m_trainerPhases,
+		m_athletePhases);
 }
 void KSkeleton::saveFrameSequences()
 {

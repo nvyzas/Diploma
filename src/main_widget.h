@@ -189,13 +189,12 @@ private:
 	bool m_tipsDrawing = true;
 
 	bool m_kinectSkeletonJointsDrawing = true;
-	bool m_SkinnedMeshJointsDrawing = true;
+	bool m_SkinnedMeshJointsDrawing = false;
 
 	QPoint m_lastMousePosition;
 	bool m_isPaused = true;	
 	QTimer m_timer;
 	bool m_shouldUpdate = false;
-	void setup();
 
 	// skinned mesh
 	enum VB_TYPES {
@@ -278,6 +277,12 @@ private:
 	GLuint m_barbellVAO;
 	void loadBarbell();
 	void drawBarbell();
+	array<uint, 7> m_comparisonJoints = {
+		JointType_SpineBase, 
+		JointType_KneeLeft, JointType_KneeRight,
+		JointType_ShoulderLeft, JointType_ShoulderRight,
+		JointType_HandLeft, JointType_HandRight
+	};
 
 	// pointer
 	QVector<MeshEntry> m_pointerMeshEntries;

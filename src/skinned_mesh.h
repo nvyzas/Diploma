@@ -137,7 +137,6 @@ public:
 	QVector<QImage>& images();
 
 	QVector3D getPelvisOffset();
-	void setKSkeleton(KSkeleton* ks);
 	bool parameter(uint i) const;
 	const aiScene* m_pScene;
 	void initKBoneMap();

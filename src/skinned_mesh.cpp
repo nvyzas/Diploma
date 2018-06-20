@@ -420,7 +420,7 @@ void SkinnedMesh::calculateBoneTransforms(const aiNode* pNode, const QMatrix4x4&
 		qts << "Default local quaternion: " << toString(q) << toStringEulerAngles(q) << toStringAxisAngle(q) << endl;
 		qts << "Default local transformation:\n" << toString(L);
 
-		QMatrix4x4 localTransformation;
+		QMatrix4x4 localTransformation(L);
 		const auto& kit = m_kboneMap.find(nodeName.toStdString());
 		if (m_parameters[1] && kit != m_kboneMap.end()) {
 			uint k = kit->second;

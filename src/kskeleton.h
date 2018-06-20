@@ -17,7 +17,7 @@
 
 #define INVALID_JOINT_ID -1
 #define NUM_LIMBS 23
-#define NUM_PHASES 6
+#define NUM_PHASES 7
 
 // Represents a node of the skeletal hierarchy
 struct KNode
@@ -178,7 +178,7 @@ public:
 
 	// files
 	bool exportToTRC();
-
+	void processSpecific();
 
 	void saveFrameSequences();
 	void loadMotion();
@@ -201,8 +201,12 @@ public:
 	int m_bigMotionSize = 0;
 	QVector3D m_athletePelvisOffset = QVector3D(0.f, 0.f, 0.f);
 	QVector3D m_trainerPelvisOffset = QVector3D(0.f, 0.f, 0.f);
-	float m_athleteFeetOffset = 0.f;
-	float m_trainerFeetOffset = 0.f;
+	QVector3D m_athleteFeetOffset = QVector3D(0.f, 0.f, 0.f);
+	QVector3D m_trainerFeetOffset = QVector3D(0.f, 0.f, 0.f);
+	QVector3D m_athleteInitialBarbellDirection = QVector3D(0.f, 0.f, 0.f);
+	QVector3D m_trainerInitialBarbellDirection = QVector3D(0.f, 0.f, 0.f);
+	QVector3D m_athleteInitialFeetDirection = QVector3D(0.f, 0.f, 0.f);
+	QVector3D m_trainerInitialFeetDirection = QVector3D(0.f, 0.f, 0.f);
 
 	// Motions
 	QVector<KFrame> m_athleteRawMotion;
@@ -226,9 +230,25 @@ public:
 		POWER_POSITION = 2,
 		TRIPLE_EXTENSION = 3,
 		CATCH = 4,
-		END = 5
+		STAND_UP = 5,
+		END = 6
 	};
 	array<uint, NUM_PHASES> identifyPhases(const QVector<KFrame>& motion);
+
+	QVector<KFrame> interpolateMotion(
+		const QVector<KFrame>& motion,
+		int counterStart,
+		int desiredSize);
+	QVector<KFrame> filterMotion(const QVector<KFrame>& motion);
+	void cropMotions();
+	QVector<KFrame> adjustMotion(const QVector<KFrame>& motion);
+	void adjustLimbLength(KFrame& kframe, uint jointId, const QVector3D& direction, float factor); // recursively adjust joints
+	QVector<KFrame> rescaleMotion(
+		const QVector<KFrame>& original,
+		const QVector<KFrame>& prototype,
+		const array<uint, NUM_PHASES>& originalPhases,
+		const array<uint, NUM_PHASES>& prototypePhases
+	);
 private:
 	array<KNode, JointType_Count> m_nodes; // these define the kinect skeleton hierarchy
 
@@ -248,20 +268,6 @@ private:
 	void initJoints();
 	void initLimbs();
 
-	QVector<KFrame> interpolateMotion(
-		const QVector<KFrame>& motion,
-		int counterStart,
-		int desiredSize);
-	QVector<KFrame> filterMotion(const QVector<KFrame>& motion);
-	void cropMotions();
-	QVector<KFrame> adjustMotion(const QVector<KFrame>& motion);
-	void adjustLimbLength(KFrame& kframe, uint jointId, const QVector3D& direction, float factor); // recursively adjust joints
-	QVector<KFrame> rescaleMotion(
-		const QVector<KFrame>& original, 
-		const QVector<KFrame>& prototype,
-		const array<uint, NUM_PHASES>& originalPhases,
-		const array<uint, NUM_PHASES>& prototypePhases
-		);
 
 	QVector3D m_leftFootOffset;
 	QVector3D m_rightFootOffset;
