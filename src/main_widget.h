@@ -122,16 +122,17 @@ public:
 	bool tipsDrawing() const;
 	QVector3D activeJointVelocity() const;
 	float activeJointAngle() const;
+
+	// barbell info
 	QVector3D activeBarbellDisplacement() const;
 	QVector3D activeBarbellVelocity() const;
-	QVector3D activeBarbellAngle() const;
-
+	float activeBarbellAngle() const;
 	QVector3D m_activeAthleteBarbellDiscplacement;
 	QVector3D m_activeTrainerBarbellDiscplacement;
 	QVector3D m_activeAthleteBarbellVelocity;
 	QVector3D m_activeTrainerBarbellVelocity;
-	QVector3D m_activeAthleteBarbellAngle;
-	QVector3D m_activeTrainerBarbellAngle;
+	float m_activeAthleteBarbellAngle;
+	float m_activeTrainerBarbellAngle;
 
 public slots:
 	void setCaptureEnabled(bool state);
@@ -184,6 +185,9 @@ private:
 	QStringList m_motionTypeList = { "Raw", "Interpolated", "Filtered", "Adjusted", "Resized" };
 
 	QVector3D m_generalOffset;
+	QVector3D m_athleteHeightOffset = QVector3D(0, 0.05, 0);
+	QVector3D m_trainerHeightOffset = QVector3D(0, 0, 0);
+
 	Mode m_activeMode;
 
 	bool m_athleteEnabled;

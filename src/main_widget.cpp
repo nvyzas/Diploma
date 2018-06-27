@@ -272,6 +272,7 @@ void MainWidget::paintGL()
 			m_pipeline->setWorldPosition(
 				m_activeAthleteFrame.joints[JointType_SpineBase].position-
 				m_ksensor->skeleton()->m_athleteFeetOffset+
+				m_athleteHeightOffset+
 				m_generalOffset
 			);
 
@@ -306,7 +307,8 @@ void MainWidget::paintGL()
 			m_pipeline->setWorldOrientation(QQuaternion());
 			m_pipeline->setWorldPosition(
 				m_activeTrainerFrame.joints[JointType_SpineBase].position -
-				m_ksensor->skeleton()->m_trainerFeetOffset -
+				m_ksensor->skeleton()->m_trainerFeetOffset +
+				m_trainerHeightOffset -
 				m_generalOffset
 			);
 
@@ -337,6 +339,7 @@ void MainWidget::paintGL()
 	}
 
 	// calculate barbell info
+
 	// athlete
 	QVector3D athleteBarbellLeftGrip =
 		m_barbellFromMesh ?
@@ -351,14 +354,35 @@ void MainWidget::paintGL()
 	static QVector3D previousAthleteBarbellPosition;
 	QVector3D athleteBarbellDirection = athleteBarbellRightGrip - athleteBarbellLeftGrip;
 	QVector3D athleteBarbellVelocity = (athleteBarbellPosition - previousAthleteBarbellPosition) / m_playbackInterval;
-	previousAthleteBarbellPosition = athleteBarbellPosition;
+	if (!m_isPaused) previousAthleteBarbellPosition = athleteBarbellPosition;
 
 	m_activeAthleteBarbellDiscplacement = athleteBarbellPosition - m_ksensor->skeleton()->m_athleteHandsOffset;
 	m_activeAthleteBarbellVelocity = athleteBarbellVelocity;
+	m_activeAthleteBarbellAngle = ToDegrees(atan2(
+		athleteBarbellDirection.y(), 
+		sqrt(pow(athleteBarbellDirection.x(), 2) + pow(athleteBarbellDirection.z(), 2))));
 
-	
 	// trainer
+	QVector3D trainerBarbellLeftGrip =
+		m_barbellFromMesh ?
+		m_activeTrainerFrame.joints[JointType_SpineBase].position + m_trainer->boneEndPosition(m_trainer->findBoneId("thumb_01_l")) :
+		m_activeTrainerFrame.joints[JointType_HandLeft].position;
+	QVector3D trainerBarbellRightGrip =
+		m_barbellFromMesh ?
+		m_activeTrainerFrame.joints[JointType_SpineBase].position + m_trainer->boneEndPosition(m_trainer->findBoneId("thumb_01_r")) :
+		m_activeTrainerFrame.joints[JointType_HandRight].position;
 
+	QVector3D trainerBarbellPosition = (trainerBarbellLeftGrip + trainerBarbellRightGrip) / 2.f;
+	static QVector3D previousTrainerBarbellPosition;
+	QVector3D trainerBarbellDirection = trainerBarbellRightGrip - trainerBarbellLeftGrip;
+	QVector3D trainerBarbellVelocity = (trainerBarbellPosition - previousTrainerBarbellPosition) / m_playbackInterval;
+	if (!m_isPaused) previousTrainerBarbellPosition = trainerBarbellPosition;
+
+	m_activeTrainerBarbellDiscplacement = trainerBarbellPosition - m_ksensor->skeleton()->m_trainerHandsOffset;
+	m_activeTrainerBarbellVelocity = trainerBarbellVelocity;
+	m_activeTrainerBarbellAngle = ToDegrees(atan2(
+		trainerBarbellDirection.y(), 
+		sqrt(pow(trainerBarbellDirection.x(), 2) + pow(trainerBarbellDirection.z(), 2))));
 
 	// draw barbells
 	if (m_barbellDrawing) {
@@ -372,7 +396,8 @@ void MainWidget::paintGL()
 			m_pipeline->setWorldOrientation(QQuaternion::rotationTo(QVector3D(0.f, 0.f, 1.f), athleteBarbellDirection));
 			m_pipeline->setWorldPosition(
 				athleteBarbellPosition-
-				m_ksensor->skeleton()->m_athleteFeetOffset+
+				m_ksensor->skeleton()->m_athleteFeetOffset +
+				m_athleteHeightOffset +
 				m_generalOffset
 			);
 
@@ -391,8 +416,9 @@ void MainWidget::paintGL()
 				m_pipeline->setWorldScale(0.25, length, 0.25);
 				m_pipeline->setWorldOrientation(QQuaternion::rotationTo(QVector3D(0.f, 1.f, 0.f), direction));
 				m_pipeline->setWorldPosition(
-					m_ksensor->skeleton()->m_athleteHandsOffset-
-					m_ksensor->skeleton()->m_athleteFeetOffset+
+					m_ksensor->skeleton()->m_athleteHandsOffset -
+					m_ksensor->skeleton()->m_athleteFeetOffset +
+					m_athleteHeightOffset +
 					m_generalOffset
 				);
 				m_lighting->setUniformValue(m_modelViewLocation, m_pipeline->GetWVTrans());
@@ -407,11 +433,12 @@ void MainWidget::paintGL()
 				m_lighting->setUniformValue(m_ambientLocation, QVector3D(0, 1, 1));
 
 				float length = athleteBarbellVelocity.length();
-				m_pipeline->setWorldScale(0.25, length, 0.25);
+				m_pipeline->setWorldScale(0.25, 0.5 * length, 0.25);
 				m_pipeline->setWorldOrientation(QQuaternion::rotationTo(QVector3D(0.f, 1.f, 0.f), athleteBarbellVelocity));
 				m_pipeline->setWorldPosition(
 					athleteBarbellPosition -
 					m_ksensor->skeleton()->m_athleteFeetOffset +
+					m_athleteHeightOffset +
 					m_generalOffset
 				);
 				m_lighting->setUniformValue(m_modelViewLocation, m_pipeline->GetWVTrans());
@@ -422,27 +449,13 @@ void MainWidget::paintGL()
 
 		// trainer
 		if (m_trainerEnabled) {
-			QVector3D barbellLeftGrip =
-				m_barbellFromMesh ?
-				m_activeTrainerFrame.joints[JointType_SpineBase].position + m_trainer->boneEndPosition(m_trainer->findBoneId("thumb_01_l")) :
-				m_activeTrainerFrame.joints[JointType_HandLeft].position;
-			QVector3D barbellRightGrip =
-				m_barbellFromMesh ?
-				m_activeTrainerFrame.joints[JointType_SpineBase].position + m_trainer->boneEndPosition(m_trainer->findBoneId("thumb_01_r")) :
-				m_activeTrainerFrame.joints[JointType_HandRight].position;
-
-			QVector3D barbellDirection = barbellRightGrip - barbellLeftGrip;
-			QVector3D barbellPosition = (barbellLeftGrip + barbellRightGrip) / 2.f;
-			static QVector3D previousBarbellPosition;
-			QVector3D barbellVelocity = (barbellPosition - previousBarbellPosition) / m_playbackInterval;
-			previousBarbellPosition = barbellPosition;
-
 			m_pipeline->setWorldScale(0.75, 0.75, 1.0);
-			m_pipeline->setWorldOrientation(QQuaternion::rotationTo(QVector3D(1.f, 0.f, 0.f), barbellDirection));
+			m_pipeline->setWorldOrientation(QQuaternion::rotationTo(QVector3D(1.f, 0.f, 0.f), trainerBarbellDirection));
 			m_pipeline->setWorldPosition(
-				barbellPosition -
+				trainerBarbellPosition -
 				m_ksensor->skeleton()->m_trainerFeetOffset +
-				-m_generalOffset
+				m_trainerHeightOffset -
+				m_generalOffset
 			);
 
 			m_lighting->setUniformValue(m_modelViewLocation, m_pipeline->GetWVTrans());
@@ -455,34 +468,35 @@ void MainWidget::paintGL()
 				m_lighting->setUniformValue(m_specularLocation, QVector3D(0, 0, 0));
 				m_lighting->setUniformValue(m_ambientLocation, QVector3D(1, 0, 1));
 
-				QVector3D barbellOffset = m_ksensor->skeleton()->m_trainerHandsOffset;
-				float length = barbellOffset.distanceToPoint(barbellPosition);
-				QVector3D direction = barbellPosition - barbellOffset;
-				m_pipeline->setWorldScale(0.25, length, 0.25);
+				float length = m_ksensor->skeleton()->m_trainerHandsOffset.distanceToPoint(trainerBarbellPosition);
+				QVector3D direction = trainerBarbellPosition - m_ksensor->skeleton()->m_trainerHandsOffset;
+				m_pipeline->setWorldScale(0.25, 0.5 * length, 0.25);
 				m_pipeline->setWorldOrientation(QQuaternion::rotationTo(QVector3D(0.f, 1.f, 0.f), direction));
 				m_pipeline->setWorldPosition(
 					m_ksensor->skeleton()->m_trainerHandsOffset -
 					m_ksensor->skeleton()->m_trainerFeetOffset +
-					-m_generalOffset
+					m_trainerHeightOffset -
+					m_generalOffset
 				);
 				m_lighting->setUniformValue(m_modelViewLocation, m_pipeline->GetWVTrans());
 				m_lighting->setUniformValue(m_projectionLocation, m_pipeline->GetProjTrans());
 				drawPointer();
 			}
 
-			// barbell speed
+			// barbell velocity
 			if (true) {
 				m_lighting->setUniformValue(m_diffuseLocation, QVector3D(0, 0, 0));
 				m_lighting->setUniformValue(m_specularLocation, QVector3D(0, 0, 0));
 				m_lighting->setUniformValue(m_ambientLocation, QVector3D(0, 1, 1));
 
-				float length = barbellVelocity.length();
+				float length = trainerBarbellVelocity.length();
 				m_pipeline->setWorldScale(0.25, length, 0.25);
-				m_pipeline->setWorldOrientation(QQuaternion::rotationTo(QVector3D(0.f, 1.f, 0.f), barbellVelocity));
+				m_pipeline->setWorldOrientation(QQuaternion::rotationTo(QVector3D(0.f, 1.f, 0.f), trainerBarbellVelocity));
 				m_pipeline->setWorldPosition(
-					barbellPosition -
+					trainerBarbellPosition -
 					m_ksensor->skeleton()->m_trainerFeetOffset +
-					-m_generalOffset
+					m_trainerHeightOffset-
+					m_generalOffset
 				);
 				m_lighting->setUniformValue(m_modelViewLocation, m_pipeline->GetWVTrans());
 				m_lighting->setUniformValue(m_projectionLocation, m_pipeline->GetProjTrans());
@@ -626,30 +640,6 @@ void MainWidget::paintGL()
 		m_shaderProgram->setUniformValue(m_mvpLocation, m_pipeline->getWVPtrans());
 		drawPlane();
 	}
-
-	// calculate barbell direction
-	QVector3D leftHand;
-	QVector3D rightHand;
-	if (m_athleteEnabled) {
-		leftHand = m_activeAthleteFrame.joints[JointType_HandLeft].position;
-		rightHand = m_activeAthleteFrame.joints[JointType_HandRight].position;
-	}
-	else {
-		leftHand = m_activeTrainerFrame.joints[JointType_HandLeft].position;
-		rightHand = m_activeTrainerFrame.joints[JointType_HandRight].position;
-	}
-	QVector3D barDirection = rightHand - leftHand;
-
-	// calculate bar horizontal angle
-	m_barAngle = ToDegrees(atan2(barDirection.y(), sqrt(pow(barDirection.x(), 2) + pow(barDirection.z(), 2))));
-	
-	// calculate knee angle
-	QVector3D hipRight   = (m_activeAthleteFrame).joints[JointType_HipRight].position;
-	QVector3D kneeRight  = (m_activeAthleteFrame).joints[JointType_KneeRight].position;
-	QVector3D ankleRight = (m_activeAthleteFrame).joints[JointType_AnkleRight].position;
-	QVector3D kneeToHip  = (hipRight - kneeRight).normalized();
-	QVector3D kneeToAnkle = (ankleRight - kneeRight).normalized();
-	m_kneeAngle = ToDegrees(acos(QVector3D::dotProduct(kneeToHip, kneeToAnkle)));
 	
 	if (!m_isPaused && m_shouldUpdate && m_activeMode == Mode::PLAYBACK) {
 		if (++m_activeFrameIndex > m_ksensor->skeleton()->m_bigMotionSize)  m_activeFrameIndex = 0;
@@ -990,36 +980,30 @@ float MainWidget::activeJointAngle() const
 }
 QVector3D MainWidget::activeBarbellDisplacement() const
 {
-	QVector3D barbellDisplacement;
 	if (m_athleteEnabled) {
-		QVector3D barbellLeftGrip =
-			m_barbellFromMesh ?
-			m_activeAthleteFrame.joints[JointType_SpineBase].position + m_athlete->boneEndPosition(m_athlete->findBoneId("thumb_01_l")) :
-			m_activeAthleteFrame.joints[JointType_HandLeft].position;
-		QVector3D barbellRightGrip =
-			m_barbellFromMesh ?
-			m_activeAthleteFrame.joints[JointType_SpineBase].position + m_athlete->boneEndPosition(m_athlete->findBoneId("thumb_01_r")) :
-			m_activeAthleteFrame.joints[JointType_HandRight].position;
-		QVector3D barbellPosition = (barbellLeftGrip + barbellRightGrip) / 2.f;
-		barbellDisplacement = barbellPosition - m_ksensor->skeleton()->m_athleteHandsOffset;
+		return m_activeAthleteBarbellDiscplacement;
 	}
 	else {
-		QVector3D barbellLeftGrip =
-			m_barbellFromMesh ?
-			m_activeTrainerFrame.joints[JointType_SpineBase].position + m_trainer->boneEndPosition(m_athlete->findBoneId("thumb_01_l")) :
-			m_activeTrainerFrame.joints[JointType_HandLeft].position;
-		QVector3D barbellRightGrip =
-			m_barbellFromMesh ?
-			m_activeTrainerFrame.joints[JointType_SpineBase].position + m_trainer->boneEndPosition(m_athlete->findBoneId("thumb_01_r")) :
-			m_activeTrainerFrame.joints[JointType_HandRight].position;
-		QVector3D barbellPosition = (barbellLeftGrip + barbellRightGrip) / 2.f;
-		barbellDisplacement = barbellPosition - m_ksensor->skeleton()->m_trainerHandsOffset;
+		return m_activeTrainerBarbellDiscplacement;
 	}
-	return barbellDisplacement;
 }
 QVector3D MainWidget::activeBarbellVelocity() const
 {
-	return QVector3D();
+	if (m_athleteEnabled) {
+		return m_activeAthleteBarbellVelocity;
+	}
+	else {
+		return m_activeTrainerBarbellVelocity;
+	}
+}
+float MainWidget::activeBarbellAngle() const
+{
+	if (m_athleteEnabled) {
+		return m_activeAthleteBarbellAngle;
+	}
+	else {
+		return m_activeTrainerBarbellAngle;
+	}
 }
 bool MainWidget::modelSkinning() const
 {

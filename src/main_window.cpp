@@ -246,7 +246,6 @@ void MainWindow::updateInfo()
 {
 	QString jointVelocity;
 	QTextStream qts(&jointVelocity);
-	//qts.setFieldWidth(5);
 	qts.setRealNumberPrecision(2);
 	qts.setRealNumberNotation(QTextStream::FixedNotation);
 	qts.setNumberFlags(QTextStream::ForceSign);
@@ -257,8 +256,26 @@ void MainWindow::updateInfo()
 	QString jointAngle("Angle: " + QString::number(ui->openGLWidget->activeJointAngle(), 'f', 1));
 	ui->label_jointAngle->setText(jointAngle);
 
+	QString barbellDisplacement;
+	QTextStream qts2(&barbellDisplacement);
+	qts2.setRealNumberPrecision(2);
+	qts2.setRealNumberNotation(QTextStream::FixedNotation);
+	qts2.setNumberFlags(QTextStream::ForceSign);
 	QVector3D bd = ui->openGLWidget->activeBarbellDisplacement();
-	QString barbellDisplacement("Displacement: ");
+	qts2 << "Displacement: " << bd.x() << " " << bd.y() << " " << bd.z() << flush;
+	ui->label_barbellDisplacement->setText(barbellDisplacement);
+
+	QString barbellVelocity;
+	QTextStream qts3(&barbellVelocity);
+	qts3.setRealNumberPrecision(2);
+	qts3.setRealNumberNotation(QTextStream::FixedNotation);
+	qts3.setNumberFlags(QTextStream::ForceSign);
+	QVector3D bv = ui->openGLWidget->activeBarbellVelocity();
+	qts3 << "Velocity: " << bv.x() << " " << bv.y() << " " << bv.z() << flush;
+	ui->label_barbellVelocity->setText(barbellVelocity);
+
+	QString barbellAngle("Angle: " + QString::number(ui->openGLWidget->activeBarbellAngle(), 'f', 1));
+	ui->label_barbellAngle->setText(barbellAngle);
 }
 void MainWindow::updateActiveFrameInfo()
 {
