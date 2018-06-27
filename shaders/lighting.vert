@@ -6,16 +6,15 @@ layout (location = 2) in vec3 normal;
 
 
 uniform	mat4 modelView;
-// uniform mat4 viewMatrix;
 uniform mat4 projection;
 
 
 // Light and material properties
-uniform vec3 lightPosition = vec3(5.0, 5.0, 5.0); 
-uniform vec3 diffuseAlbedo = vec3(0.5, 0.2, 0.7); 				// Whiteness: How much diffuse light a surface reflects back 
-uniform vec3 specularAlbedo = vec3(0.7);						// Whiteness: How much specular light a surface reflects back  
-uniform float specularPower = 128.0;
-uniform vec3 ambient = vec3(0.05, 0.05, 0.05);						
+uniform vec3 lightPosition  = vec3(5.0, 5.0, 5.0);				//vec3(5.0, 5.0, 5.0); 
+uniform vec3 diffuseAlbedo  = vec3(1.0, 0.0, 0.0); 				//vec3(0.5, 0.2, 0.7); 		
+uniform vec3 specularAlbedo = vec3(0.7, 0.7, 0.7);				//vec3(0.7);				  
+uniform float specularPower = 128.0;							//128.0;
+uniform vec3 ambient		= vec3(0.05, 0.05, 0.05);			//vec3(0.05, 0.05, 0.05);				
 
 out VS_OUT
 {

@@ -257,6 +257,8 @@ void MainWindow::updateInfo()
 	QString jointAngle("Angle: " + QString::number(ui->openGLWidget->activeJointAngle(), 'f', 1));
 	ui->label_jointAngle->setText(jointAngle);
 
+	QVector3D bd = ui->openGLWidget->activeBarbellDisplacement();
+	QString barbellDisplacement("Displacement: ");
 }
 void MainWindow::updateActiveFrameInfo()
 {
@@ -265,5 +267,4 @@ void MainWindow::updateActiveFrameInfo()
 
 	QString time("Time: " + QString::number(ui->openGLWidget->m_activeFrameTimestamp, 'f', 3));;
 	ui->label_time->setText(time);
-
 }

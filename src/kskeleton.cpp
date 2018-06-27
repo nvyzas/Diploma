@@ -778,6 +778,11 @@ void KSkeleton::calculateOffsets()
 			m_athleteAdjustedMotion.front().joints[JointType_AnkleRight].position / 2.f;
 		cout << "Feet: " << m_athleteFeetOffset << endl;
 		
+		m_athleteHandsOffset =
+			m_athleteAdjustedMotion.front().joints[JointType_HandLeft].position / 2.f +
+			m_athleteAdjustedMotion.front().joints[JointType_HandRight].position / 2.f;
+		cout << "Hands: " << m_athleteHandsOffset << endl;
+
 		m_athleteInitialBarbellDirection =
 			m_athleteAdjustedMotion.front().joints[JointType_HandLeft].position -
 			m_athleteAdjustedMotion.front().joints[JointType_HandRight].position;
@@ -799,6 +804,11 @@ void KSkeleton::calculateOffsets()
 			m_trainerAdjustedMotion.front().joints[JointType_AnkleRight].position / 2.f;
 		cout << "Feet: " << m_trainerFeetOffset << endl;
 		
+		m_trainerHandsOffset =
+			m_trainerAdjustedMotion.front().joints[JointType_HandLeft].position / 2.f +
+			m_trainerAdjustedMotion.front().joints[JointType_HandRight].position / 2.f;
+		cout << "Hands: " << m_trainerHandsOffset << endl;
+
 		m_trainerInitialBarbellDirection =
 			m_trainerAdjustedMotion.front().joints[JointType_HandLeft].position -
 			m_trainerAdjustedMotion.front().joints[JointType_HandRight].position;
@@ -853,7 +863,8 @@ bool KSkeleton::exportToTRC()
 	}
 	QTextStream out(&qf);
 
-	QVector<KFrame>& exportedMotion = (m_trainerRecording) ? m_trainerAdjustedMotion : m_athleteAdjustedMotion;
+	QVector<KFrame>& exportedMotion = m_athleteRecording ? m_athleteRescaledMotion : m_trainerAdjustedMotion;
+	cout << "Exporting " << (m_athleteRecording ? "athlete" : "trainer") << " motion to .trc" << endl;
 
 	// Line 1
 	out << "PathFileType\t";
@@ -910,7 +921,6 @@ bool KSkeleton::exportToTRC()
 	out << flush;
 	qf.close();
 
-	cout << "Successfully created " << fileName.toStdString() << endl;
 	return true;
 }
 void KSkeleton::processSpecific()

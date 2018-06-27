@@ -203,6 +203,8 @@ public:
 	QVector3D m_trainerPelvisOffset = QVector3D(0.f, 0.f, 0.f);
 	QVector3D m_athleteFeetOffset = QVector3D(0.f, 0.f, 0.f);
 	QVector3D m_trainerFeetOffset = QVector3D(0.f, 0.f, 0.f);
+	QVector3D m_athleteHandsOffset = QVector3D(0.f, 0.f, 0.f);
+	QVector3D m_trainerHandsOffset = QVector3D(0.f, 0.f, 0.f);
 	QVector3D m_athleteInitialBarbellDirection = QVector3D(0.f, 0.f, 0.f);
 	QVector3D m_trainerInitialBarbellDirection = QVector3D(0.f, 0.f, 0.f);
 	QVector3D m_athleteInitialFeetDirection = QVector3D(0.f, 0.f, 0.f);

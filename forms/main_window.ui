@@ -152,13 +152,16 @@
              <property name="bottomMargin">
               <number>6</number>
              </property>
-             <item row="1" column="0" colspan="2">
-              <widget class="QComboBox" name="comboBox_activeJoint">
+             <item row="6" column="0">
+              <widget class="QLabel" name="label_jointAngle">
                <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
+               </property>
+               <property name="text">
+                <string>Joint angle</string>
                </property>
               </widget>
              </item>
@@ -175,16 +178,43 @@
                </property>
               </widget>
              </item>
-             <item row="6" column="0">
-              <widget class="QLabel" name="label_jointAngle">
+             <item row="1" column="0" colspan="2">
+              <widget class="QComboBox" name="comboBox_activeJoint">
                <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+                <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                  <horstretch>0</horstretch>
                  <verstretch>0</verstretch>
                 </sizepolicy>
                </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="groupBox">
+            <property name="title">
+             <string>Barbell</string>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout">
+             <item>
+              <widget class="QLabel" name="label_barbellDisplacement">
                <property name="text">
-                <string>Joint angle</string>
+                <string>Displacement</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_barbellVelocity">
+               <property name="text">
+                <string>Velocity</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_barbellAngle">
+               <property name="text">
+                <string>Angle</string>
                </property>
               </widget>
              </item>

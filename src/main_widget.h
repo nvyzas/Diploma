@@ -122,6 +122,17 @@ public:
 	bool tipsDrawing() const;
 	QVector3D activeJointVelocity() const;
 	float activeJointAngle() const;
+	QVector3D activeBarbellDisplacement() const;
+	QVector3D activeBarbellVelocity() const;
+	QVector3D activeBarbellAngle() const;
+
+	QVector3D m_activeAthleteBarbellDiscplacement;
+	QVector3D m_activeTrainerBarbellDiscplacement;
+	QVector3D m_activeAthleteBarbellVelocity;
+	QVector3D m_activeTrainerBarbellVelocity;
+	QVector3D m_activeAthleteBarbellAngle;
+	QVector3D m_activeTrainerBarbellAngle;
+
 public slots:
 	void setCaptureEnabled(bool state);
 
@@ -303,6 +314,8 @@ private:
 	uint m_diffuseLocation;
 	uint m_specularLocation;
 	uint m_ambientLocation;
+
+	bool m_barbellFromMesh = true;
 };
 
 #endif /* MAIN_WIDGET_H */
